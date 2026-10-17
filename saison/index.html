@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017122735">
+<meta name="officious-page" content="20261017132532">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -229,6 +229,16 @@ button.s-primaire {
   background: var(--s-accent);
   border-color: var(--s-accent);
   color: #fff;
+}
+
+.s-coche {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+}
+.s-coche input {
+  width: auto;
 }
 
 /* tirer pour actualiser */
@@ -1296,6 +1306,7 @@ dialog h2 {
     <button data-act="actualiser" role="menuitem" hidden>Actualiser</button>
     <button data-act="exporter" role="menuitem">Télécharger une copie</button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
+    <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
     <button id="mMaj" role="menuitem" hidden>Mettre à jour l’appli</button>
     <hr>
     <button data-act="nouveautes" role="menuitem">Nouveautés</button>
@@ -1712,6 +1723,14 @@ function creerInterface() {
       <form method="dialog" class="s-pied"><button class="s-primaire">Fermer</button></form>
     </dialog>`
   );
+  ajoute(
+    `<dialog id="s-outils" class="s-dialogue" aria-label="Outils affichés">
+      <h2>Outils affichés</h2>
+      <p class="s-aide">Icônes de la suite sur l’écran d’accueil. Une icône masquée peut être réaffichée ici, depuis n’importe quel outil ; rien n’est désinstallé.</p>
+      <div id="s-outilsListe"></div>
+      <form method="dialog" class="s-pied"><button class="s-primaire">Fermer</button></form>
+    </dialog>`
+  );
   for (const d of document.querySelectorAll('.s-dialogue'))
     d.addEventListener('click', e => e.target === d && d.close()); /* toucher le fond referme */
   initEnLigne();
@@ -1910,6 +1929,40 @@ function reglerEnLigne() {
   $s('#s-elAdresse').value = reglage('en ligne');
   $s('#s-elApercu').textContent = '';
   $s('#s-enligne').showModal();
+}
+
+/* ---- outils affichés (Compagnon) : masquer ou réafficher les icônes des autres outils de la suite ---- */
+async function reglerOutils() {
+  if (!AND) return;
+  let L;
+  try {
+    L = JSON.parse(await andCallRaw('outils'));
+  } catch (e) {
+    return toast(/inconnue/.test(e.message) ? 'Mets d’abord le Compagnon à jour' : sansCode(e));
+  }
+  const boite = $s('#s-outilsListe');
+  boite.innerHTML = '';
+  for (const o of L) {
+    const l = document.createElement('label');
+    l.className = 's-coche';
+    const c = document.createElement('input');
+    c.type = 'checkbox';
+    c.checked = o.visible;
+    c.disabled = o.ici; /* l'outil ouvert ne se masque pas lui-même */
+    c.dataset.appli = o.appli;
+    c.onchange = async () => {
+      try {
+        await andCallRaw('afficherOutil', JSON.stringify({ appli: o.appli, visible: c.checked }));
+        toast(c.checked ? o.titre + ' : icône affichée' : o.titre + ' : icône masquée');
+      } catch (e) {
+        c.checked = !c.checked;
+        toast(sansCode(e));
+      }
+    };
+    l.append(c, ' ' + o.titre + (o.ici ? ' (ouvert)' : ''));
+    boite.append(l);
+  }
+  $s('#s-outils').showModal();
 }
 
 /* ---- tirer pour actualiser (Compagnon) : l'écran suit le doigt, la flèche tourne, coche ou pause à la fin ---- */
@@ -2954,7 +3007,7 @@ window.compagnonBack = () => {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.0.2',
+  version: '1.1.0',
   demarrer,
   /* fichier */
   modifie,
@@ -2965,6 +3018,7 @@ return {
   exporter,
   actualiser,
   reglerEnLigne,
+  reglerOutils,
   /* état */
   get ouvert() {
     return C.ouvert;
@@ -4599,6 +4653,13 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-17 16:00',
+    v: '0.5',
+    items: [
+      'Au téléphone, menu ⋯ « Outils affichés… » : choisir les icônes de la suite Officious présentes sur l’écran d’accueil.'
+    ]
+  },
+  {
     d: '2026-10-17 15:00',
     v: '0.4',
     items: [
@@ -4655,6 +4716,7 @@ function initBoutons() {
     $('[data-act=ouvrir]').textContent = 'Choisir un autre fichier…';
     $('[data-act=nouveau]').hidden = true;
     $('[data-act=actualiser]').hidden = false;
+    $('[data-act=outils]').hidden = false;
   } else if (!hasFS) {
     $('#vOuvrir').textContent = 'Ouvrir une copie de planning.md';
     $('[data-act=ouvrir]').textContent = 'Ouvrir une copie…';
@@ -4677,6 +4739,7 @@ function initBoutons() {
       nouveau: () => socle.nouveauFichier(),
       exporter: () => socle.exporter(),
       enligne: () => socle.reglerEnLigne(),
+      outils: () => socle.reglerOutils(),
       actualiser: () => socle.actualiser(),
       nouveautes: () => socle.montrerNouveautes(),
       journal: async () =>
