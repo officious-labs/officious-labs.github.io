@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017223441">
+<meta name="officious-page" content="20261017223535">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4935,6 +4935,24 @@ function manques(p, avenir) {
     }
   return out;
 }
+/** Texte à coller dans une note de Tâches : 1re ligne = intitulé, lignes « - » = sous-tâches quand on la trie. */
+function texteTaches(p, avenir) {
+  const L = manques(p, avenir);
+  return [
+    'Compléter « Demandez le programme » : ' + typo(p.nom.charAt(0).toLowerCase() + p.nom.slice(1)),
+    ...L.map(
+      ({ e, m }) =>
+        '- ' +
+        typo(e.titre).replace(/\*/g, '') +
+        ' (' +
+        JOURS_C[jour(e.d1).getDay()] +
+        ' ' +
+        jourMois(jour(e.d1)) +
+        ') : ' +
+        m.join(', ')
+    )
+  ].join('\n');
+}
 function afficherManques(p, avenir) {
   const box = $('#mailManques');
   const L = mailPour === 'familles' && p ? manques(p, avenir) : [];
@@ -4946,7 +4964,7 @@ function afficherManques(p, avenir) {
   $('#mailForcer').hidden = !L.length;
   if (!L.length) return (box.innerHTML = '');
   box.innerHTML =
-    '<p><b>À compléter avant l’envoi</b> : touche une date pour ouvrir sa fiche.</p><ul>' +
+    '<p><b>À compléter avant l’envoi</b> : touche une date pour ouvrir sa fiche. <button type="button" id="mailVersTaches" class="lien">Copier pour Tâches</button></p><ul>' +
     L.map(
       ({ e, m }) =>
         '<li><button type="button" data-id="' +
@@ -5099,7 +5117,15 @@ function initMail() {
   $('#mailPeriode').onchange = afficherMail;
   $('#mailAvenir').onchange = afficherMail;
   for (const b of $$('[data-pour]')) b.onclick = () => choisirPour(b.dataset.pour);
-  $('#mailManques').addEventListener('click', ev => {
+  $('#mailManques').addEventListener('click', async ev => {
+    if (ev.target.id === 'mailVersTaches') {
+      const t = texteTaches(periodeMail(), $('#mailAvenir').checked);
+      return toast(
+        (await copierRiche(esc(t).replace(/\n/g, '<br>'), t))
+          ? 'Copié : colle-le dans une nouvelle note de Tâches'
+          : 'Copie impossible'
+      );
+    }
     const b = ev.target.closest('[data-id]');
     if (!b) return;
     $('#mail').close();
@@ -5136,6 +5162,7 @@ const NOUVEAUTES = [
     v: '0.11',
     items: [
       'Saisie rapide plus souple : « le jeudi 12 mars à 19 h au CCED, concert des CHAM, élèves de CHAM 5e, entrée libre » remplit date, heure, lieu, titre, élèves concernés et infos pratiques. Lieux en toutes lettres (« à la médiathèque », « salle Bach »), tarifs, « gratuit », « sur réservation », « sur invitation », téléphones.',
+      '« Demandez le programme » : « Copier pour Tâches » dans la liste des dates à compléter. Colle-le dans une note de Tâches ; triée en tâche, chaque date devient une sous-tâche.',
       'Une manifestation qui porte le même titre qu’une précédente reprend son descriptif, ses élèves concernés, ses infos pratiques et son lieu (l’aperçu dit ce qui est repris, et d’où).'
     ]
   },
