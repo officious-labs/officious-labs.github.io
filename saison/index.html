@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017222121">
+<meta name="officious-page" content="20261017223441">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1393,7 +1393,7 @@ button.lien {
 
 <main id="principal">
   <form id="ajout" autocomplete="off">
-    <input id="ajoutTxt" placeholder="Ajouter : ven 27 nov 18h Carte blanche @Bach" aria-label="Ajouter un événement" spellcheck="true">
+    <input id="ajoutTxt" placeholder="Ajouter : jeudi 12 mars 19 h au CCED, Concert des CHAM, entrée libre" aria-label="Ajouter un événement" spellcheck="true">
     <div id="ajoutApercu" aria-live="polite"></div>
   </form>
   <details id="controles" hidden><summary></summary><ul></ul></details>
@@ -3699,7 +3699,18 @@ function dateLongue(iso) {
 }
 /* 05-saisie.js : saisie rapide en une ligne. Sans DOM : testée dans node (tests/modele.test.mjs).
    « ven 27 nov 18h Carte blanche @Bach », « 20-21/05 18h Pépinière musicale @CCED »,
-   « semaine du 24 mai Écrits de FM », « du 21 au 27 février OHEL @CCED », « 6/03 10h30-12h30 Petit déjeuner » */
+   « semaine du 24 mai Écrits de FM », « du 21 au 27 février OHEL @CCED », « 6/03 10h30-12h30 Petit déjeuner ».
+   Depuis la 0.11, aussi des phrases plus libres (sans IA : des règles) : « le jeudi 12 mars à 19 h au CCED, concert
+   des CHAM, élèves de CHAM 5e, entrée libre » → lieu, élèves concernés, infos pratiques. */
+
+/** Texte sans accents, de même longueur (pour chercher sans tenir compte des accents ni des majuscules). */
+function sansAccents(s) {
+  return s
+    .split('')
+    .map(c => c.normalize('NFD')[0])
+    .join('')
+    .toLowerCase();
+}
 
 const MOIS_ABR = {
   janv: 1,
@@ -3756,10 +3767,10 @@ function dateValide(y, m, j) {
   return d.getMonth() === m - 1 && d.getDate() === j;
 }
 
-/** Lit une ligne de saisie rapide → {d1, d2, heures, semaine, titre, lieu} ou {erreur}. */
+/** Lit une ligne de saisie rapide → {d1, d2, heures, semaine, titre, lieu, eleves, pratique} ou {erreur}. */
 function lireSaisie(texte, pers, lieuxRef, ref) {
   let t = ' ' + texte.trim() + ' ';
-  const ev = { d1: '', d2: '', heures: '', semaine: false, titre: '', lieu: '' };
+  const ev = { d1: '', d2: '', heures: '', semaine: false, titre: '', lieu: '', eleves: '', pratique: '' };
   const fait = m => {
     t = t.slice(0, m.index) + ' ' + t.slice(m.index + m[0].length);
   };
@@ -3769,6 +3780,27 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
     return dateValide(y, m, j) ? y + '-' + String(m).padStart(2, '0') + '-' + String(j).padStart(2, '0') : '';
   };
   let m;
+  /* « le », « les » devant une date (« le jeudi 12 mars », « les 29 et 30 mai ») */
+  t = t.replace(/\s(?:le|les)\s+(?=(?:\d|1er|(?:lun|mar|mer|jeu|ven|sam|dim)[a-z]*\.?\s+\d))/gi, ' ');
+  /* infos pratiques : tarifs, entrée, réservation, téléphone (retirées du titre, gardées dans l'ordre de la saisie) */
+  const pratique = [];
+  const PRAT = [
+    /[\s,;]((?:entrée\s+)?gratuit(?:e)?(?:\s+(?:sur|avec)\s+réservation(?:\s+auprès\s+du\s+conservatoire)?)?(?:\s+pour\s+les\s+élèves(?:\s+du\s+conservatoire)?(?:\s+et\s+les\s+(?:enfants\s+de\s+)?(?:moins\s+de|–\s+de|-\s+de)\s+\d+\s+ans)?)?)(?=[\s,;.]|$)/i,
+    /[\s,;](entrée\s+libre(?:\s+avec\s+participation)?)(?=[\s,;.]|$)/i,
+    /[\s,;]((?:entrée\s+)?sur\s+invitation(?:\s+seulement)?)(?=[\s,;.]|$)/i,
+    /[\s,;]((?:réservation|sur\s+réservation)(?:\s+(?:auprès\s+du\s+conservatoire|conseillée|obligatoire))?)(?=[\s,;.]|$)/i,
+    /[\s,;]((?:tarifs?\s*:?\s*)?\d+(?:[,.]\d{1,2})?\s?(?:€|euros?)(?:\s*[,/]\s*\d+(?:[,.]\d{1,2})?\s?(?:€|euros?))*(?:\s+(?:pour\s+les\s+)?(?:non\s+)?lucéens?)?)(?=[\s,;.]|$)/i,
+    /[\s,;]((?:renseignements?\s*(?:et\s+réservations?)?\s*:?\s*)?0[1-9](?:[\s.]?\d{2}){4})(?=[\s,;.]|$)/i
+  ];
+  for (const rx of PRAT)
+    while ((m = rx.exec(t))) {
+      pratique.push({ i: m.index, v: majuscule(m[1].replace(/\s+/g, ' ').trim()) });
+      fait(m);
+    }
+  ev.pratique = pratique
+    .sort((a, b) => a.i - b.i)
+    .map(x => x.v)
+    .join('\n');
   /* lieu : « @Clé » du référentiel (sans tenir compte des majuscules), sinon tout ce qui suit « @ » */
   if ((m = /\s@(.+)$/.exec(t))) {
     const brut = m[1].trim();
@@ -3777,6 +3809,24 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
       .find(k => brut.toLowerCase() === k.toLowerCase());
     ev.lieu = cle || brut;
     fait(m);
+  } else if (lieuxRef) {
+    /* lieu en toutes lettres : « au CCED », « à la médiathèque », « salle Bach », « à la Conciergerie »… (clé ou nom
+       du référentiel, sans tenir compte des accents ni des majuscules) */
+    const sa = sansAccents(t);
+    const cands = [];
+    for (const L of Object.values(lieuxRef))
+      for (const n of new Set([L.cle, L.nom, L.nom.replace(/^.*,\s*/, '')])) if (n) cands.push([sansAccents(n), L.cle]);
+    cands.sort((a, b) => b[0].length - a[0].length);
+    for (const [n, cle] of cands) {
+      const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const r = new RegExp("[\\s,;](?:au|a la|a l’|a l'|a|en|salle)\\s+(?:salle\\s+)?" + esc + '(?=[\\s,;.]|$)');
+      const x = r.exec(sa);
+      if (x) {
+        ev.lieu = cle;
+        fait(x);
+        break;
+      }
+    }
   }
   /* dates */
   const R = [
@@ -3840,7 +3890,7 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
   }
   if (!ev.d1) return { erreur: 'pas de date reconnue' };
   /* heures : « 18h », « 18h30 », « 18:30 », « 10h30-12h30 », « de 14h à 17h » */
-  const H = '(\\d{1,2})(?:h|:)(\\d{2})?';
+  const H = '(\\d{1,2})\\s?(?:h|:)\\s?(\\d{2})?';
   if ((m = new RegExp('\\s(?:de\\s+)?' + H + '\\s*(?:-|–|à)\\s*' + H + '(?=\\s)', 'i').exec(t))) {
     ev.heures = normHeures(m[1] + ':' + (m[2] || '00') + '-' + m[3] + ':' + (m[4] || '00'));
     fait(m);
@@ -3848,7 +3898,22 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
     ev.heures = normHeures(m[1] + ':' + (m[2] || '00'));
     fait(m);
   }
-  ev.titre = majuscule(t.replace(/\s+/g, ' ').replace(/^[\s,·—–-]+|[\s,·—–-]+$/g, ''));
+  /* élèves concernés : « élèves de la classe de piano », « élèves concernés : ateliers théâtre », jusqu'à la
+     virgule ou la fin ; en dernier, une fois date, heure et lieu retirés */
+  if ((m = /[\s,;](?:avec\s+|pour\s+)?(?:les\s+)?(élèves\s+(?:concernés\s*:\s*)?[^,;]+)/i.exec(t))) {
+    ev.eleves = m[1]
+      .replace(/^élèves\s+concernés\s*:\s*/i, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    fait(m);
+  }
+  ev.titre = majuscule(
+    t
+      .replace(/\s+/g, ' ')
+      .replace(/\s+([,;])/g, '$1')
+      .replace(/([,;])(?=[,;])/g, '')
+      .replace(/^[\s,·—–-]+|[\s,·—–-]+$/g, '')
+  );
   if (!ev.titre) return { erreur: 'il manque le titre' };
   return ev;
 }
@@ -4076,6 +4141,21 @@ function afficherControles() {
 }
 
 /* ---------- saisie rapide ---------- */
+/**
+ * Reprise d'une manifestation du même titre (la plus récente qui en a) : descriptif, élèves concernés, infos
+ * pratiques, et le lieu s'il n'est pas donné. Seulement ce que la saisie ne dit pas. → {champs, de} ou null.
+ */
+function reprise(r) {
+  const cle = t => t.toLowerCase().replace(/\s+/g, ' ').trim();
+  const src = doc.evts
+    .filter(e => cle(e.titre) === cle(r.titre) && (e.detail || e.eleves || e.pratique))
+    .sort((a, b) => (a.d1 < b.d1 ? 1 : -1))[0];
+  if (!src) return null;
+  const champs = {};
+  for (const c of ['detail', 'eleves', 'pratique']) if (!r[c] && src[c]) champs[c] = src[c];
+  if (!r.lieu && src.lieu) champs.lieu = src.lieu;
+  return Object.keys(champs).length ? { champs, de: src } : null;
+}
 function apercuSaisie() {
   const v = $('#ajoutTxt').value.trim(),
     a = $('#ajoutApercu');
@@ -4084,7 +4164,7 @@ function apercuSaisie() {
     a.className = '';
     return null;
   }
-  const r = lireSaisie(v, periodes(doc), lieux(doc));
+  let r = lireSaisie(v, periodes(doc), lieux(doc));
   if (r.erreur) {
     a.textContent =
       r.erreur === 'pas de date reconnue'
@@ -4095,7 +4175,22 @@ function apercuSaisie() {
     a.className = 'err';
     return null;
   }
+  const rep = reprise(r);
+  if (rep) r = { ...r, ...rep.champs, repriseDe: rep.de.d1 };
   const L = lieuDe(r);
+  const plus = [];
+  if (r.eleves) plus.push('Élèves concernés\u00a0: ' + rich(r.eleves));
+  if (r.pratique) plus.push(rich(r.pratique.replace(/\n/g, ' · ')));
+  if (rep)
+    plus.push(
+      '<span class="flou">' +
+        Object.keys(rep.champs)
+          .map(c => ({ detail: 'descriptif', eleves: 'élèves', pratique: 'infos pratiques', lieu: 'lieu' })[c])
+          .join(', ') +
+        ' repris du ' +
+        esc(jourMois(jour(rep.de.d1))) +
+        '</span>'
+    );
   a.innerHTML =
     '→ ' +
     esc(majuscule(libDate(r))) +
@@ -4104,13 +4199,15 @@ function apercuSaisie() {
     rich(r.titre) +
     '</b>' +
     (L ? ' · ' + pastille(L) : '') +
-    (r.lieu && !lieux(doc)[r.lieu] ? ' <span class="flou">(lieu hors liste)</span>' : '');
+    (r.lieu && !lieux(doc)[r.lieu] ? ' <span class="flou">(lieu hors liste)</span>' : '') +
+    (plus.length ? '<br>' + plus.join(' · ') : '');
   a.className = 'ok';
   return r;
 }
 function ajouter(r) {
   snapshot();
-  const e = { ...evVide(), ...r, id: idNouveau() };
+  const { repriseDe, ...champs } = r;
+  const e = { ...evVide(), ...champs, id: idNouveau() };
   while (doc.evts.some(x => x.id === e.id)) e.id = idNouveau();
   doc.evts.push(e);
   changed();
@@ -5034,6 +5131,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 01:00',
+    v: '0.11',
+    items: [
+      'Saisie rapide plus souple : « le jeudi 12 mars à 19 h au CCED, concert des CHAM, élèves de CHAM 5e, entrée libre » remplit date, heure, lieu, titre, élèves concernés et infos pratiques. Lieux en toutes lettres (« à la médiathèque », « salle Bach »), tarifs, « gratuit », « sur réservation », « sur invitation », téléphones.',
+      'Une manifestation qui porte le même titre qu’une précédente reprend son descriptif, ses élèves concernés, ses infos pratiques et son lieu (l’aperçu dit ce qui est repris, et d’où).'
+    ]
+  },
   {
     d: '2026-10-18 00:45',
     v: '0.10',
