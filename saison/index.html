@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017132532">
+<meta name="officious-page" content="20261017142030">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1514,18 +1514,10 @@ function fixeReglage(cleR, val) {
 
 const AND = window.Compagnon || null;
 const TACTILE = !!AND || matchMedia('(pointer: coarse)').matches;
-/* méthodes qui touchent à OneDrive : refusées hors des heures de travail (voir 12-heures.js) */
-const ONEDRIVE_M = new Set([
-  'read',
-  'write',
-  'pick',
-  'spLogin',
-  'spRead',
-  'spWrite',
-  'spCreate',
-  'spList',
-  'spRecycle'
-]);
+/* méthodes qui touchent à OneDrive : refusées hors des heures de travail (voir 12-heures.js). read et write ne le
+   sont pas quand le fichier choisi est sur le téléphone (tel.local) ; choisir ou créer un fichier reste toujours
+   possible (socle 1.2.0). */
+const ONEDRIVE_M = new Set(['read', 'write', 'spLogin', 'spRead', 'spWrite', 'spCreate', 'spList', 'spRecycle']);
 let pontSeq = 0;
 const pontAppels = {};
 
@@ -1542,7 +1534,9 @@ function andCallRaw(m, arg) {
   });
 }
 function andCall(m, arg) {
-  if (ONEDRIVE_M.has(m) && horsHeures()) return Promise.reject(new Error('horsplage:' + texteHorsHeures()));
+  const fichierLocal = tel.local && (m === 'read' || m === 'write');
+  if (ONEDRIVE_M.has(m) && !fichierLocal && AND && !heuresTravail())
+    return Promise.reject(new Error('horsplage:' + texteHorsHeures()));
   return andCallRaw(m, arg);
 }
 window.compagnonReply = (id, ok, val) => {
@@ -1621,9 +1615,10 @@ function heuresTravail(now) {
   const t = now.getHours() * 60 + now.getMinutes();
   return !jourChome(now) && t >= TRAVAIL_DE && t < TRAVAIL_A;
 }
-/** Vrai seulement dans le Compagnon : au PC, c'est OneDrive du poste qui synchronise, à son rythme. */
+/** Vrai seulement dans le Compagnon, avec un fichier de OneDrive : au PC, c'est OneDrive du poste qui synchronise, à
+    son rythme ; un fichier du téléphone se lit et s'écrit à toute heure. */
 function horsHeures() {
-  return !!AND && !heuresTravail();
+  return !!AND && !tel.local && !heuresTravail();
 }
 function texteReprise() {
   const now = maintenant(),
@@ -1873,7 +1868,10 @@ function texteEtat() {
     if (!b) return C.ouvert ? 'Pas encore de fichier · gardé dans l’appli' : 'Aucun fichier choisi';
     if (horsHeures()) return (C.dirty ? 'Modifications en attente · ' : '') + texteHorsHeures();
     if (C.saveErr) return '⚠ ' + C.saveErr;
-    return (C.dirty ? 'Enregistrement… ' : 'Enregistré · ') + (b.direct ? 'en ligne' : tel.nom);
+    return (
+      (C.dirty ? 'Enregistrement… ' : 'Enregistré · ') +
+      (b.direct ? 'en ligne' : tel.nom + (tel.local ? ' (téléphone)' : ''))
+    );
   }
   if (!C.ouvert) return '';
   if (!hasFS) {
@@ -2148,7 +2146,7 @@ const pcBackend = {
 };
 
 /* ---- Compagnon ---- */
-const tel = { nom: '', directRate: false, etag: '' };
+const tel = { nom: '', local: false /* fichier du téléphone, pas de OneDrive */, directRate: false, etag: '' };
 const andBackend = {
   read: () => andCall('read'),
   fresh: () => andCall('read', 'frais') /* demande d'abord à OneDrive sa dernière version */,
@@ -2181,7 +2179,7 @@ const spBackend = {
   direct: true
 };
 function backendTel() {
-  if (adresseEnLigne() && !tel.directRate) return spBackend;
+  if (adresseEnLigne() && !tel.directRate && !tel.local) return spBackend;
   return tel.nom ? andBackend : null;
 }
 
@@ -2490,6 +2488,7 @@ async function ouvrir() {
 }
 /** Enregistrer dans un nouveau fichier (l'état affiché, ou un fichier neuf donné par l'outil). */
 async function nouveauFichier(modeleNeuf) {
+  if (AND) return nouveauTel(modeleNeuf);
   if (!hasFS) {
     if (modeleNeuf) adopter(modeleNeuf);
     return;
@@ -2628,18 +2627,56 @@ function apresLecture() {
     .then(() => deposerPage())
     .catch(() => {});
 }
+/** Le fichier choisi est-il sur le téléphone ? (un Compagnon trop ancien ne sait pas le dire : OneDrive) */
+async function majLocal() {
+  try {
+    tel.local = (await andCallRaw('local')) === '1';
+  } catch (e) {
+    tel.local = false;
+  }
+}
 async function choisirTel() {
-  if (horsHeures()) return toast(texteHorsHeures());
+  if (!heuresTravail())
+    toast(
+      'Hors des heures de travail : un fichier du téléphone s’ouvre tout de suite, un fichier OneDrive attendra ' +
+        texteReprise(),
+      null,
+      null,
+      5000
+    );
   try {
     tel.nom = await andCall('pick');
+    await majLocal();
     tel.directRate = false;
     C.baseText = null;
     C.dirty = C.dirty && C.ouvert;
     await chargerTel();
-    toast('Ouvert : ' + tel.nom);
+    toast('Ouvert : ' + tel.nom + (tel.local ? ' (sur le téléphone)' : ''));
   } catch (e) {
     if (!/annulé/.test(e.message)) toast(sansCode(e));
   }
+}
+
+/** Compagnon : nouveau fichier (sur le téléphone ou dans OneDrive), qui reçoit l'état affiché ou un état neuf. */
+async function nouveauTel(modeleNeuf) {
+  try {
+    tel.nom = await andCallRaw('create', A.fichier);
+  } catch (e) {
+    if (/inconnue/.test(e.message)) toast('Mets d’abord l’appli à jour (menu ⋯)');
+    else if (!/annulé/.test(e.message)) toast(sansCode(e));
+    return;
+  }
+  await majLocal();
+  tel.directRate = false;
+  C.baseText = null;
+  C.ouvert = true;
+  if (modeleNeuf) A.appliquer(modeleNeuf);
+  C.backend = backendTel();
+  modifie();
+  clearTimeout(modifie.t);
+  await enregistrer();
+  toast(horsHeures() ? 'Créé : ' + tel.nom + ' · ' + texteHorsHeures() : 'Enregistré dans ' + tel.nom);
+  etat();
 }
 
 /**
@@ -2955,6 +2992,7 @@ async function demarrer(adaptateur) {
     try {
       tel.nom = await andCallRaw('name');
     } catch (e) {}
+    if (tel.nom) await majLocal();
     await chargerTel();
     if (mem.get('page-maj')) {
       mem.set('page-maj', null);
@@ -3007,7 +3045,7 @@ window.compagnonBack = () => {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.1.0',
+  version: '1.2.0',
   demarrer,
   /* fichier */
   modifie,
@@ -4653,6 +4691,14 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-17 17:00',
+    v: '0.6',
+    items: [
+      'Au téléphone, un planning rangé sur le téléphone (Téléchargements, Documents…) s’ouvre et s’enregistre à toute heure, même le week-end ; seul OneDrive attend les heures de travail.',
+      'Au téléphone : « Créer un nouveau planning… », sur le téléphone ou dans OneDrive.'
+    ]
+  },
+  {
     d: '2026-10-17 16:00',
     v: '0.5',
     items: [
@@ -4711,10 +4757,9 @@ function initBoutons() {
   $('#vOuvrir').onclick = () => socle.ouvrir();
   $('#vNouveau').onclick = () => socle.nouveauFichier(planningVide());
   if (AND) {
-    $('#vOuvrir').textContent = 'Choisir planning.md dans OneDrive';
-    $('#vNouveau').hidden = true;
+    $('#vOuvrir').textContent = 'Choisir planning.md';
+    $('#vNouveau').textContent = 'Créer un nouveau planning…';
     $('[data-act=ouvrir]').textContent = 'Choisir un autre fichier…';
-    $('[data-act=nouveau]').hidden = true;
     $('[data-act=actualiser]').hidden = false;
     $('[data-act=outils]').hidden = false;
   } else if (!hasFS) {
