@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017205941">
+<meta name="officious-page" content="20261017211059">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4710,7 +4710,9 @@ function htmlEquipe(p, avenir) {
     h += '<p><b><u>' + esc(m) + '</u></b></p>';
     for (const e of L) {
       const [q, lignes] = blocEquipe(e);
-      h += '<p><b>' + r(q) + '</b><br>' + lignes.map(r).join('<br>') + '</p>';
+      const corps = '<b>' + r(q) + '</b><br>' + lignes.map(r).join('<br>');
+      /* annulé : grisé et rayé, comme dans la liste (la seule couleur du mail ; <s> est compris par Outlook) */
+      h += e.statut === 'annulé' ? '<p style="color:#808080"><s>' + corps + '</s></p>' : '<p>' + corps + '</p>';
     }
   }
   return h;
@@ -4810,6 +4812,7 @@ const NOUVEAUTES = [
     v: '0.7',
     items: [
       'Mail « Équipe » : toutes les dates et toutes les informations (horaires, lieu, accompagnement, remarques, dates internes et annulées), en texte simple, prêt à coller dans Outlook. Bouton « Mail », puis « Équipe » ; « Toute la saison » est proposé.',
+      'Dans ce mail, les dates annulées sont grisées et rayées, comme dans la liste.',
       'L’affiche est désormais toujours la version publique.'
     ]
   },
