@@ -46,7 +46,7 @@ import java.util.concurrent.Executors;
  *
  * Contrat du pont : request(id, méthode, argument) ; la réponse revient par window.compagnonReply(id, ok, valeur).
  * Méthodes : name, pick, read, write, spLogin, spRead, spWrite, spCreate, spList, spRecycle, copy, paste, haptic,
- * version, checkUpdate, update. Les erreurs portent un code en tête (connexion:, introuvable:, conflit:, http:, reseau:).
+ * outils, afficherOutil, version, checkUpdate, update. Les erreurs portent un code en tête (connexion:, introuvable:, conflit:, http:, reseau:).
  */
 public abstract class MainActivity extends Activity {
     /** Nom de l'outil de cette activité : chemin de sa page, préfixe de ses réglages. */
@@ -292,6 +292,21 @@ public abstract class MainActivity extends Activity {
                         }
                         repondre(id, true, "");
                     } catch (Exception e) { repondre(id, false, message(e)); }
+                    break;
+                case "outils":
+                    io.execute(() -> {
+                        try { repondre(id, true, Outils.liste(MainActivity.this, appli())); }
+                        catch (Exception e) { repondre(id, false, message(e)); }
+                    });
+                    break;
+                case "afficherOutil":
+                    io.execute(() -> {
+                        try {
+                            JSONObject o = new JSONObject(arg);
+                            Outils.afficher(MainActivity.this, appli(), o.getString("appli"), o.getBoolean("visible"));
+                            repondre(id, true, "");
+                        } catch (Exception e) { repondre(id, false, message(e)); }
+                    });
                     break;
                 case "copy":
                     // presse-papiers : texte brut + mise en forme (le mail « Demandez le programme » se colle tel quel)

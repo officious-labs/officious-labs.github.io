@@ -16,20 +16,13 @@ public class MajRecue extends BroadcastReceiver {
     static final int NOTIF = 1;
     static final String CANAL = "maj";
 
-    /** Activité de chaque outil de la suite (une icône chacun). */
-    static Class<?> activiteDe(String appli) {
-        switch (appli) {
-            default: return SaisonActivity.class;
-        }
-    }
-
     @Override
     public void onReceive(Context ctx, Intent recu) {
         if (!Intent.ACTION_MY_PACKAGE_REPLACED.equals(recu.getAction())) return;
 
         // rouvre le dernier outil utilisé
         String dernier = ctx.getSharedPreferences("compagnon", Context.MODE_PRIVATE).getString("dernier", "saison");
-        Intent ouvrir = new Intent(ctx, activiteDe(dernier)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent ouvrir = new Intent(ctx, Outils.activiteDe(dernier)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
             nm.createNotificationChannel(new NotificationChannel(CANAL, "Mises à jour de l'appli", NotificationManager.IMPORTANCE_DEFAULT));
