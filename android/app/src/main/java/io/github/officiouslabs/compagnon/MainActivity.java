@@ -45,7 +45,7 @@ import java.util.concurrent.Executors;
  * à son fichier par le pont « Compagnon ». Dérivé de la coquille de Tâches (15/10/2026), via celle de Saison.
  *
  * Contrat du pont : request(id, méthode, argument) ; la réponse revient par window.compagnonReply(id, ok, valeur).
- * Méthodes : name, pick, read, write, spLogin, spRead, spWrite, spCreate, spList, spRecycle, copy, paste, haptic,
+ * Méthodes : name, local, pick, create, read, write, spLogin, spRead, spWrite, spCreate, spList, spRecycle, copy, paste, haptic,
  * outils, afficherOutil, version, checkUpdate, update. Les erreurs portent un code en tête (connexion:, introuvable:, conflit:, http:, reseau:).
  */
 public abstract class MainActivity extends Activity {
@@ -56,7 +56,7 @@ public abstract class MainActivity extends Activity {
     private static final String DEPOT = "https://github.com/officious-labs/officious-labs.github.io/releases/download/android/";
     private static final String FIN_INSTALLATION = "io.github.officiouslabs.compagnon.INSTALLATION";
     private String CHEMIN, DEPART, PAGE;
-    private static final int CHOISIR = 1;
+    private static final int CHOISIR = 1, CREER = 2;
     private static final int CONNEXION = 6;
 
     private WebView web;
@@ -193,8 +193,15 @@ public abstract class MainActivity extends Activity {
                 case "name":
                     io.execute(() -> repondre(id, true, fichier() == null ? "" : prefs.getString("nom:" + appli(), "")));
                     break;
+                case "local":
+                    // "1" si le fichier choisi est sur le téléphone (pas dans OneDrive) : il se lit et s'écrit à toute heure
+                    io.execute(() -> { Uri u = fichier(); repondre(id, true, u != null && !surOneDrive(u) ? "1" : ""); });
+                    break;
                 case "pick":
                     runOnUiThread(() -> choisir(id));
+                    break;
+                case "create":
+                    runOnUiThread(() -> creer(id, arg));
                     break;
                 case "read":
                     io.execute(() -> {
@@ -403,6 +410,30 @@ public abstract class MainActivity extends Activity {
         }
     }
 
+    /** Fichier fourni par l'appli OneDrive (son fournisseur de documents), et non par le téléphone. */
+    private static boolean surOneDrive(Uri u) {
+        String a = u.getAuthority() == null ? "" : u.getAuthority().toLowerCase();
+        return a.contains("skydrive") || a.contains("onedrive") || a.contains("microsoft");
+    }
+
+    /** Nouveau fichier, à l'endroit choisi (Téléchargements, Documents… ou OneDrive), avec le nom proposé. */
+    private void creer(int id, String nom) {
+        if (choixEnCours != -1) repondre(choixEnCours, false, "annulé");
+        choixEnCours = id;
+        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("text/markdown");
+        i.putExtra(Intent.EXTRA_TITLE, nom == null || nom.isEmpty() ? "fichier.md" : nom);
+        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        try {
+            startActivityForResult(i, CREER);
+        } catch (Exception e) {
+            choixEnCours = -1;
+            repondre(id, false, "sélecteur de fichiers indisponible");
+        }
+    }
+
     @Override
     protected void onActivityResult(int code, int res, Intent data) {
         super.onActivityResult(code, res, data);
@@ -412,7 +443,7 @@ public abstract class MainActivity extends Activity {
             if (i != -1) repondre(i, res == RESULT_OK, res == RESULT_OK ? "" : "annulé");
             return;
         }
-        if (code != CHOISIR) return;
+        if (code != CHOISIR && code != CREER) return;
         final int id = choixEnCours;
         choixEnCours = -1;
         if (id == -1) return;
