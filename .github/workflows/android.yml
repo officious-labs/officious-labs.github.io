@@ -44,7 +44,15 @@ jobs:
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
         run: |
           export KEYSTORE_PASS="$(printf '%s' "$KEYSTORE_PASS" | tr -d ' \t\r\n')"
-          gradle -p android assembleRelease --no-daemon
+          if [ -n "$KEYSTORE_FILE" ]; then
+            # diagnostic lisible dans les annotations (les journaux ne sont pas toujours accessibles) ; rien de secret
+            echo "::notice::clé reçue : $(wc -c < "$KEYSTORE_FILE") octets, empreinte $(sha256sum "$KEYSTORE_FILE" | cut -c1-16), mot de passe de ${#KEYSTORE_PASS} caractères"
+            keytool -list -storetype pkcs12 -keystore "$KEYSTORE_FILE" -storepass "$KEYSTORE_PASS" -alias compagnon > /dev/null 2>&1 \
+              || { echo "::error::la clé ne s'ouvre pas avec ce mot de passe (secret KEYSTORE_B64 ou KEYSTORE_PASS mal copié)"; exit 1; }
+          fi
+          gradle -p android assembleRelease --no-daemon 2>&1 | tee "$RUNNER_TEMP/gradle.log" || true
+          grep -q "BUILD SUCCESSFUL" "$RUNNER_TEMP/gradle.log" \
+            || { echo "::error::$(grep -A6 'What went wrong' "$RUNNER_TEMP/gradle.log" | tr '\n' ' ' | cut -c1-900)"; exit 1; }
       - name: Publication
         env:
           GH_TOKEN: ${{ github.token }}
