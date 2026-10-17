@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017215240">
+<meta name="officious-page" content="20261017222121">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1005,6 +1005,50 @@ dialog h2 {
   padding: 0.3rem 0.5rem;
   background: var(--papier);
 }
+#mailManques {
+  border: 1px solid #e6c98f;
+  background: #fdf6e7;
+  border-radius: 9px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.9rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+#mailManques p {
+  margin: 0 0 0.3rem;
+}
+#mailManques ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+#mailManques button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 0.3rem 0;
+  border-top: 1px solid #f0dfb8;
+  font: inherit;
+  cursor: pointer;
+}
+#mailManques .q {
+  font-weight: 600;
+}
+#mailManques .m {
+  display: block;
+  color: #8a5a10;
+  font-size: 0.85rem;
+}
+button.lien {
+  border: 0;
+  background: none;
+  color: var(--gris);
+  text-decoration: underline;
+  font-size: 0.85rem;
+  padding: 0;
+}
 #mailApercu {
   overflow: auto;
   background: #fff;
@@ -1315,6 +1359,10 @@ dialog h2 {
     transition: none !important;
   }
 }
+#mailCopier:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 </style>
 </head>
 <body>
@@ -1427,9 +1475,11 @@ dialog h2 {
   <div class="mail-objet">
     <span>Objet</span><output id="mailObjet"></output><button id="mailCopierObjet">Copier l’objet</button>
   </div>
+  <div id="mailManques" hidden></div>
   <div id="mailApercu"></div>
   <div class="mail-pied">
     <span id="mailAide" class="aide">Version publique. Colle le message dans un nouveau mail Outlook.</span>
+    <button id="mailForcer" class="lien" hidden>copier quand même</button>
     <button id="mailCopier" class="primaire">Copier le message</button>
   </div>
 </dialog>
@@ -4768,6 +4818,53 @@ function texteMail(p, avenir) {
   return out.join('\n');
 }
 
+/* ---- contrôle avant l'envoi (Familles) : pour chaque date, date, heure, lieu, titre, descriptif, élèves concernés
+   et infos pratiques sont obligatoires (François, 18/10/2026). Date et titre existent toujours ; un libellé de date
+   imposé (« samedi 13 juin, tout l'après-midi ») ou un programme horaire dans le descriptif vaut heure. Description, élèves et infos pratiques se comptent par
+   bloc : une date regroupée hérite de celles de la première. ---- */
+function manques(p, avenir) {
+  const out = [];
+  for (const g of groupes(evtsMail(p, avenir)))
+    for (const e of g.evts) {
+      const m = [];
+      /* un programme détaillé avec ses horaires (« - 18 h : … ») vaut heure, comme pour le théâtre en mai */
+      const programme = /^\s*[-•]\s.*\b\d{1,2}\s?h\b/m.test(g.detail || '');
+      if (!e.heures && !e.libelle && !programme) m.push('heure');
+      if (!e.lieu) m.push('lieu');
+      if (!g.detail) m.push('descriptif');
+      if (!g.eleves) m.push('élèves concernés');
+      if (!g.pratique) m.push('infos pratiques');
+      if (m.length) out.push({ e, m });
+    }
+  return out;
+}
+function afficherManques(p, avenir) {
+  const box = $('#mailManques');
+  const L = mailPour === 'familles' && p ? manques(p, avenir) : [];
+  box.hidden = !L.length;
+  $('#mailCopier').disabled = !!L.length;
+  $('#mailCopier').textContent = L.length
+    ? L.length + ' date' + (L.length > 1 ? 's' : '') + ' à compléter'
+    : 'Copier le message';
+  $('#mailForcer').hidden = !L.length;
+  if (!L.length) return (box.innerHTML = '');
+  box.innerHTML =
+    '<p><b>À compléter avant l’envoi</b> : touche une date pour ouvrir sa fiche.</p><ul>' +
+    L.map(
+      ({ e, m }) =>
+        '<li><button type="button" data-id="' +
+        esc(e.id) +
+        '"><span class="q">' +
+        esc(majuscule(libDate(e))) +
+        '</span> ' +
+        rich(e.titre) +
+        '<span class="m">manque : ' +
+        m.join(', ') +
+        '</span></button></li>'
+    ).join('') +
+    '</ul>';
+}
+
 /* ---- mail « Équipe » ---- */
 const TOUTE = '*'; /* valeur de « Toute la saison » dans la liste des périodes */
 
@@ -4892,6 +4989,7 @@ function afficherMail() {
   const c = contenuMail();
   $('#mailObjet').textContent = c.objet;
   $('#mailApercu').innerHTML = c.html;
+  afficherManques(periodeMail(), $('#mailAvenir').checked);
 }
 const copierRiche = (html, texte) => socle.copierRiche(html, texte);
 function ouvrirMail() {
@@ -4904,6 +5002,17 @@ function initMail() {
   $('#mailPeriode').onchange = afficherMail;
   $('#mailAvenir').onchange = afficherMail;
   for (const b of $$('[data-pour]')) b.onclick = () => choisirPour(b.dataset.pour);
+  $('#mailManques').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-id]');
+    if (!b) return;
+    $('#mail').close();
+    if (version === 'public') changerVersion('interne');
+    ouvrirFiche(b.dataset.id);
+  });
+  $('#mailForcer').onclick = () => {
+    $('#mailCopier').disabled = false;
+    $('#mailCopier').click();
+  };
   $('#mailCopier').onclick = async () => {
     const c = contenuMail();
     const r = await copierRiche(c.html, c.texte);
@@ -4925,6 +5034,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 00:45',
+    v: '0.10',
+    items: [
+      '« Demandez le programme » : contrôle avant l’envoi. Chaque date doit avoir heure, lieu, descriptif, élèves concernés et infos pratiques ; celles qui ne sont pas complètes sont listées au-dessus de l’aperçu (touche-en une pour ouvrir sa fiche), et la copie attend qu’elles le soient. « Copier quand même » reste possible.'
+    ]
+  },
   {
     d: '2026-10-18 00:15',
     v: '0.9',
