@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017223535">
+<meta name="officious-page" content="20261017224922">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1322,7 +1322,130 @@ button.lien {
 }
 
 /* ---------- téléphone ---------- */
+/* ---------- calendrier ---------- */
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.6rem;
+}
+.cal-nav h2 {
+  font:
+    italic 500 1.5rem/1.1 Lora,
+    Georgia,
+    serif;
+  color: var(--accent);
+  margin: 0 0.4rem;
+  min-width: 11rem;
+  text-align: center;
+}
+.cal-grille {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--filet);
+  border: 1px solid var(--filet);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.cal-tete {
+  background: var(--papier);
+  color: var(--gris);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 0.3rem 0;
+}
+.cal-j {
+  background: var(--papier);
+  min-height: 6.2rem;
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  min-width: 0;
+}
+.cal-j.hors {
+  background: var(--fond);
+}
+.cal-j.hors .n {
+  color: var(--pale);
+}
+.cal-j .n {
+  font-size: 0.8rem;
+  color: var(--gris);
+  align-self: flex-end;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+}
+.cal-j.auj .n {
+  background: var(--accent);
+  color: var(--papier);
+  font-weight: 600;
+}
+.cal-j.choisi {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.cal-ev {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-left: 3px solid var(--c);
+  background: color-mix(in srgb, var(--c) 10%, var(--papier));
+  color: var(--encre);
+  font-size: 0.74rem;
+  line-height: 1.25;
+  padding: 0.12rem 0.3rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.cal-ev span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-ev.annule {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+.cal-detail {
+  margin-top: 1rem;
+}
 @media (max-width: 700px) {
+  /* calendrier au téléphone : des pastilles de couleur, la journée touchée s'affiche en dessous */
+  .cal-j {
+    min-height: 3.4rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 3px;
+    padding: 0.2rem;
+  }
+  .cal-j .n {
+    flex-basis: 100%;
+    text-align: right;
+  }
+  .cal-j.auj .n {
+    flex-basis: auto;
+    margin-left: auto;
+  }
+  .cal-ev {
+    width: 0.62rem;
+    height: 0.62rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--c);
+  }
+  .cal-ev span {
+    display: none;
+  }
+  .cal-nav h2 {
+    min-width: 0;
+    flex: 1;
+  }
   #tete {
     flex-wrap: wrap;
     padding: 0.5rem 0.8rem;
@@ -1373,6 +1496,7 @@ button.lien {
     <button id="vInterne" aria-pressed="true" title="Tout, avec les remarques internes">Interne</button>
     <button id="vPublic" aria-pressed="false" title="Ce que voient les familles">Publique</button>
   </div>
+  <button id="bVue" title="Voir le mois en calendrier">Calendrier</button>
   <button id="bAffiche" title="Affiche à imprimer, une page par période (Alt+P)">Affiche</button>
   <button id="bMail" title="Corps du mail « Demandez le programme » (Alt+M)">Mail</button>
   <button id="bMenu" class="icone" title="Fichier" aria-haspopup="menu">⋯</button>
@@ -1398,6 +1522,7 @@ button.lien {
   </form>
   <details id="controles" hidden><summary></summary><ul></ul></details>
   <div id="liste"></div>
+  <div id="calendrier" hidden></div>
   <div id="vide" hidden>
     <p>Aucun planning ouvert.</p>
     <p><button id="vOuvrir" class="primaire">Ouvrir planning.md</button> <button id="vNouveau">Commencer un nouveau planning</button></p>
@@ -4079,6 +4204,7 @@ function afficherListe() {
 
 function toutAfficher() {
   afficherListe();
+  afficherCalendrier();
   afficherControles();
   if (selId && !doc.evts.some(e => e.id === selId)) fermerFiche();
   else if (selId) remplirFiche();
@@ -4465,6 +4591,142 @@ function changerVersion(v) {
   $('#vPublic').setAttribute('aria-pressed', String(v === 'public'));
   document.body.classList.toggle('vpublic', v === 'public');
   afficherListe();
+}
+/* 06b-calendrier.js : vue calendrier, un mois à la fois (lundi en tête). Les dates prennent la couleur de leur lieu ;
+   au téléphone, des pastilles, et la journée touchée s'affiche en dessous. Mêmes règles que la liste : version
+   interne ou publique, annulées rayées, un clic ouvre la fiche. */
+
+let vue = 'liste'; /* 'liste' ou 'calendrier' */
+try {
+  if (localStorage.getItem('saison-vue') === 'calendrier') vue = 'calendrier';
+} catch (e) {}
+let calMois = ''; /* 'AAAA-MM' affiché */
+let calJour = ''; /* jour choisi (liste sous la grille) */
+
+function changerVue(v) {
+  vue = v;
+  try {
+    localStorage.setItem('saison-vue', v);
+  } catch (e) {}
+  $('#bVue').textContent = v === 'calendrier' ? 'Liste' : 'Calendrier';
+  $('#bVue').title = v === 'calendrier' ? 'Revenir à la liste par période' : 'Voir le mois en calendrier';
+  toutAfficher();
+}
+/** Mois affiché au départ : celui d'aujourd'hui s'il est dans la saison, sinon le premier mois de la saison. */
+function moisDepart() {
+  const a = auj().slice(0, 7);
+  const pers = periodes(doc);
+  if (!pers.length || (a >= pers[0].d1.slice(0, 7) && a <= pers[pers.length - 1].d2.slice(0, 7))) return a;
+  return pers[0].d1.slice(0, 7);
+}
+function decalerMois(n) {
+  const [y, m] = calMois.split('-').map(Number);
+  const d = new Date(y, m - 1 + n, 1, 12);
+  calMois = isoDe(d).slice(0, 7);
+  calJour = '';
+  afficherCalendrier();
+}
+function evtsDuJour(iso) {
+  return doc.evts.filter(e => visible(e) && e.d1 <= iso && e.d2 >= iso).sort(ordre);
+}
+function afficherCalendrier() {
+  const cal = $('#calendrier');
+  const actif = vue === 'calendrier' && socle.ouvert;
+  cal.hidden = !actif;
+  $('#liste').hidden = actif;
+  if (!actif) return;
+  if (!calMois) calMois = moisDepart();
+  const [y, m] = calMois.split('-').map(Number);
+  const premier = new Date(y, m - 1, 1, 12);
+  const debut = new Date(premier);
+  debut.setDate(1 - ((premier.getDay() + 6) % 7)); /* lundi de la première semaine */
+  const auj0 = auj();
+  let h =
+    '<div class="cal-nav"><button class="icone" data-cal="-1" title="Mois précédent" aria-label="Mois précédent">‹</button>' +
+    '<h2>' +
+    majuscule(MOIS[m - 1]) +
+    ' ' +
+    y +
+    '</h2><button class="icone" data-cal="1" title="Mois suivant" aria-label="Mois suivant">›</button>' +
+    '<button data-cal="0">Aujourd’hui</button></div><div class="cal-grille" role="grid">';
+  h += ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.']
+    .map(j => '<div class="cal-tete">' + j + '</div>')
+    .join('');
+  const d = new Date(debut);
+  for (let k = 0; k < 42; k++) {
+    const iso = isoDe(d);
+    if (k >= 35 && d.getMonth() !== m - 1) break; /* pas de sixième semaine vide */
+    const evts = evtsDuJour(iso);
+    h +=
+      '<div class="cal-j' +
+      (d.getMonth() !== m - 1 ? ' hors' : '') +
+      (iso === auj0 ? ' auj' : '') +
+      (iso === calJour ? ' choisi' : '') +
+      (evts.length ? ' plein' : '') +
+      '" data-jour="' +
+      iso +
+      '"><span class="n">' +
+      d.getDate() +
+      '</span>' +
+      evts
+        .map(e => {
+          const L = lieuDe(e);
+          return (
+            '<button type="button" class="cal-ev' +
+            (e.statut === 'annulé' ? ' annule' : '') +
+            '" data-id="' +
+            esc(e.id) +
+            '" style="--c:' +
+            (L ? L.hex : 'var(--encre)') +
+            '" title="' +
+            esc(typo(e.titre).replace(/\*/g, '')) +
+            '"><span>' +
+            (e.heures ? esc(libH(e.heures.split('-')[0])) + ' ' : '') +
+            rich(e.titre) +
+            '</span></button>'
+          );
+        })
+        .join('') +
+      '</div>';
+    d.setDate(d.getDate() + 1);
+  }
+  h += '</div>';
+  if (calJour) {
+    const L = evtsDuJour(calJour);
+    h +=
+      '<section class="periode cal-detail"><h2>' +
+      esc(majuscule(JOURS[jour(calJour).getDay()] + ' ' + jourMois(jour(calJour)))) +
+      '</h2>' +
+      (L.length ? '<ol>' + L.map(ligneHtml).join('') + '</ol>' : '<p class="rien">Rien ce jour-là.</p>') +
+      '</section>';
+  }
+  cal.innerHTML = h;
+}
+function initCalendrier() {
+  $('#bVue').onclick = () => changerVue(vue === 'calendrier' ? 'liste' : 'calendrier');
+  $('#bVue').textContent = vue === 'calendrier' ? 'Liste' : 'Calendrier';
+  $('#calendrier').addEventListener('click', ev => {
+    const nav = ev.target.closest('[data-cal]');
+    if (nav) {
+      const n = +nav.dataset.cal;
+      if (n) decalerMois(n);
+      else {
+        calMois = auj().slice(0, 7);
+        calJour = auj();
+        afficherCalendrier();
+      }
+      return;
+    }
+    const b = ev.target.closest('.cal-ev, .ev');
+    /* au téléphone, les pastilles sont trop petites pour viser : on choisit la journée */
+    if (b && !(TACTILE && b.classList.contains('cal-ev'))) return ouvrirFiche(b.dataset.id);
+    const j = ev.target.closest('[data-jour]');
+    if (j) {
+      calJour = calJour === j.dataset.jour ? '' : j.dataset.jour;
+      if (j.classList.contains('hors')) calMois = calJour.slice(0, 7) || calMois;
+      afficherCalendrier();
+    }
+  });
 }
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
@@ -5158,6 +5420,13 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-18 01:20',
+    v: '0.12',
+    items: [
+      'Vue calendrier (bouton « Calendrier » en haut) : un mois à la fois, chaque manifestation dans la couleur de son lieu ; un clic ouvre la fiche. Au téléphone, des pastilles : touche une journée pour voir ses manifestations en dessous.'
+    ]
+  },
+  {
     d: '2026-10-18 01:00',
     v: '0.11',
     items: [
@@ -5368,6 +5637,7 @@ function retour() {
 
 initBoutons();
 initListe();
+initCalendrier();
 initAffiche();
 initMail();
 document.addEventListener('keydown', raccourcis);
