@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017211059">
+<meta name="officious-page" content="20261017213954">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -739,6 +739,15 @@ body.avec-fiche #principal {
   color: var(--gris);
   margin-top: 0.15rem;
 }
+.eleves {
+  font-size: 0.85rem;
+  color: #0070c0; /* bleu de « Élèves concernés » dans les mails du conservatoire */
+}
+.pratique {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--gris);
+}
 .rem {
   font-size: 0.85rem;
   color: var(--ocre);
@@ -1366,7 +1375,9 @@ dialog h2 {
     <div id="fLieux" class="puces"></div>
     <input id="fLieuLibre" placeholder="Autre lieu, en toutes lettres">
   </div>
-  <label class="champ">Détail, pour tout le monde<textarea id="fDetail" rows="2"></textarea></label>
+  <label class="champ">Détail, pour tout le monde<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
+  <label class="champ">Élèves concernés<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
+  <label class="champ">Infos pratiques<textarea id="fPratique" rows="2" placeholder="Gratuit sur réservation auprès du conservatoire"></textarea></label>
   <div class="champ">État
     <div id="fStatut" class="bascule large" role="group">
       <button data-v="">Confirmé</button><button data-v="à confirmer">À confirmer</button><button data-v="en attente">En attente</button><button data-v="annulé">Annulé</button>
@@ -3281,6 +3292,8 @@ function evVide() {
     heureInconnue: false,
     titre: '',
     detail: '',
+    eleves: '' /* élèves concernés (public) */,
+    pratique: '' /* tarif, réservation, contact (public) */,
     remarque: '',
     lieu: '',
     accomp: '',
@@ -3319,9 +3332,9 @@ function parse(texte) {
       if (m) doc.reglages.push({ cle: m[1].trim(), val: m[2].trim() });
       continue;
     }
-    const sous = l.match(/^\s+(>|🔒) ?(.*)$/);
+    const sous = l.match(/^\s+(>|🔒|👥|🎟) ?(.*)$/u);
     if (sous && ev) {
-      const champ = sous[1] === '>' ? 'detail' : 'remarque';
+      const champ = { '>': 'detail', '🔒': 'remarque', '👥': 'eleves', '🎟': 'pratique' }[sous[1]];
       ev[champ] = ev[champ] ? ev[champ] + '\n' + sous[2] : sous[2];
       continue;
     }
@@ -3415,6 +3428,8 @@ function ligneEv(e) {
   j.push('id ' + e.id);
   const out = ['- ' + q + ' · ' + e.titre + ' ' + j.map(t => '{' + t + '}').join(' ')];
   for (const l of (e.detail || '').split('\n')) if (l.trim()) out.push('  > ' + l);
+  for (const l of (e.eleves || '').split('\n')) if (l.trim()) out.push('  👥 ' + l);
+  for (const l of (e.pratique || '').split('\n')) if (l.trim()) out.push('  🎟 ' + l);
   for (const l of (e.remarque || '').split('\n')) if (l.trim()) out.push('  🔒 ' + l);
   return out;
 }
@@ -3449,6 +3464,8 @@ const CHAMPS = [
   'heureInconnue',
   'titre',
   'detail',
+  'eleves',
+  'pratique',
   'remarque',
   'lieu',
   'accomp',
@@ -3882,6 +3899,8 @@ function ligneHtml(e) {
     '</div>';
   if (meta) h += '<div class="meta">' + meta + '</div>';
   if (e.detail) h += '<div class="detail">' + rich(e.detail).replace(/\n/g, '<br>') + '</div>';
+  if (e.eleves) h += '<div class="eleves">Élèves concernés\u00a0: ' + rich(e.eleves) + '</div>';
+  if (e.pratique) h += '<div class="pratique">' + rich(e.pratique).replace(/\n/g, '<br>') + '</div>';
   if (version === 'interne' && (e.accomp || e.remarque)) {
     h +=
       '<div class="rem">🔒 ' +
@@ -4108,6 +4127,8 @@ function remplirFiche() {
     '" data-cle="">aucun</button>';
   set('#fLieuLibre', L[e.lieu] ? '' : e.lieu);
   set('#fDetail', e.detail);
+  set('#fEleves', e.eleves);
+  set('#fPratique', e.pratique);
   $$('#fStatut button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === e.statut)));
   $('#fInterne').checked = e.interne;
   set('#fAccomp', e.accomp);
@@ -4180,6 +4201,8 @@ function initListe() {
   for (const [sel, champ] of [
     ['#fTitre', 'titre'],
     ['#fDetail', 'detail'],
+    ['#fEleves', 'eleves'],
+    ['#fPratique', 'pratique'],
     ['#fAccomp', 'accomp'],
     ['#fRemarque', 'remarque'],
     ['#fLibelle', 'libelle']
@@ -4491,35 +4514,94 @@ function evtsMail(p, avenir) {
 function objetMail(p) {
   return typo('Demandez le programme : ' + p.nom.charAt(0).toLowerCase() + p.nom.slice(1));
 }
-/** Bloc date du mail : mêmes informations que sur l'affiche, en tableau. */
-function dateMail(e) {
-  const a = jour(e.d1),
-    b = jour(e.d2),
-    n = ecartJours(e.d1, e.d2);
+/* ---- mail « Familles » : pensé pour la lecture sur téléphone, la clarté avant tout (François, 18/10/2026).
+   En-tête court, « En bref » (une ligne par événement), puis un bloc par événement rangé sous son mois : colonne de
+   date à gauche, à droite titre, quand et où (une ligne par date), description, élèves concernés, infos pratiques. */
+
+const BLEU = '#215E99' /* bleu de Lucé */,
+  BLEU_ELEVES = '#0070C0'; /* « Élèves concernés » : le repère des mails du conservatoire */
+const JOURS_C = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+
+/** Champs publics comparés pour regrouper deux dates d'un même événement. */
+const PUBLICS = ['detail', 'eleves', 'pratique'];
+/**
+ * Regroupe les dates d'un même événement : même titre (sans casse ni espaces), à 7 jours au plus de la précédente,
+ * et pas de texte public contradictoire (une date sans description rejoint celle qui en a une). Ainsi le Festival
+ * baroque (2 mai à Dreux, 3 mai à Chartres) fait un bloc, mais deux « Concert de musiques actuelles » d'un mois à
+ * l'autre, chacun avec sa description, en font deux.
+ */
+function groupes(evts) {
+  const cle = t => t.toLowerCase().replace(/\s+/g, ' ').trim();
+  const G = [];
+  for (const e of evts) {
+    const g = G.find(
+      g =>
+        cle(g.titre) === cle(e.titre) &&
+        ecartJours(g.evts[g.evts.length - 1].d2, e.d1) <= 7 &&
+        PUBLICS.every(c => !e[c] || !g[c] || e[c] === g[c])
+    );
+    if (g) {
+      g.evts.push(e);
+      for (const c of PUBLICS) if (!g[c] && e[c]) g[c] = e[c];
+      if (e.d2 > g.d2) g.d2 = e.d2;
+      if (e.statut === 'à confirmer') g.reserve = true;
+    } else
+      G.push({
+        titre: e.titre,
+        d1: e.d1,
+        d2: e.d2,
+        evts: [e],
+        detail: e.detail,
+        eleves: e.eleves,
+        pratique: e.pratique,
+        reserve: e.statut === 'à confirmer'
+      });
+  }
+  return G;
+}
+/** « mer. 29 avril », « 2–3 mai », « 30 mai – 2 juin » (pour « En bref »). */
+function dateCourte(g) {
+  const a = jour(g.d1),
+    b = jour(g.d2);
+  if (g.d1 === g.d2) return JOURS_C[a.getDay()] + ' ' + jourMois(a);
+  if (a.getMonth() === b.getMonth()) return quantieme(a) + '–' + jourMois(b);
+  return jourMois(a) + ' – ' + jourMois(b);
+}
+/** Une ligne « quand et où » : « Samedi 2 mai, 18 h 30 — Église Saint-Pierre de Dreux ». En HTML, le lieu prend
+    sa couleur, celle de l'affiche (demandé par la direction) ; un lieu saisi en toutes lettres reste à l'encre. */
+function quandOu(e, html) {
   const L = lieuDe(e);
-  const c = L && L.hex ? L.hex : ENCRE;
-  const deuxMois = a.getMonth() !== b.getMonth() && !e.semaine;
+  let q = majuscule(libDate(e));
+  if (e.heures) q += ', ' + libHeures(e.heures);
+  else if (e.heureInconnue) q += ', horaire à préciser';
+  if (!html) return typo(q) + (L ? ' — ' + typo(L.nom) : '');
+  if (!L) return esc(typo(q));
+  const nom = L.libre ? esc(typo(L.nom)) : '<b style="color:' + L.hex + '">' + esc(typo(L.nom)) + '</b>';
+  return esc(typo(q)) + ' — ' + nom;
+}
+/** Couleur des dates d'un bloc : celle de son lieu (de l'affiche) si toutes ses dates y ont lieu, sinon l'encre. */
+function couleurDate(g) {
+  const c = g.evts.map(e => {
+    const L = lieuDe(e);
+    return L && !L.libre ? L.hex : ENCRE;
+  });
+  return c.every(x => x === c[0]) ? c[0] : ENCRE;
+}
+/** Colonne de date d'un bloc : jour abrégé, quantième (ou « 2–3 »), dans le bleu de Lucé. */
+function colonneDate(g) {
+  const a = jour(g.d1),
+    b = jour(g.d2);
+  const memeMois = a.getMonth() === b.getMonth();
+  const haut = g.d1 === g.d2 ? JOURS_C[a.getDay()] : JOURS_C[a.getDay()] + '–' + JOURS_C[b.getDay()];
   const num =
-    n === 0
+    g.d1 === g.d2
       ? a.getDate() === 1
         ? '1<sup>er</sup>'
         : a.getDate()
-      : e.semaine || deuxMois
-        ? a.getDate()
-        : a.getDate() + '–' + b.getDate();
-  const haut =
-    n === 0
-      ? JOURS[a.getDay()]
-      : e.semaine
-        ? 'semaine du'
-        : deuxMois
-          ? 'à partir du'
-          : n === 1 && a.getDay() === 6
-            ? 'week-end'
-            : n === 1
-              ? JOURS[a.getDay()].slice(0, 3) + '. et ' + JOURS[b.getDay()].slice(0, 3) + '.'
-              : 'du ' + JOURS[a.getDay()].slice(0, 3) + '. au ' + JOURS[b.getDay()].slice(0, 3) + '.';
-  const bas = MOIS[a.getMonth()];
+      : memeMois
+        ? a.getDate() + '–' + b.getDate()
+        : a.getDate();
+  const bas = memeMois ? '' : 'au ' + jourMois(b);
   const petit = 'font-family:' + MF + ';font-size:11px;line-height:14px;color:' + GRIS + ';';
   return (
     '<div style="' +
@@ -4529,124 +4611,153 @@ function dateMail(e) {
     '</div>' +
     '<div style="font-family:' +
     MF +
-    ';font-size:24px;line-height:28px;font-weight:bold;color:' +
-    c +
+    ';font-size:' +
+    (String(num).length > 3 ? 19 : 22) /* « 22–23 » tient dans la colonne */ +
+    'px;line-height:26px;font-weight:bold;color:' +
+    couleurDate(g) +
     ';white-space:nowrap">' +
     num +
     '</div>' +
-    '<div style="' +
-    petit +
-    '">' +
-    bas +
-    '</div>'
+    (bas ? '<div style="' + petit + '">' + esc(bas) + '</div>' : '')
   );
 }
-function pastilleMail(L) {
-  if (!L) return '';
-  /* les familles ne connaissent pas les clés (« CCED ») : le nom complet, dans la couleur du lieu */
-  if (L.libre) return rich(L.nom);
-  return '<span style="color:' + L.hex + ';font-weight:bold">' + rich(L.nom) + '</span>';
+/** Texte public saisi → HTML de messagerie : les lignes « - … » deviennent une liste à puces. */
+function paragraphesMail(t, style) {
+  let h = '',
+    liste = [];
+  const vider = () => {
+    if (liste.length)
+      h +=
+        '<ul style="margin:2px 0 4px 0;padding:0 0 0 18px;' +
+        style +
+        '">' +
+        liste.map(l => '<li style="margin:0">' + rich(l) + '</li>').join('') +
+        '</ul>';
+    liste = [];
+  };
+  for (const l of t.split('\n')) {
+    if (!l.trim()) continue;
+    const m = l.match(/^\s*[-•]\s+(.*)$/);
+    if (m) liste.push(m[1]);
+    else {
+      vider();
+      h += '<div style="' + style + '">' + rich(l) + '</div>';
+    }
+  }
+  vider();
+  return h;
 }
 function htmlMail(p, avenir) {
-  const evts = evtsMail(p, avenir);
-  const orga = reglage('organisme') || 'Conservatoire de Lucé';
+  const G = groupes(evtsMail(p, avenir));
   const adr = reglage('adresse');
-  const td = 'border-top:1px solid ' + FILET + ';padding:12px 0;vertical-align:top;';
+  const txt = (taille, coul, plus = '') =>
+    'font-family:' +
+    MF +
+    ';font-size:' +
+    taille +
+    'px;line-height:' +
+    Math.round(taille * 1.4) +
+    'px;color:' +
+    coul +
+    ';' +
+    plus;
   let h = '<div style="margin:0;padding:0 10px;font-family:' + MF + ';color:' + ENCRE + '">';
   h +=
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:620px;border-collapse:collapse">';
   h +=
-    '<tr><td colspan="2" style="padding:0 0 4px 0;font-family:' +
-    MF +
-    ';font-size:13px;color:' +
-    GRIS +
+    '<tr><td colspan="2" style="padding:0;' +
+    txt(22, ENCRE, 'font-weight:bold;') +
     '">' +
-    rich(orga) +
+    esc(typo('Demandez le programme !')) +
     '</td></tr>';
+  h += '<tr><td colspan="2" style="padding:0 0 14px 0;' + txt(15, GRIS) + '">' + esc(typo(p.nom)) + '</td></tr>';
+  if (!G.length)
+    return h + '<tr><td colspan="2" style="' + txt(15, ENCRE) + '">Programme à venir.</td></tr></table></div>';
+  /* en bref */
   h +=
-    '<tr><td colspan="2" style="padding:0 0 10px 0;font-family:Georgia,\'Times New Roman\',serif;font-style:italic;font-size:26px;line-height:32px;color:' +
-    ENCRE +
-    '">' +
-    esc(typo(p.nom)) +
-    '</td></tr>';
+    '<tr><td colspan="2" style="padding:0 0 4px 0;' +
+    txt(11, GRIS, 'font-weight:bold;letter-spacing:1px;') +
+    '">EN BREF</td></tr>';
   h +=
-    '<tr><td colspan="2" style="padding:0 0 6px 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>' +
-    ['bleu', 'rouge', 'vert']
-      .map(
-        k => '<td height="4" style="height:4px;line-height:4px;font-size:0;background:' + COULEURS[k] + '">&nbsp;</td>'
-      )
-      .join('') +
-    '</tr></table></td></tr>';
-  if (!evts.length) h += '<tr><td colspan="2" style="' + td + 'font-size:15px">Programme à venir.</td></tr>';
-  for (const e of evts) {
-    const L = lieuDe(e);
-    const meta = [metaQuand(e), pastilleMail(L)].filter(Boolean).join(' · ');
+    '<tr><td colspan="2" style="padding:0 0 6px 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">';
+  for (const g of G)
     h +=
-      '<tr><td width="74" style="' +
-      td +
-      'width:74px;padding-right:12px;text-align:center">' +
-      dateMail(e) +
-      '</td><td style="' +
-      td +
+      '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap;vertical-align:top;' +
+      txt(14, couleurDate(g), 'font-weight:bold;') +
+      '">' +
+      esc(dateCourte(g)) +
+      '</td><td style="padding:2px 0;vertical-align:top;' +
+      txt(14, ENCRE) +
+      '">' +
+      rich(g.titre) +
+      (g.reserve ? ' <span style="color:' + GRIS + '">(sous réserve)</span>' : '') +
+      '</td></tr>';
+  h += '</table></td></tr>';
+  /* le détail, par mois */
+  let mois = '';
+  for (const g of G) {
+    const m = MOIS[jour(g.d1).getMonth()];
+    if (m !== mois) {
+      mois = m;
+      h +=
+        '<tr><td colspan="2" style="padding:18px 0 2px 0;border-bottom:1px solid ' +
+        FILET +
+        ';' +
+        txt(12, GRIS, 'font-weight:bold;letter-spacing:1px;') +
+        '">' +
+        m.toUpperCase() +
+        '</td></tr>';
+    }
+    h +=
+      '<tr><td width="58" style="width:58px;padding:12px 10px 12px 0;vertical-align:top;text-align:center;border-bottom:1px solid ' +
+      FILET +
+      '">' +
+      colonneDate(g) +
+      '</td><td style="padding:12px 0;vertical-align:top;border-bottom:1px solid ' +
+      FILET +
       '">';
     h +=
-      '<div style="font-family:' +
-      MF +
-      ';font-size:16px;line-height:21px;font-weight:bold;color:' +
-      ENCRE +
+      '<div style="' +
+      txt(16, ENCRE, 'font-weight:bold;') +
       '">' +
-      rich(e.titre) +
-      (e.statut === 'à confirmer'
-        ? ' <span style="font-weight:normal;font-size:13px;color:' + GRIS + '">(sous réserve)</span>'
-        : '') +
+      rich(g.titre) +
+      (g.reserve ? ' <span style="font-weight:normal;font-size:13px;color:' + GRIS + '">(sous réserve)</span>' : '') +
       '</div>';
-    if (meta)
+    for (const e of g.evts) h += '<div style="' + txt(14, ENCRE) + '">' + quandOu(e, true) + '</div>';
+    if (g.detail) h += '<div style="padding-top:4px"></div>' + paragraphesMail(g.detail, txt(14, '#3e4652'));
+    if (g.eleves)
       h +=
-        '<div style="font-family:' +
-        MF +
-        ';font-size:14px;line-height:20px;color:' +
-        ENCRE +
-        ';padding-top:2px">' +
-        meta +
+        '<div style="padding-top:4px;' +
+        txt(14, BLEU_ELEVES) +
+        '"><b>Élèves concernés' +
+        NBSP +
+        ':</b> ' +
+        rich(g.eleves) +
         '</div>';
-    if (e.detail)
-      h +=
-        '<div style="font-family:' +
-        MF +
-        ';font-size:14px;line-height:20px;color:' +
-        GRIS +
-        ';padding-top:2px">' +
-        rich(e.detail).replace(/\n/g, '<br>') +
-        '</div>';
+    if (g.pratique)
+      h += '<div style="padding-top:4px"></div>' + paragraphesMail(g.pratique, txt(13, GRIS, 'font-style:italic;'));
     h += '</td></tr>';
   }
-  if (adr)
-    h +=
-      '<tr><td colspan="2" style="border-top:1px solid ' +
-      FILET +
-      ';padding:12px 0 0 0;font-family:' +
-      MF +
-      ';font-size:12px;line-height:18px;color:' +
-      GRIS +
-      '">' +
-      rich(adr) +
-      '</td></tr>';
+  if (adr) h += '<tr><td colspan="2" style="padding:12px 0 0 0;' + txt(12, GRIS) + '">' + rich(adr) + '</td></tr>';
   return h + '</table></div>';
 }
 function texteMail(p, avenir) {
-  const evts = evtsMail(p, avenir);
-  const out = [typo(p.nom), ''];
-  for (const e of evts) {
-    const L = lieuDe(e);
-    const q = [majuscule(libDate(e)), e.heures ? libHeures(e.heures) : ''].filter(Boolean).join(', ');
-    out.push(
-      typo(q) +
-        ' — ' +
-        typo(e.titre).replace(/\*/g, '') +
-        (L ? ' (' + typo(L.nom) + ')' : '') +
-        (e.statut === 'à confirmer' ? ' (sous réserve)' : '')
-    );
-    if (e.detail) out.push('   ' + typo(e.detail).replace(/\*/g, '').replace(/\n/g, '\n   '));
+  const G = groupes(evtsMail(p, avenir));
+  const net = s => typo(s).replace(/\*/g, '');
+  const out = [net('Demandez le programme !'), typo(p.nom), ''];
+  if (!G.length) return out.concat('Programme à venir.').join('\n');
+  out.push('EN BREF');
+  for (const g of G) out.push(dateCourte(g) + ' : ' + net(g.titre) + (g.reserve ? ' (sous réserve)' : ''));
+  let mois = '';
+  for (const g of G) {
+    const m = MOIS[jour(g.d1).getMonth()];
+    if (m !== mois) out.push('', m.toUpperCase());
+    mois = m;
+    out.push('', net(g.titre) + (g.reserve ? ' (sous réserve)' : ''));
+    for (const e of g.evts) out.push(quandOu(e));
+    for (const l of (g.detail || '').split('\n')) if (l.trim()) out.push(net(l.replace(/^\s*[-•]\s+/, '• ')));
+    if (g.eleves) out.push('Élèves concernés' + NBSP + ': ' + net(g.eleves));
+    for (const l of (g.pratique || '').split('\n')) if (l.trim()) out.push(net(l));
   }
   if (reglage('adresse')) out.push('', typo(reglage('adresse')));
   return out.join('\n');
@@ -4685,6 +4796,8 @@ function blocEquipe(e) {
   if (L) lignes.push('Lieu : ' + L.nom);
   if (e.accomp) lignes.push('Accompagnement : ' + e.accomp);
   for (const l of (e.detail || '').split('\n')) if (l.trim()) lignes.push(l.trim());
+  if (e.eleves) lignes.push('Élèves concernés : ' + e.eleves);
+  for (const l of (e.pratique || '').split('\n')) if (l.trim()) lignes.push(l.trim());
   const rem = (e.remarque || '').split('\n').filter(l => l.trim());
   rem.forEach((l, i) => lignes.push((i ? '' : 'Remarque : ') + l.trim()));
   return [typo(quand), lignes.map(typo)];
@@ -4807,6 +4920,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 00:00',
+    v: '0.8',
+    items: [
+      'Nouveau « Demandez le programme » : « En bref » en tête (une ligne par date), puis un bloc par événement rangé sous son mois, avec élèves concernés et infos pratiques. Les lieux gardent leur couleur de l’affiche.',
+      'Fiche : « Élèves concernés » et « Infos pratiques » (tarif, réservation, téléphone). Dans le détail, les lignes qui commencent par « - » deviennent une liste.',
+      'Un même événement sur plusieurs dates (même titre, à une semaine au plus) forme un seul bloc dans le mail, avec une ligne par date et par lieu.'
+    ]
+  },
   {
     d: '2026-10-17 23:30',
     v: '0.7',
