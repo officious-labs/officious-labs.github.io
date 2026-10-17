@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017213954">
+<meta name="officious-page" content="20261017215240">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -372,10 +372,10 @@ button.s-primaire {
   --pale: #8a929c;
   --filet: #e3e6ea;
   --survol: #eceff3;
-  --accent: #215e99;
-  --bleu: #215e99;
+  --accent: #2e5e8c;
+  --bleu: #2e5e8c;
   --rouge: #c8102e;
-  --vert: #3a7c22;
+  --vert: #3d7a45;
   --ocre: #7a5c1e;
   color-scheme: light;
 }
@@ -771,7 +771,7 @@ body.avec-fiche #principal {
   white-space: nowrap;
 }
 .lieu-libre {
-  color: var(--gris);
+  color: #64707d; /* autres lieux */
 }
 .tag {
   display: inline-block;
@@ -797,7 +797,7 @@ body.avec-fiche #principal {
 }
 .t-interne {
   background: #e6eef7;
-  color: #215e99;
+  color: #2e5e8c;
 }
 #vide {
   text-align: center;
@@ -1119,7 +1119,7 @@ dialog h2 {
     Georgia,
     serif;
   letter-spacing: -0.01em;
-  color: #1f2933;
+  color: #2e5e8c; /* titres dans la couleur du conservatoire */
 }
 .pg-filet {
   display: flex;
@@ -1128,13 +1128,13 @@ dialog h2 {
 }
 .pg-filet i {
   flex: 1;
-  background: #215e99;
+  background: #2e5e8c;
 }
 .pg-filet i:nth-child(2) {
-  background: #c8102e;
+  background: #a23b4f;
 }
 .pg-filet i:nth-child(3) {
-  background: #3a7c22;
+  background: #3d7a45;
 }
 .pg-liste {
   list-style: none;
@@ -1157,9 +1157,9 @@ dialog h2 {
     italic 500 calc(15pt * var(--s)) / 1 Lora,
     Georgia,
     serif;
-  color: #5b6470;
+  color: #2e5e8c;
   padding: calc(4mm * var(--s) + var(--g)) 0 calc(1.2mm * var(--s));
-  border-bottom: 0.35mm solid #1f2933;
+  border-bottom: 0.35mm solid #2e5e8c;
 }
 .pg-mois:first-child {
   padding-top: calc(1mm * var(--s));
@@ -1209,7 +1209,7 @@ dialog h2 {
   color: #b7bec6;
 }
 .page .lieu-libre {
-  color: #5b6470;
+  color: #64707d;
 }
 .pg-rien {
   margin: 20mm 0;
@@ -3245,11 +3245,14 @@ function typo(s) {
 /* 02-modele.js : lecture et écriture de planning.md, fusion à trois voies. Voir docs/modele.md. */
 
 const STATUTS = ['annulé', 'en attente', 'à confirmer'];
+/* Couleurs des lieux (palette « Lucé adoucie », choisie par François le 18/10/2026) : une par équipement de la Ville,
+   gris pour les autres lieux. Assez foncées pour du texte sur blanc (contraste ≥ 4,5:1). */
 const COULEURS = {
-  bleu: '#215E99',
-  rouge: '#C8102E',
-  vert: '#3A7C22',
-  gris: '#6b6b6b',
+  bleu: '#2E5E8C' /* conservatoire */,
+  rouge: '#A23B4F' /* CCED (framboise, plus doux que le rouge du logo) */,
+  vert: '#3D7A45' /* médiathèque */,
+  ocre: '#A0661C' /* Conciergerie */,
+  gris: '#64707D' /* autres lieux */,
   orange: '#c2620a',
   violet: '#6a3d9a'
 };
@@ -3391,6 +3394,7 @@ function periodes(doc) {
     .filter(Boolean)
     .sort((a, b) => (a.d1 < b.d1 ? -1 : 1));
 }
+const EQUIPEMENTS = [['Conciergerie', 'Conciergerie', 'ocre']];
 /** Référentiel des lieux : { clé: {cle, nom, couleur} }. Un lieu absent du référentiel est un texte libre. */
 function lieux(doc) {
   const o = {};
@@ -3399,6 +3403,8 @@ function lieux(doc) {
     const m = r.val.match(/^(.*?) = (.*?)(?: · (\S+))?$/);
     if (m) o[m[1]] = { cle: m[1], nom: m[2], couleur: m[3] || '' };
   }
+  /* équipements de la Ville toujours connus, même absents des réglages d'un fichier plus ancien */
+  for (const [cle, nom, couleur] of EQUIPEMENTS) if (!o[cle]) o[cle] = { cle, nom, couleur };
   return o;
 }
 function periodeDe(ev, pers) {
@@ -3627,7 +3633,7 @@ function lieuDe(e) {
   return L
     ? { ...L, hex: COULEURS[L.couleur] || COULEURS.gris }
     : e.lieu
-      ? { cle: '', nom: e.lieu, libre: true }
+      ? { cle: '', nom: e.lieu, libre: true, hex: COULEURS.gris } /* autres lieux : la cinquième couleur */
       : null;
 }
 function reglage(cle) {
@@ -4518,8 +4524,7 @@ function objetMail(p) {
    En-tête court, « En bref » (une ligne par événement), puis un bloc par événement rangé sous son mois : colonne de
    date à gauche, à droite titre, quand et où (une ligne par date), description, élèves concernés, infos pratiques. */
 
-const BLEU = '#215E99' /* bleu de Lucé */,
-  BLEU_ELEVES = '#0070C0'; /* « Élèves concernés » : le repère des mails du conservatoire */
+const BLEU_ELEVES = '#0070C0'; /* « Élèves concernés » : le repère des mails du conservatoire */
 const JOURS_C = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 
 /** Champs publics comparés pour regrouper deux dates d'un même événement. */
@@ -4568,7 +4573,7 @@ function dateCourte(g) {
   return jourMois(a) + ' – ' + jourMois(b);
 }
 /** Une ligne « quand et où » : « Samedi 2 mai, 18 h 30 — Église Saint-Pierre de Dreux ». En HTML, le lieu prend
-    sa couleur, celle de l'affiche (demandé par la direction) ; un lieu saisi en toutes lettres reste à l'encre. */
+    sa couleur, celle de l'affiche (demandé par la direction) ; un lieu saisi en toutes lettres prend le gris des autres lieux. */
 function quandOu(e, html) {
   const L = lieuDe(e);
   let q = majuscule(libDate(e));
@@ -4576,14 +4581,14 @@ function quandOu(e, html) {
   else if (e.heureInconnue) q += ', horaire à préciser';
   if (!html) return typo(q) + (L ? ' — ' + typo(L.nom) : '');
   if (!L) return esc(typo(q));
-  const nom = L.libre ? esc(typo(L.nom)) : '<b style="color:' + L.hex + '">' + esc(typo(L.nom)) + '</b>';
+  const nom = '<b style="color:' + L.hex + '">' + esc(typo(L.nom)) + '</b>';
   return esc(typo(q)) + ' — ' + nom;
 }
 /** Couleur des dates d'un bloc : celle de son lieu (de l'affiche) si toutes ses dates y ont lieu, sinon l'encre. */
 function couleurDate(g) {
   const c = g.evts.map(e => {
     const L = lieuDe(e);
-    return L && !L.libre ? L.hex : ENCRE;
+    return L ? L.hex : ENCRE;
   });
   return c.every(x => x === c[0]) ? c[0] : ENCRE;
 }
@@ -4666,7 +4671,7 @@ function htmlMail(p, avenir) {
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:620px;border-collapse:collapse">';
   h +=
     '<tr><td colspan="2" style="padding:0;' +
-    txt(22, ENCRE, 'font-weight:bold;') +
+    txt(22, COULEURS.bleu, 'font-weight:bold;') /* titres dans la couleur du conservatoire */ +
     '">' +
     esc(typo('Demandez le programme !')) +
     '</td></tr>';
@@ -4703,7 +4708,7 @@ function htmlMail(p, avenir) {
         '<tr><td colspan="2" style="padding:18px 0 2px 0;border-bottom:1px solid ' +
         FILET +
         ';' +
-        txt(12, GRIS, 'font-weight:bold;letter-spacing:1px;') +
+        txt(12, COULEURS.bleu, 'font-weight:bold;letter-spacing:1px;') +
         '">' +
         m.toUpperCase() +
         '</td></tr>';
@@ -4921,6 +4926,14 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-18 00:15',
+    v: '0.9',
+    items: [
+      'Nouvelles couleurs des lieux, plus douces : bleu pour le conservatoire, framboise pour le CCED, vert pour la médiathèque, ocre pour la Conciergerie (toujours connue, même sans réglage), gris pour les autres lieux.',
+      'Titres de l’affiche et du mail dans le bleu du conservatoire.'
+    ]
+  },
+  {
     d: '2026-10-18 00:00',
     v: '0.8',
     items: [
@@ -4992,7 +5005,8 @@ function planningVide() {
       { cle: 'période', val: 'Mai – juillet ' + b + ' = ' + b + '-05-01..' + b + '-07-31' },
       { cle: 'lieu', val: 'Bach = Conservatoire, salle Bach · bleu' },
       { cle: 'lieu', val: 'CCED = Centre culturel Edmond Desouches · rouge' },
-      { cle: 'lieu', val: 'Médiathèque = Médiathèque George Sand · vert' }
+      { cle: 'lieu', val: 'Médiathèque = Médiathèque George Sand · vert' },
+      { cle: 'lieu', val: 'Conciergerie = Conciergerie · ocre' }
     ]
   };
 }
