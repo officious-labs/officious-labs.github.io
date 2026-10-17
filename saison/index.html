@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017142030">
+<meta name="officious-page" content="20261017205941">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -981,7 +981,16 @@ dialog h2 {
   flex: 1;
   font-weight: 600;
 }
+.mail-reglages {
+  flex-wrap: wrap; /* au téléphone : destinataires, période et case à cocher passent à la ligne */
+  row-gap: 0.5rem;
+}
+.mail-reglages .bascule {
+  flex: none;
+}
 #mailPeriode {
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--filet);
   border-radius: 7px;
   padding: 0.3rem 0.5rem;
@@ -995,6 +1004,16 @@ dialog h2 {
   border-radius: 9px;
   padding: 14px 0;
   min-height: 12rem;
+}
+/* mail « Équipe » : aperçu dans la police par défaut d'Outlook, comme il arrivera */
+#mailApercu.simple {
+  padding: 14px 16px;
+  font-family: Aptos, Calibri, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.35;
+}
+#mailApercu.simple p {
+  margin: 0 0 1em;
 }
 
 /* ---------- affiche ---------- */
@@ -1373,10 +1392,6 @@ dialog h2 {
 
 <section id="affiche" hidden aria-label="Affiche">
   <div class="outils">
-    <div class="bascule" role="group" aria-label="Version de l’affiche">
-      <button data-v="public" aria-pressed="true">Publique</button>
-      <button data-v="interne" aria-pressed="false">Interne</button>
-    </div>
     <div id="affPeriodes" class="puces"></div>
     <span class="espace"></span>
     <button id="affImprimer" class="primaire">Imprimer…</button>
@@ -1387,10 +1402,14 @@ dialog h2 {
 
 <dialog id="mail" aria-label="Demandez le programme">
   <div class="mail-tete">
-    <h2>Demandez le programme</h2>
+    <h2 id="mailTitre">Demandez le programme</h2>
     <button id="mailFermer" class="icone" title="Fermer (Échap)">×</button>
   </div>
   <div class="mail-reglages">
+    <div class="bascule" role="group" aria-label="Destinataires">
+      <button data-pour="familles" aria-pressed="true" title="« Demandez le programme » : ce que voient les familles">Familles</button>
+      <button data-pour="equipe" aria-pressed="false" title="Toutes les dates et toutes les informations, en texte simple">Équipe</button>
+    </div>
     <select id="mailPeriode" aria-label="Période"></select>
     <label class="coche"><input id="mailAvenir" type="checkbox" checked> seulement les dates à venir</label>
   </div>
@@ -1399,7 +1418,7 @@ dialog h2 {
   </div>
   <div id="mailApercu"></div>
   <div class="mail-pied">
-    <span class="aide">Version publique. Colle le message dans un nouveau mail Outlook.</span>
+    <span id="mailAide" class="aide">Version publique. Colle le message dans un nouveau mail Outlook.</span>
     <button id="mailCopier" class="primaire">Copier le message</button>
   </div>
 </dialog>
@@ -4271,9 +4290,9 @@ function changerVersion(v) {
   document.body.classList.toggle('vpublic', v === 'public');
   afficherListe();
 }
-/* 07-affiche.js : l'affiche A4, une page par période, version publique ou interne, à imprimer depuis le navigateur. */
+/* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
+   pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
 
-let affVersion = 'public';
 let affChoix = null; /* noms des périodes cochées ; null = la période en cours et les suivantes */
 
 function ligneAffiche(e, interne) {
@@ -4376,14 +4395,11 @@ function afficherAffiche() {
         '</button>'
     )
     .join('');
-  $$('#affiche .outils .bascule button').forEach(b =>
-    b.setAttribute('aria-pressed', String(b.dataset.v === affVersion))
-  );
   const pages = $('#pages');
   pages.style.setProperty('--zoom', 1);
   pages.classList.add('mesure');
   pages.innerHTML = periodesChoisies()
-    .map(p => pageAffiche(p, affVersion === 'interne'))
+    .map(p => pageAffiche(p, false))
     .join('');
   for (const pg of $$('.page', pages)) ajuster(pg);
   pages.classList.remove('mesure');
@@ -4435,12 +4451,6 @@ function fermerAffiche() {
 function initAffiche() {
   $('#affFermer').onclick = fermerAffiche;
   $('#affImprimer').onclick = () => window.print();
-  $('#affiche .outils .bascule').addEventListener('click', ev => {
-    const b = ev.target.closest('button');
-    if (!b) return;
-    affVersion = b.dataset.v;
-    afficherAffiche();
-  });
   $('#affPeriodes').addEventListener('click', ev => {
     const b = ev.target.closest('button');
     if (!b) return;
@@ -4456,8 +4466,11 @@ function initAffiche() {
     if (!$('#affiche').hidden) zoomPages();
   });
 }
-/* 08-mail.js : corps du mail « Demandez le programme » (version publique), copié en texte riche pour Outlook.
-   HTML de messagerie : tableaux et styles en ligne seulement (Outlook rend le HTML avec le moteur de Word). */
+/* 08-mail.js : deux mails, copiés en texte riche pour Outlook.
+   - Familles : « Demandez le programme », version publique mise en page (tableaux et styles en ligne seulement :
+     Outlook rend le HTML avec le moteur de Word).
+   - Équipe : toutes les dates et toutes les informations, en texte simple, sans police, couleur ni tableau, comme un
+     mail écrit à la main (François, 17/10/2026 : rien ne doit trahir un outil automatisé). */
 
 const MF = "'Segoe UI',Arial,Helvetica,sans-serif";
 const GRIS = '#5b6470',
@@ -4639,39 +4652,141 @@ function texteMail(p, avenir) {
   return out.join('\n');
 }
 
+/* ---- mail « Équipe » ---- */
+const TOUTE = '*'; /* valeur de « Toute la saison » dans la liste des périodes */
+
+/** Tous les événements de la période (p null : toute la saison), internes et annulés compris. */
+function evtsEquipe(p, avenir) {
+  const a = auj();
+  return doc.evts
+    .filter(e => {
+      if (!p) return true;
+      const q = periodeDe(e, periodes(doc));
+      return q && q.nom === p.nom;
+    })
+    .filter(e => !avenir || e.d2 >= a)
+    .sort(ordre);
+}
+function objetEquipe(p) {
+  if (p) return typo('Planning des manifestations, ' + p.nom.charAt(0).toLowerCase() + p.nom.slice(1));
+  const an = (doc.titre.match(/\d{4}\s*[-–]\s*\d{4}/) || [''])[0].replace(/\s/g, '');
+  return 'Planning des manifestations' + (an ? ' ' + an : '');
+}
+/** Une date : [première ligne (en gras dans le mail), lignes suivantes]. Texte brut, typographie française. */
+function blocEquipe(e) {
+  const L = lieuDe(e);
+  let quand = majuscule(libDate(e));
+  if (e.heures) quand += ', ' + libHeures(e.heures);
+  else if (e.heureInconnue) quand += ', horaire à préciser';
+  let titre = e.titre;
+  if (e.statut) titre += ' (' + e.statut + ')';
+  if (e.interne) titre += ' (interne)';
+  const lignes = [titre];
+  if (L) lignes.push('Lieu : ' + L.nom);
+  if (e.accomp) lignes.push('Accompagnement : ' + e.accomp);
+  for (const l of (e.detail || '').split('\n')) if (l.trim()) lignes.push(l.trim());
+  const rem = (e.remarque || '').split('\n').filter(l => l.trim());
+  rem.forEach((l, i) => lignes.push((i ? '' : 'Remarque : ') + l.trim()));
+  return [typo(quand), lignes.map(typo)];
+}
+/** Les dates regroupées par mois : [[« Novembre 2026 », [événements]], …] */
+function parMois(evts) {
+  const g = [];
+  for (const e of evts) {
+    const d = jour(e.d1),
+      m = majuscule(MOIS[d.getMonth()]) + ' ' + d.getFullYear();
+    if (!g.length || g[g.length - 1][0] !== m) g.push([m, []]);
+    g[g.length - 1][1].push(e);
+  }
+  return g;
+}
+function htmlEquipe(p, avenir) {
+  const evts = evtsEquipe(p, avenir);
+  if (!evts.length) return '<p>Aucune date pour le moment.</p>';
+  /* *italique* garde son sens (titres d'œuvres) ; le reste : texte, gras pour la date, rien d'autre */
+  const r = s => esc(s).replace(/\*([^*]+)\*/g, '<i>$1</i>');
+  let h = '';
+  for (const [m, L] of parMois(evts)) {
+    h += '<p><b><u>' + esc(m) + '</u></b></p>';
+    for (const e of L) {
+      const [q, lignes] = blocEquipe(e);
+      h += '<p><b>' + r(q) + '</b><br>' + lignes.map(r).join('<br>') + '</p>';
+    }
+  }
+  return h;
+}
+function texteEquipe(p, avenir) {
+  const evts = evtsEquipe(p, avenir);
+  if (!evts.length) return 'Aucune date pour le moment.';
+  const out = [];
+  for (const [m, L] of parMois(evts)) {
+    out.push(m.toUpperCase(), '');
+    for (const e of L) {
+      const [q, lignes] = blocEquipe(e);
+      out.push(q, ...lignes.map(l => l.replace(/\*/g, '')), '');
+    }
+  }
+  return out.join('\n').trimEnd();
+}
+
+/* ---- fenêtre du mail ---- */
+let mailPour = 'familles';
+function choisirPour(v) {
+  mailPour = v;
+  for (const b of $$('[data-pour]')) b.setAttribute('aria-pressed', String(b.dataset.pour === v));
+  const eq = v === 'equipe';
+  $('#mailTitre').textContent = eq ? 'Planning pour l’équipe' : 'Demandez le programme';
+  $('#mailAide').textContent = eq
+    ? 'Toutes les dates, internes et annulées comprises, avec toutes les informations. Colle le message dans un nouveau mail Outlook.'
+    : 'Version publique. Colle le message dans un nouveau mail Outlook.';
+  $('#mailApercu').classList.toggle('simple', eq);
+  afficherMail();
+}
+/** Période choisie ; null pour « Toute la saison » (mail « Équipe » seulement). */
 function periodeMail() {
   const pers = periodes(doc);
+  if (mailPour === 'equipe' && $('#mailPeriode').value === TOUTE) return null;
   return pers.find(p => p.nom === $('#mailPeriode').value) || pers[0];
+}
+function contenuMail() {
+  const p = periodeMail(),
+    av = $('#mailAvenir').checked;
+  return mailPour === 'equipe'
+    ? { objet: objetEquipe(p), html: htmlEquipe(p, av), texte: texteEquipe(p, av) }
+    : { objet: objetMail(p), html: htmlMail(p, av), texte: texteMail(p, av) };
 }
 function afficherMail() {
   const pers = periodes(doc);
   const sel = $('#mailPeriode');
   const avant = sel.value;
-  sel.innerHTML = pers.map(p => '<option>' + esc(p.nom) + '</option>').join('');
-  if (avant && pers.some(p => p.nom === avant)) sel.value = avant;
+  sel.innerHTML =
+    pers.map(p => '<option>' + esc(p.nom) + '</option>').join('') +
+    (mailPour === 'equipe' ? '<option value="' + TOUTE + '">Toute la saison</option>' : '');
+  if (avant && (pers.some(p => p.nom === avant) || (avant === TOUTE && mailPour === 'equipe'))) sel.value = avant;
   else {
     const a = auj();
     const cur = pers.find(p => p.d2 >= a);
     if (cur) sel.value = cur.nom;
   }
-  const p = periodeMail();
-  if (!p) return;
-  $('#mailObjet').textContent = objetMail(p);
-  $('#mailApercu').innerHTML = htmlMail(p, $('#mailAvenir').checked);
+  if (!pers.length && mailPour !== 'equipe') return;
+  const c = contenuMail();
+  $('#mailObjet').textContent = c.objet;
+  $('#mailApercu').innerHTML = c.html;
 }
 const copierRiche = (html, texte) => socle.copierRiche(html, texte);
 function ouvrirMail() {
   if (!socle.ouvert) return;
-  afficherMail();
+  choisirPour(version === 'interne' ? 'equipe' : 'familles'); /* suit la version affichée dans la liste */
   $('#mail').showModal();
 }
 function initMail() {
   $('#mailFermer').onclick = () => $('#mail').close();
   $('#mailPeriode').onchange = afficherMail;
   $('#mailAvenir').onchange = afficherMail;
+  for (const b of $$('[data-pour]')) b.onclick = () => choisirPour(b.dataset.pour);
   $('#mailCopier').onclick = async () => {
-    const p = periodeMail();
-    const r = await copierRiche(htmlMail(p, $('#mailAvenir').checked), texteMail(p, $('#mailAvenir').checked));
+    const c = contenuMail();
+    const r = await copierRiche(c.html, c.texte);
     toast(
       r === true
         ? 'Message copié : colle-le dans un nouveau mail'
@@ -4690,6 +4805,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-17 23:30',
+    v: '0.7',
+    items: [
+      'Mail « Équipe » : toutes les dates et toutes les informations (horaires, lieu, accompagnement, remarques, dates internes et annulées), en texte simple, prêt à coller dans Outlook. Bouton « Mail », puis « Équipe » ; « Toute la saison » est proposé.',
+      'L’affiche est désormais toujours la version publique.'
+    ]
+  },
   {
     d: '2026-10-17 17:00',
     v: '0.6',
