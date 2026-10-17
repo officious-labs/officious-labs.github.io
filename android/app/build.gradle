@@ -1,0 +1,45 @@
+plugins { id 'com.android.application' }
+
+// Signature : clé fixe fournie par les secrets GitHub (KEYSTORE_FILE, KEYSTORE_PASS) pour que chaque
+// nouvelle version s'installe par-dessus la précédente. Le flux de fabrication refuse de publier sans elle.
+def cle = System.getenv('KEYSTORE_FILE')
+
+android {
+    namespace 'io.github.officiouslabs.compagnon'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'io.github.officiouslabs.compagnon'
+        minSdk 26
+        targetSdk 34
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger())
+        versionName '1.0'
+    }
+    signingConfigs {
+        if (cle) {
+            fixe {
+                storeFile file(cle)
+                storeType 'pkcs12'
+                enableV1Signing true
+                enableV2Signing true
+                storePassword System.getenv('KEYSTORE_PASS')
+                keyAlias 'compagnon'
+                keyPassword System.getenv('KEYSTORE_PASS')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig cle ? signingConfigs.fixe : signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // retirer l'en-tête X-Requested-With dans la page de connexion
+    implementation 'androidx.webkit:webkit:1.8.0'
+}

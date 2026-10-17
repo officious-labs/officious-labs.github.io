@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône de Saison, la même que l'onglet de la page : trois dates aux couleurs du logo de Lucé (bleu, rouge, vert),
+     chacune suivie de sa ligne. Dessin de 64 unités agrandi 1,1 fois et centré dans le cercle utile de 66 dp (sur 108). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="18.8" android:translateY="18.8" android:scaleX="1.1" android:scaleY="1.1">
+        <path android:fillColor="#215E99" android:pathData="M12,13h5a2,2 0 0 1 2,2v6a2,2 0 0 1 -2,2h-5a2,2 0 0 1 -2,-2v-6a2,2 0 0 1 2,-2z" />
+        <path android:fillColor="#215E99" android:fillAlpha="0.35" android:pathData="M26,15h25a3,3 0 0 1 0,6h-25a3,3 0 0 1 0,-6z" />
+        <path android:fillColor="#C8102E" android:pathData="M12,27h5a2,2 0 0 1 2,2v6a2,2 0 0 1 -2,2h-5a2,2 0 0 1 -2,-2v-6a2,2 0 0 1 2,-2z" />
+        <path android:fillColor="#C8102E" android:fillAlpha="0.35" android:pathData="M26,29h19a3,3 0 0 1 0,6h-19a3,3 0 0 1 0,-6z" />
+        <path android:fillColor="#3A7C22" android:pathData="M12,41h5a2,2 0 0 1 2,2v6a2,2 0 0 1 -2,2h-5a2,2 0 0 1 -2,-2v-6a2,2 0 0 1 2,-2z" />
+        <path android:fillColor="#3A7C22" android:fillAlpha="0.35" android:pathData="M26,43h23a3,3 0 0 1 0,6h-23a3,3 0 0 1 0,-6z" />
+    </group>
+</vector>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fond">#F5F6F8</color>
+    <bool name="clair">true</bool>
+    <color name="icone_fond">#FFFFFF</color>
+</resources>

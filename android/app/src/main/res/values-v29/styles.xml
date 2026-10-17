@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 10 et plus : thème clair ou sombre selon le réglage du téléphone ; la page suit (prefers-color-scheme). -->
+    <style name="Theme.Officious" parent="@android:style/Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:statusBarColor">@color/fond</item>
+        <item name="android:windowLightStatusBar">@bool/clair</item>
+        <item name="android:navigationBarColor">@color/fond</item>
+        <item name="android:windowLightNavigationBar">@bool/clair</item>
+        <item name="android:windowBackground">@color/fond</item>
+    </style>
+</resources>

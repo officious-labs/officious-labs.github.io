@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Une seule appli (« Officious » dans les réglages), une icône par outil : chaque outil a son activité et sa propre
+         tâche (taskAffinity), pour apparaître à part dans les applis récentes. -->
+    <application
+        android:label="Officious"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.Officious"
+        android:allowBackup="false">
+        <activity
+            android:name=".SaisonActivity"
+            android:label="Saison"
+            android:icon="@mipmap/ic_saison"
+            android:taskAffinity="io.github.officiouslabs.compagnon.saison"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <receiver android:name=".MajRecue" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <activity android:name=".ConnexionActivity" android:exported="false" android:label="Connexion à OneDrive" />
+    </application>
+</manifest>

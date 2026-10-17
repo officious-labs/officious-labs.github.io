@@ -1,0 +1,62 @@
+name: Compagnon Android
+
+on:
+  push:
+    paths: ['android/**', '.github/workflows/android.yml']   # les pages se chargent en ligne : pas de nouvelle appli pour un changement de page
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Copie des pages (versions hors ligne embarquées, une par outil)
+        run: |
+          mkdir -p android/app/src/main/assets
+          for d in */; do
+            if [ -f "$d/index.html" ] && grep -q 'name="officious-appli"' "$d/index.html"; then
+              cp "$d/index.html" "android/app/src/main/assets/${d%/}.html"
+              echo "page embarquée : ${d%/}"
+            fi
+          done
+      - name: Clé de signature
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          # sans clé fixe, chaque fabrication aurait une signature différente et ne s'installerait pas par-dessus la
+          # précédente : on compile quand même (pour vérifier le code), mais on ne publie pas
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | tr -d ' \t\r\n' | base64 -d > "$RUNNER_TEMP/compagnon.p12"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/compagnon.p12" >> "$GITHUB_ENV"
+          fi
+      - name: Compilation
+        env:
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+        run: |
+          export KEYSTORE_PASS="$(printf '%s' "$KEYSTORE_PASS" | tr -d ' \t\r\n')"
+          gradle -p android assembleRelease --no-daemon
+      - name: Publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$KEYSTORE_FILE" ]; then
+            echo "::error::Compilation réussie, mais pas de publication : secrets KEYSTORE_B64 et KEYSTORE_PASS absents (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          cp android/app/build/outputs/apk/release/app-release.apk officious.apk
+          echo "$GITHUB_RUN_NUMBER" > version.txt
+          gh release delete android --yes --cleanup-tag || true
+          gh release create android officious.apk version.txt \
+            --title "Compagnon Officious" \
+            --notes "Fabrication ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA::7})." \
+            --target "$GITHUB_SHA"
