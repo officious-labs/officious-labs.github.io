@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018185046">
+<meta name="officious-page" content="20261018185719">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2303,6 +2303,26 @@ function vibrer(k) {
   else web();
 }
 
+/* ---- impression : par le Compagnon (la WebView ignore window.print()), sinon le navigateur.
+   format : 'a4' ou 'a3' (A3 à l'italienne), pour régler d'avance la boîte d'impression d'Android ---- */
+async function imprimer(nom, format) {
+  if (AND) {
+    try {
+      await andCallRaw('print', JSON.stringify({ nom: nom || A.titre, format: format || 'a4' }));
+      return true;
+    } catch (e) {
+      toast(
+        /inconnue/.test(e.message)
+          ? 'Mets d’abord l’appli à jour (menu ⋯) pour imprimer'
+          : 'Impression impossible : ' + sansCode(e)
+      );
+      return false;
+    }
+  }
+  window.print();
+  return true;
+}
+
 /* ---- copie riche (texte + mise en forme) : par le Compagnon, sinon le presse-papiers du navigateur ---- */
 async function copierRiche(html, texte) {
   if (AND) {
@@ -3511,7 +3531,7 @@ window.compagnonBack = () => {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.2.0',
+  version: '1.3.0',
   demarrer,
   /* fichier */
   modifie,
@@ -3544,6 +3564,7 @@ return {
   occupe,
   vibrer,
   copierRiche,
+  imprimer,
   etat,
   journalTexte,
   montrerNouveautes,
@@ -5435,7 +5456,8 @@ function fermerAffiche() {
 }
 function initAffiche() {
   $('#affFermer').onclick = fermerAffiche;
-  $('#affImprimer').onclick = () => window.print();
+  /* au téléphone, l'impression passe par Android (socle) : imprimante ou PDF, déjà réglée au bon format */
+  $('#affImprimer').onclick = () => socle.imprimer(affFormat === 'a3' ? doc.titre || 'Saison' : 'Affiche', affFormat);
   $('#affFormat').addEventListener('click', ev => {
     const b = ev.target.closest('[data-f]');
     if (!b) return;
@@ -6139,6 +6161,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 21:10',
+    v: '0.23',
+    items: [
+      'Au téléphone, « Imprimer… » ouvre l’impression d’Android (imprimante ou « Enregistrer en PDF »), déjà réglée en A3 à l’italienne ou en A4. Il faut la dernière version de l’appli (menu ⋯ → « Mettre à jour l’appli »).'
+    ]
+  },
   {
     d: '2026-10-18 20:30',
     v: '0.22',
