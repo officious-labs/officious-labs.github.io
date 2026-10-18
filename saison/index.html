@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018194145">
+<meta name="officious-page" content="20261018201154">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -748,12 +748,13 @@ body.avec-fiche #principal {
   color: var(--gris);
   margin-top: 0.15rem;
 }
-.eleves {
-  /* sous le titre, comme un sous-titre */
+.soustitre {
   font-size: 0.92rem;
-  font-weight: 500;
+  color: #3e4652;
+}
+.eleves {
+  font-size: 0.85rem;
   color: #0070c0; /* bleu de « Élèves concernés » dans les mails du conservatoire */
-  margin-top: 0.05rem;
 }
 .pratique {
   font-size: 0.85rem;
@@ -1301,10 +1302,10 @@ button.lien {
   font-size: calc(13pt * var(--s));
   line-height: 1.25;
 }
-.pg-eleves {
-  font-size: calc(10.5pt * var(--s));
-  color: #0070c0; /* bleu de « Élèves concernés » */
-  margin-top: calc(0.5mm * var(--s));
+.pg-soustitre {
+  font-size: calc(11pt * var(--s));
+  color: #3e4652;
+  margin-top: calc(0.3mm * var(--s));
 }
 .pg-lieu {
   /* colonne des lieux : filet de couleur, nom court */
@@ -1448,9 +1449,9 @@ button.lien {
   font-size: 0.9em;
 }
 .a3-s {
-  /* élèves concernés, sous le titre */
+  /* sous-titre */
   display: block;
-  color: #0070c0;
+  color: #3e4652;
   font-size: 0.92em;
 }
 .a3-m {
@@ -1804,6 +1805,7 @@ dialog.completer {
     <button id="ficheFermer" class="icone" title="Fermer (Échap)">×</button>
   </div>
   <label class="champ">Titre<input id="fTitre"></label>
+  <label class="champ">Sous-titre, pour tous (affiches et mails)<input id="fSousTitre" placeholder="avec Félix Bacik · élèves de la classe de violon"></label>
   <div class="ligne2">
     <label class="champ">Du<input id="fD1" type="date"></label>
     <label class="champ">Au<input id="fD2" type="date"></label>
@@ -1817,9 +1819,9 @@ dialog.completer {
     <div id="fLieux" class="puces"></div>
     <input id="fLieuLibre" placeholder="Autre lieu, en toutes lettres">
   </div>
-  <label class="champ">Descriptif, pour le public<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
-  <label class="champ">Élèves concernés<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
-  <label class="champ">Infos pratiques<textarea id="fPratique" rows="2" placeholder="Gratuit sur réservation auprès du conservatoire"></textarea></label>
+  <label class="champ">Descriptif, pour « Demandez le programme »<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
+  <label class="champ">Élèves concernés, pour « Demandez le programme »<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
+  <label class="champ">Infos pratiques, pour « Demandez le programme »<textarea id="fPratique" rows="2" placeholder="Gratuit sur réservation auprès du conservatoire"></textarea></label>
   <div class="champ">État
     <div id="fStatut" class="bascule large" role="group">
       <button data-v="">Confirmé</button><button data-v="à confirmer">À confirmer</button><button data-v="en attente">En attente</button><button data-v="annulé">Annulé</button>
@@ -3801,6 +3803,7 @@ function evVide() {
     heures: '',
     heureInconnue: false,
     titre: '',
+    soustitre: '' /* sous le titre, pour tous : affiches, mails, liste */,
     detail: '',
     eleves: '' /* élèves concernés (public) */,
     pratique: '' /* tarif, réservation, contact (public) */,
@@ -3842,9 +3845,9 @@ function parse(texte) {
       if (m) doc.reglages.push({ cle: m[1].trim(), val: m[2].trim() });
       continue;
     }
-    const sous = l.match(/^\s+(>|🔒|👥|🎟) ?(.*)$/u);
+    const sous = l.match(/^\s+(↳|>|🔒|👥|🎟) ?(.*)$/u);
     if (sous && ev) {
-      const champ = { '>': 'detail', '🔒': 'remarque', '👥': 'eleves', '🎟': 'pratique' }[sous[1]];
+      const champ = { '↳': 'soustitre', '>': 'detail', '🔒': 'remarque', '👥': 'eleves', '🎟': 'pratique' }[sous[1]];
       ev[champ] = ev[champ] ? ev[champ] + '\n' + sous[2] : sous[2];
       continue;
     }
@@ -3948,6 +3951,7 @@ function ligneEv(e) {
   j.push(...e.autres);
   j.push('id ' + e.id);
   const out = ['- ' + q + ' · ' + e.titre + ' ' + j.map(t => '{' + t + '}').join(' ')];
+  for (const l of (e.soustitre || '').split('\n')) if (l.trim()) out.push('  ↳ ' + l);
   for (const l of (e.detail || '').split('\n')) if (l.trim()) out.push('  > ' + l);
   for (const l of (e.eleves || '').split('\n')) if (l.trim()) out.push('  👥 ' + l);
   for (const l of (e.pratique || '').split('\n')) if (l.trim()) out.push('  🎟 ' + l);
@@ -3984,6 +3988,7 @@ const CHAMPS = [
   'heures',
   'heureInconnue',
   'titre',
+  'soustitre',
   'detail',
   'eleves',
   'pratique',
@@ -4157,11 +4162,6 @@ function lieuDe(e) {
   if (B) return { cle: '', nom: e.lieu, court: reste || e.lieu, libre: true, couleur: B.couleur, hex: COULEURS[B.couleur] };
   return { cle: '', nom: e.lieu, libre: true, hex: COULEURS.gris }; /* autres lieux : la cinquième couleur */
 }
-/** « élèves de la classe de violon » se lit seul ; « classe de piano » prend l'étiquette. → [étiquette, texte] */
-function elevesEnTete(s) {
-  const t = (s || '').trim();
-  return /^(les\s+)?élèves?\b/i.test(t) ? ['', majuscule(t.replace(/^les\s+/i, ''))] : ['Élèves concernés', t];
-}
 function reglage(cle) {
   const r = doc.reglages.find(x => x.cle === cle);
   return r ? r.val : '';
@@ -4255,7 +4255,7 @@ function couperEleves(titre) {
 /** Lit une ligne de saisie rapide → {d1, d2, heures, semaine, titre, lieu, eleves, pratique} ou {erreur}. */
 function lireSaisie(texte, pers, lieuxRef, ref) {
   let t = ' ' + texte.trim() + ' ';
-  const ev = { d1: '', d2: '', heures: '', semaine: false, titre: '', lieu: '', eleves: '', pratique: '' };
+  const ev = { d1: '', d2: '', heures: '', semaine: false, titre: '', soustitre: '', lieu: '', eleves: '', pratique: '' };
   const fait = m => {
     t = t.slice(0, m.index) + ' ' + t.slice(m.index + m[0].length);
   };
@@ -4394,10 +4394,13 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
   /* « pour les élèves… », « avec les élèves… », « , élèves de… », « élèves concernés : … » ; pas « Concert des élèves
      de piano », qui reste un titre */
   if ((m = RX_ELEVES.exec(t))) {
-    ev.eleves = m[1]
+    const texte = m[1]
       .replace(/^élèves\s+concernés\s*:\s*/i, '')
       .replace(/\s+/g, ' ')
       .trim();
+    /* « … pour les élèves accompagnés par X » prolonge le titre : sous-titre, pour tous (affiches comprises) */
+    if (/^\s(?:avec|pour)\s/i.test(m[0])) ev.soustitre = majuscule(texte);
+    else ev.eleves = texte;
     fait(m);
   }
   ev.titre = majuscule(
@@ -4514,13 +4517,10 @@ function ligneHtml(e) {
     rich(e.titre) +
     (tags.length ? ' ' + tags.join(' ') : '') +
     '</div>';
-  if (e.eleves) {
-    /* sous le titre : « Carte blanche de rodage » / « Élèves de la classe de violon » */
-    const [et, t] = elevesEnTete(e.eleves);
-    h += '<div class="eleves">' + (et ? et + '\u00a0: ' : '') + rich(t) + '</div>';
-  }
+  if (e.soustitre) h += '<div class="soustitre">' + rich(e.soustitre) + '</div>';
   if (meta) h += '<div class="meta">' + meta + '</div>';
   if (e.detail) h += '<div class="detail">' + rich(e.detail).replace(/\n/g, '<br>') + '</div>';
+  if (e.eleves) h += '<div class="eleves">Élèves concernés\u00a0: ' + rich(e.eleves) + '</div>';
   if (e.pratique) h += '<div class="pratique">' + rich(e.pratique).replace(/\n/g, '<br>') + '</div>';
   if (e.accomp || e.remarque) {
     h +=
@@ -4703,6 +4703,7 @@ function apercuSaisie() {
     ' · <b>' +
     rich(r.titre) +
     '</b>' +
+    (r.soustitre ? ' — ' + rich(r.soustitre) : '') +
     (L ? ' · ' + pastille(L) : '') +
     (r.lieu && !lieux(doc)[r.lieu] ? ' <span class="flou">(lieu hors liste)</span>' : '') +
     (plus.length ? '<br>' + plus.join(' · ') : '');
@@ -4806,6 +4807,7 @@ function remplirFiche() {
   };
   $('#ficheDate').textContent = typo(majuscule(libDate(e)));
   set('#fTitre', e.titre);
+  set('#fSousTitre', e.soustitre);
   set('#fD1', e.d1);
   set('#fD2', e.d2 !== e.d1 ? e.d2 : '');
   $('#fSemaine').checked = e.semaine;
@@ -4913,6 +4915,7 @@ function initListe() {
   };
   for (const [sel, champ] of [
     ['#fTitre', 'titre'],
+    ['#fSousTitre', 'soustitre'],
     ['#fDetail', 'detail'],
     ['#fEleves', 'eleves'],
     ['#fPratique', 'pratique'],
@@ -4923,23 +4926,23 @@ function initListe() {
     $(sel).addEventListener('input', () => modifier(champ, $(sel).value.replace(/\s+$/, '')));
     $(sel).addEventListener('blur', () => (editSnap = null));
   }
-  /* « Carte blanche de rodage pour les élèves de la classe de violon » : en quittant le titre, la fin passe dans
-     « Élèves concernés », qui s'affiche sous le titre (si ce champ est encore vide) */
+  /* « Carte blanche de rodage pour les élèves de la classe de violon » : en quittant le titre, la fin passe en
+     sous-titre (si celui-ci est encore vide) */
   $('#fTitre').addEventListener('change', () => {
     const e = evSel();
-    if (!e || e.eleves) return;
+    if (!e || e.soustitre) return;
     const c = couperEleves(e.titre);
     if (!c) return;
     snapshot();
     editSnap = null;
     e.titre = c[0];
-    e.eleves = c[1];
+    e.soustitre = majuscule(c[1]);
     changed();
     afficherListe();
     afficherControles();
     $('#fTitre').value = c[0];
-    $('#fEleves').value = c[1];
-    toast('« ' + majuscule(c[1]) + ' » passe sous le titre');
+    $('#fSousTitre').value = e.soustitre;
+    toast('« ' + e.soustitre + ' » passe en sous-titre');
   });
   $('#fD1').addEventListener('change', () => {
     const e = evSel(),
@@ -5282,7 +5285,6 @@ function ligneA3(e) {
     n === 0 ? JOURS[a.getDay()].slice(0, 3) + '.' : e.semaine ? 'sem.' : n === 1 && a.getDay() === 6 ? 'w.-e.' : 'du';
   /* lieu en toutes lettres, en gris après l'heure : la couleur est sur le quantième (choix du 18/10/2026) */
   const quand = [e.heures ? libHeures(e.heures) : '', L ? L.nom : ''].filter(Boolean).map(x => esc(typo(x)));
-  const [et, el] = elevesEnTete(e.eleves);
   return (
     '<li class="a3-ev' +
     (e.statut === 'annulé' ? ' annule' : '') +
@@ -5298,7 +5300,7 @@ function ligneA3(e) {
     rich(e.titre) +
     '</b>' +
     (e.statut === 'à confirmer' ? ' <i>(sous réserve)</i>' : '') +
-    (el ? '<span class="a3-s">' + (et ? et + '\u00a0: ' : '') + rich(el) + '</span>' : '') +
+    (e.soustitre ? '<span class="a3-s">' + rich(e.soustitre) + '</span>' : '') +
     (quand.length ? '<span class="a3-m">' + quand.join(' · ') + '</span>' : '') +
     '</span></li>'
   );
@@ -5392,13 +5394,10 @@ function ligneAffiche(e, interne) {
   else if (e.statut === 'à confirmer') tags.push('<span class="tag t-confirmer">sous réserve</span>');
   if (interne && e.interne) tags.push('<span class="tag t-interne">équipe</span>');
   h += '<div class="pg-t">' + rich(e.titre) + (tags.length ? ' ' + tags.join(' ') : '') + '</div>';
-  if (e.eleves) {
-    const [et, el] = elevesEnTete(e.eleves);
-    h += '<div class="pg-eleves">' + (et ? et + '\u00a0: ' : '') + rich(el) + '</div>';
-  }
+  if (e.soustitre) h += '<div class="pg-soustitre">' + rich(e.soustitre) + '</div>';
   const meta = metaQuand(e);
   if (meta) h += '<div class="pg-meta">' + meta + '</div>';
-  if (e.detail) h += '<div class="pg-detail">' + rich(e.detail).replace(/\n/g, '<br>') + '</div>';
+  /* descriptif et élèves concernés : « Demandez le programme » seulement (François, 18/10/2026) */
   if (interne && (e.accomp || e.remarque))
     h +=
       '<div class="pg-rem">' +
@@ -5593,7 +5592,7 @@ const BLEU_ELEVES = '#0070C0'; /* « Élèves concernés » : le repère des mai
 const JOURS_C = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 
 /** Champs publics comparés pour regrouper deux dates d'un même événement. */
-const PUBLICS = ['detail', 'eleves', 'pratique'];
+const PUBLICS = ['soustitre', 'detail', 'eleves', 'pratique'];
 /**
  * Regroupe les dates d'un même événement : même titre (sans casse ni espaces), à 7 jours au plus de la précédente,
  * et pas de texte public contradictoire (une date sans description rejoint celle qui en a une). Ainsi le Festival
@@ -5618,6 +5617,7 @@ function groupes(evts) {
     } else
       G.push({
         titre: e.titre,
+        soustitre: e.soustitre,
         d1: e.d1,
         d2: e.d2,
         evts: [e],
@@ -5760,6 +5760,7 @@ function htmlMail(p, avenir) {
       txt(14, ENCRE) +
       '">' +
       rich(g.titre) +
+      (g.soustitre ? ' – ' + rich(g.soustitre) : '') +
       (g.reserve ? ' <span style="color:' + GRIS + '">(sous réserve)</span>' : '') +
       '</td></tr>';
   h += '</table></td></tr>';
@@ -5793,6 +5794,7 @@ function htmlMail(p, avenir) {
       rich(g.titre) +
       (g.reserve ? ' <span style="font-weight:normal;font-size:13px;color:' + GRIS + '">(sous réserve)</span>' : '') +
       '</div>';
+    if (g.soustitre) h += '<div style="' + txt(15, ENCRE) + '">' + rich(g.soustitre) + '</div>';
     for (const e of g.evts) h += '<div style="' + txt(14, ENCRE) + '">' + quandOu(e, true) + '</div>';
     if (g.detail) h += '<div style="padding-top:4px"></div>' + paragraphesMail(g.detail, txt(14, '#3e4652'));
     if (g.eleves)
@@ -5817,13 +5819,17 @@ function texteMail(p, avenir) {
   const out = [net('Demandez le programme !'), typo(p.nom), ''];
   if (!G.length) return out.concat('Programme à venir.').join('\n');
   out.push('EN BREF');
-  for (const g of G) out.push(dateCourte(g) + ' : ' + net(g.titre) + (g.reserve ? ' (sous réserve)' : ''));
+  for (const g of G)
+    out.push(
+      dateCourte(g) + ' : ' + net(g.titre) + (g.soustitre ? ' – ' + net(g.soustitre) : '') + (g.reserve ? ' (sous réserve)' : '')
+    );
   let mois = '';
   for (const g of G) {
     const m = MOIS[jour(g.d1).getMonth()];
     if (m !== mois) out.push('', m.toUpperCase());
     mois = m;
     out.push('', net(g.titre) + (g.reserve ? ' (sous réserve)' : ''));
+    if (g.soustitre) out.push(net(g.soustitre));
     for (const e of g.evts) out.push(quandOu(e));
     for (const l of (g.detail || '').split('\n')) if (l.trim()) out.push(net(l.replace(/^\s*[-•]\s+/, '• ')));
     if (g.eleves) out.push('Élèves concernés' + NBSP + ': ' + net(g.eleves));
@@ -5847,7 +5853,7 @@ function manques(p, avenir) {
       if (!e.heures && !e.libelle && !programme) m.push('heure');
       if (!e.lieu) m.push('lieu');
       if (!g.detail) m.push('descriptif');
-      if (!g.eleves) m.push('élèves concernés');
+      if (!g.eleves && !/élève/i.test(g.soustitre || '')) m.push('élèves concernés');
       if (!g.pratique) m.push('infos pratiques');
       if (m.length) out.push({ e, m, g: g.evts[0] }); /* g : la date qui porte les textes du bloc */
     }
@@ -6066,6 +6072,7 @@ function blocEquipe(e, complet) {
   /* « interne » : rien à signaler à l'équipe, pour qui tout est interne ; utile seulement dans « Complet » */
   if (e.interne && complet) titre += ' (interne)';
   const lignes = [titre];
+  if (e.soustitre) lignes.push(e.soustitre);
   if (L) lignes.push('Lieu : ' + L.nom);
   /* descriptif, élèves concernés et infos pratiques : mail public et « Complet » seulement (François, 18/10/2026) */
   if (complet) {
@@ -6242,6 +6249,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 22:20',
+    v: '0.25',
+    items: [
+      'Nouveau champ « Sous-titre », pour tous : sous le titre dans la liste, sur les affiches A3 et A4, dans le mail d’équipe et dans « Demandez le programme ». Exemple : « Masterclass musique de chambre n° 1 », sous-titre « avec Félix Bacik ».',
+      'Descriptif, élèves concernés et infos pratiques ne servent plus qu’au « Demandez le programme » (et à l’export « Complet ») : ils quittent les affiches.',
+      'Un titre comme « Carte blanche de rodage pour les élèves de la classe de violon » se coupe en quittant le champ : la fin passe en sous-titre. Un sous-titre qui parle d’élèves suffit pour le contrôle « élèves concernés » avant envoi.'
+    ]
+  },
   {
     d: '2026-10-18 21:40',
     v: '0.24',
