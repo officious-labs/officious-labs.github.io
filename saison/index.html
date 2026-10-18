@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018164938">
+<meta name="officious-page" content="20261018165039">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5467,7 +5467,8 @@ function blocEquipe(e, complet) {
   else if (e.heureInconnue) quand += ', horaire à préciser';
   let titre = e.titre;
   if (e.statut) titre += ' (' + e.statut + ')';
-  if (e.interne) titre += ' (interne)';
+  /* « interne » : rien à signaler à l'équipe, pour qui tout est interne ; utile seulement dans « Complet » */
+  if (e.interne && complet) titre += ' (interne)';
   const lignes = [titre];
   if (L) lignes.push('Lieu : ' + L.nom);
   /* descriptif, élèves concernés et infos pratiques : mail public et « Complet » seulement (François, 18/10/2026) */
