@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018192704">
+<meta name="officious-page" content="20261018194145">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1260,7 +1260,7 @@ button.lien {
 }
 .pg-ev {
   display: grid;
-  grid-template-columns: calc(23mm * var(--s)) 1fr;
+  grid-template-columns: calc(23mm * var(--s)) 1fr calc(40mm * var(--s));
   column-gap: 5.5mm;
   align-items: start;
   padding: calc(2.4mm * var(--s) + var(--g)) 0;
@@ -1300,6 +1300,21 @@ button.lien {
   font-weight: 600;
   font-size: calc(13pt * var(--s));
   line-height: 1.25;
+}
+.pg-eleves {
+  font-size: calc(10.5pt * var(--s));
+  color: #0070c0; /* bleu de « Élèves concernés » */
+  margin-top: calc(0.5mm * var(--s));
+}
+.pg-lieu {
+  /* colonne des lieux : filet de couleur, nom court */
+  font-weight: 600;
+  font-size: calc(10.5pt * var(--s));
+  line-height: 1.25;
+  color: var(--c, transparent);
+  border-left: calc(0.9mm * var(--s)) solid var(--c, transparent);
+  padding-left: 2.2mm;
+  margin-top: calc(1.6mm * var(--s));
 }
 .pg-meta {
   font-size: calc(10.5pt * var(--s));
@@ -1443,18 +1458,6 @@ button.lien {
   color: #5b6470;
   font-size: 0.9em;
   margin-top: 0.3mm;
-}
-.a3-m .pastille {
-  font-size: 0.9em;
-  padding: 0.12em 0.5em 0.18em;
-}
-.a3-m .pastille.libre {
-  /* lieu long : la pastille coule sur deux lignes comme du texte, chaque morceau garde son contour */
-  display: inline;
-  line-height: 1.75;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-  hyphens: manual;
 }
 .a3-rien {
   color: #b7bec6;
@@ -5269,11 +5272,6 @@ function nomCourt(L) {
   const v = L.nom.indexOf(',');
   return v > 0 ? majuscule(L.nom.slice(v + 1).trim()) : L.cle || L.nom;
 }
-function pastilleA3(L) {
-  return (
-    '<span class="pastille' + (L.libre ? ' libre' : '') + '" style="--c:' + L.hex + '">' + rich(nomCourt(L)) + '</span>'
-  );
-}
 function ligneA3(e) {
   const L = lieuDe(e),
     a = jour(e.d1),
@@ -5282,8 +5280,8 @@ function ligneA3(e) {
   const large = n > 0; /* « 22–27 » : en plus petit, pour tenir dans la colonne */
   const jr =
     n === 0 ? JOURS[a.getDay()].slice(0, 3) + '.' : e.semaine ? 'sem.' : n === 1 && a.getDay() === 6 ? 'w.-e.' : 'du';
-  /* lieu en pastille, nom court (« Salle Schubert », « CCED ») : la légende en bas donne les bâtiments */
-  const quand = [e.heures ? esc(libHeures(e.heures)) : '', L ? pastilleA3(L) : ''].filter(Boolean);
+  /* lieu en toutes lettres, en gris après l'heure : la couleur est sur le quantième (choix du 18/10/2026) */
+  const quand = [e.heures ? libHeures(e.heures) : '', L ? L.nom : ''].filter(Boolean).map(x => esc(typo(x)));
   const [et, el] = elevesEnTete(e.eleves);
   return (
     '<li class="a3-ev' +
@@ -5301,7 +5299,7 @@ function ligneA3(e) {
     '</b>' +
     (e.statut === 'à confirmer' ? ' <i>(sous réserve)</i>' : '') +
     (el ? '<span class="a3-s">' + (et ? et + '\u00a0: ' : '') + rich(el) + '</span>' : '') +
-    (quand.length ? '<span class="a3-m">' + quand.join(' ') + '</span>' : '') +
+    (quand.length ? '<span class="a3-m">' + quand.join(' · ') + '</span>' : '') +
     '</span></li>'
   );
 }
@@ -5345,28 +5343,26 @@ function pageA3() {
       '</section>';
   }
   h += '</div><footer class="pg-pied">';
-  /* légende : une entrée par couleur (les salles du conservatoire n'en font qu'une), nom avant la virgule */
-  const parCouleur = new Map();
-  for (const l of Object.values(lieux(doc)))
-    if (evts.some(e => (lieuDe(e) || {}).cle === l.cle || (lieuDe(e) || {}).couleur === l.couleur) && !parCouleur.has(l.couleur))
-      parCouleur.set(l.couleur, l.nom.replace(/,.*$/, ''));
-  if (evts.some(e => e.lieu && lieuDe(e).libre && !lieuDe(e).couleur)) parCouleur.set('gris', 'Autres lieux');
-  if (parCouleur.size)
-    h +=
-      '<div class="pg-legende">' +
-      [...parCouleur]
-        .map(
-          ([c, nom]) =>
-            '<span><i class="a3-pt" style="background:' +
-            (COULEURS[c] || COULEURS.gris) +
-            '"></i>' +
-            rich(nom) +
-            '</span>'
-        )
-        .join('') +
-      '</div>';
+  h += legende(evts);
   if (adr) h += '<div class="pg-adresse">' + rich(adr) + '</div>';
   return h + '</footer></article>';
+}
+/** Légende des couleurs : une entrée par bâtiment (les salles du conservatoire n'en font qu'une), nom avant la virgule. */
+function legende(evts) {
+  const parCouleur = new Map();
+  const Ls = evts.map(lieuDe).filter(Boolean);
+  for (const l of Object.values(lieux(doc)))
+    if (l.couleur && Ls.some(L => L.couleur === l.couleur) && !parCouleur.has(l.couleur))
+      parCouleur.set(l.couleur, l.nom.replace(/,.*$/, ''));
+  if (Ls.some(L => !L.couleur)) parCouleur.set('gris', 'Autres lieux');
+  if (!parCouleur.size) return '';
+  return (
+    '<div class="pg-legende">' +
+    [...parCouleur]
+      .map(([c, nom]) => '<span><i class="a3-pt" style="background:' + (COULEURS[c] || COULEURS.gris) + '"></i>' + rich(nom) + '</span>')
+      .join('') +
+    '</div>'
+  );
 }
 /** A3 : même principe que l'A4, la densité baisse jusqu'à ce que chaque mois tienne dans sa case. */
 function ajusterA3(pg) {
@@ -5396,7 +5392,11 @@ function ligneAffiche(e, interne) {
   else if (e.statut === 'à confirmer') tags.push('<span class="tag t-confirmer">sous réserve</span>');
   if (interne && e.interne) tags.push('<span class="tag t-interne">équipe</span>');
   h += '<div class="pg-t">' + rich(e.titre) + (tags.length ? ' ' + tags.join(' ') : '') + '</div>';
-  const meta = [metaQuand(e), pastille(L)].filter(Boolean).join(' ');
+  if (e.eleves) {
+    const [et, el] = elevesEnTete(e.eleves);
+    h += '<div class="pg-eleves">' + (et ? et + '\u00a0: ' : '') + rich(el) + '</div>';
+  }
+  const meta = metaQuand(e);
   if (meta) h += '<div class="pg-meta">' + meta + '</div>';
   if (e.detail) h += '<div class="pg-detail">' + rich(e.detail).replace(/\n/g, '<br>') + '</div>';
   if (interne && (e.accomp || e.remarque))
@@ -5406,7 +5406,10 @@ function ligneAffiche(e, interne) {
         .filter(Boolean)
         .join(' · ') +
       '</div>';
-  return h + '</div></li>';
+  /* le lieu toujours au même endroit : colonne de droite, filet de sa couleur, nom court (la légende donne les
+     bâtiments) — choix du 18/10/2026 */
+  h += '</div><div class="pg-lieu"' + (L ? ' style="--c:' + L.hex + '">' + rich(nomCourt(L)) : '>') + '</div>';
+  return h + '</li>';
 }
 
 function pageAffiche(p, interne) {
@@ -5414,8 +5417,6 @@ function pageAffiche(p, interne) {
     .filter(e => periodeDe(e, periodes(doc)) && periodeDe(e, periodes(doc)).nom === p.nom)
     .filter(e => interne || estPublic(e))
     .sort(ordre);
-  const Lx = lieux(doc);
-  const utilises = Object.values(Lx).filter(l => evts.some(e => (lieuDe(e) || {}).cle === l.cle));
   const orga = blocOrga();
   const adr = reglage('adresse');
   let h = '<article class="page' + (interne ? ' interne' : '') + '">';
@@ -5439,15 +5440,7 @@ function pageAffiche(p, interne) {
   }
   h += evts.length ? '<ol class="pg-liste">' + liste + '</ol>' : '<p class="pg-rien">Programme à venir.</p>';
   h += '<footer class="pg-pied">';
-  if (utilises.length)
-    h +=
-      '<div class="pg-legende">' +
-      utilises
-        .map(
-          l => '<span>' + pastille({ ...l, hex: COULEURS[l.couleur] || COULEURS.gris }) + ' ' + rich(l.nom) + '</span>'
-        )
-        .join('') +
-      '</div>';
+  h += legende(evts);
   if (adr) h += '<div class="pg-adresse">' + rich(adr) + '</div>';
   return h + '</footer></article>';
 }
@@ -6254,7 +6247,7 @@ const NOUVEAUTES = [
     v: '0.24',
     items: [
       'Affiche : le bouton redevient « Imprimer… » (il ouvre toujours la boîte d’impression, où « Enregistrer au format PDF » reste proposé).',
-      'Affiche A3 : sous le titre, la ligne des élèves concernés ; les lieux en pastilles de couleur avec un nom court (« Salle Schubert », « CCED »), la légende en bas donnant les bâtiments.',
+      'Affiches : sous le titre, la ligne des élèves concernés. A3 : le lieu reste en toutes lettres après l’heure. A4 : le lieu passe dans une colonne à droite, toujours au même endroit, avec un filet de sa couleur et un nom court (« Salle Schubert », « CCED ») ; la légende en bas donne les bâtiments.',
       'Liste : les élèves concernés s’affichent juste sous le titre. Dans une fiche, un titre comme « Carte blanche de rodage pour les élèves de la classe de violon » se coupe tout seul en quittant le champ : « Carte blanche de rodage », et dessous « Élèves de la classe de violon ».',
       'Lieux : une pastille de couleur partout, avec le nom court (« Schubert »). Un lieu écrit en toutes lettres prend la couleur de son bâtiment (« Conservatoire, salle Schubert » → pastille bleue « Salle Schubert »).'
     ]
