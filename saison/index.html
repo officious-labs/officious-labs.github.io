@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018073655">
+<meta name="officious-page" content="20261018081706">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -924,8 +924,17 @@ fieldset.interne legend {
 }
 .fiche-pied {
   display: flex;
-  justify-content: space-between;
+  gap: 0.5rem;
   margin-top: 0.5rem;
+  position: sticky; /* toujours sous le pouce, même en bas d'une longue fiche */
+  bottom: -2rem;
+  padding: 0.6rem 0 2rem;
+  background: var(--papier);
+  border-top: 1px solid var(--filet);
+}
+#fValider {
+  margin-left: auto;
+  min-width: 7rem;
 }
 
 /* ---------- fenêtres ---------- */
@@ -1568,8 +1577,9 @@ button.lien {
     <p class="aide">À n’utiliser que si le libellé calculé ne convient pas : la date ne sert alors plus qu’au tri.</p>
   </details>
   <div class="fiche-pied">
-    <button id="fDupliquer">Dupliquer</button>
     <button id="fSupprimer" class="danger">Supprimer</button>
+    <button id="fDupliquer">Dupliquer</button>
+    <button id="fValider" class="primaire">Valider</button>
   </div>
   <datalist id="accomps"></datalist>
 </aside>
@@ -4350,8 +4360,10 @@ function ajouter(r) {
 function evSel() {
   return doc.evts.find(e => e.id === selId);
 }
+let ficheAvant = ''; /* l'événement à l'ouverture de la fiche, pour dire au « Valider » s'il a changé */
 function ouvrirFiche(id) {
   selId = id;
+  ficheAvant = JSON.stringify(doc.evts.find(e => e.id === id) || {});
   $('#fiche').hidden = false;
   document.body.classList.add('avec-fiche');
   remplirFiche();
@@ -4477,6 +4489,13 @@ function initListe() {
   });
   /* fiche */
   $('#ficheFermer').onclick = fermerFiche;
+  /* les modifications sont enregistrées au fil de la saisie : « Valider » referme la fiche */
+  $('#fValider').onclick = () => {
+    if (document.activeElement) document.activeElement.blur();
+    const change = JSON.stringify(evSel() || {}) !== ficheAvant;
+    fermerFiche();
+    if (change) toast('Modifications enregistrées');
+  };
   for (const [sel, champ] of [
     ['#fTitre', 'titre'],
     ['#fDetail', 'detail'],
@@ -5461,6 +5480,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 10:30',
+    v: '0.13',
+    items: [
+      'Fiche : bouton « Valider », toujours visible en bas. Les modifications sont enregistrées au fil de la saisie ; « Valider » referme la fiche et le confirme.'
+    ]
+  },
   {
     d: '2026-10-18 01:20',
     v: '0.12',
