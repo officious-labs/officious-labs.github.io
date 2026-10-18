@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018180409">
+<meta name="officious-page" content="20261018180833">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1163,6 +1163,24 @@ button.lien {
   font-size: 10.5pt;
   color: #5b6470;
 }
+.pg-logo {
+  position: absolute;
+  right: 15mm;
+  top: 12mm;
+  height: 22mm;
+  max-width: 70mm;
+  object-fit: contain;
+  filter: grayscale(1) contrast(1.1); /* monochrome, quelle que soit l'image fournie */
+  opacity: 0.85;
+}
+.page.a3 .pg-mention {
+  top: 6mm;
+  right: 15mm;
+}
+.page.a3 .pg-tete {
+  border-bottom: 0.3mm solid #e3e6ea;
+  padding-bottom: 3mm;
+}
 .pg-mention {
   position: absolute;
   top: 9mm;
@@ -1697,6 +1715,7 @@ dialog.completer {
     <button data-act="actualiser" role="menuitem" hidden>Actualiser</button>
     <button data-act="exporter" role="menuitem">Télécharger une copie</button>
     <button data-act="retrouver" role="menuitem">Retrouver une manifestation disparue…</button>
+    <button data-act="logo" role="menuitem">Logo de l’affiche…</button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
     <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
     <button id="mMaj" role="menuitem" hidden>Mettre à jour l’appli</button>
@@ -5083,6 +5102,38 @@ function initCalendrier() {
 let affChoix = null; /* noms des périodes cochées ; null = la période en cours et les suivantes */
 let affFormat = 'a4'; /* 'a4' : une page par période ; 'a3' : toute la saison sur une feuille A3 à l'italienne */
 
+/* ---- logo de la Ville : choisi une fois par appareil (menu ⋯), gardé dans ce navigateur et jamais dans la page
+   publiée ni dans planning.md ; imprimé en monochrome ---- */
+function logoAffiche() {
+  let src = null;
+  try {
+    src = localStorage.getItem('saison-logo');
+  } catch (e) {}
+  return src ? '<img class="pg-logo" src="' + esc(src) + '" alt="">' : '';
+}
+function choisirLogo() {
+  const i = document.createElement('input');
+  i.type = 'file';
+  i.accept = 'image/*';
+  i.onchange = () => {
+    const f = i.files[0];
+    if (!f) return;
+    if (f.size > 1500000) return toast('Image trop lourde (1,5 Mo au plus) : préfère un SVG ou un PNG plus petit');
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        localStorage.setItem('saison-logo', r.result);
+        toast('Logo enregistré sur cet appareil : il apparaît sur l’affiche A3');
+      } catch (e) {
+        toast('Impossible d’enregistrer ce logo (trop lourd ?)');
+      }
+      if (!$('#affiche').hidden) afficherAffiche();
+    };
+    r.readAsDataURL(f);
+  };
+  i.click();
+}
+
 /* ---- A3 : la saison entière, une colonne par période (François, 18/10/2026) ---- */
 function moisSaison() {
   const pers = periodes(doc);
@@ -5137,7 +5188,9 @@ function pageA3() {
   h +=
     '<h1 class="pg-titre">Saison ' +
     esc(an) +
-    '</h1><div class="pg-filet" aria-hidden="true"><i></i><i></i><i></i></div></header>';
+    '</h1>' +
+    logoAffiche() +
+    '</header>'; /* sans le filet tricolore (François, 18/10/2026) */
   /* une colonne par période (François, 18/10/2026 : par mois, trop de blanc), les mois en intertitres */
   const pers = periodes(doc);
   h += '<div class="a3-grille" style="--n:' + pers.length + '">';
@@ -6071,6 +6124,13 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-18 20:30',
+    v: '0.22',
+    items: [
+      'Affiche A3 : sans le filet tricolore ; logo de la Ville en tête, en monochrome. Choisis l’image une fois par appareil : menu ⋯ → « Logo de l’affiche… ».'
+    ]
+  },
+  {
     d: '2026-10-18 20:15',
     v: '0.21',
     items: [
@@ -6280,6 +6340,7 @@ function initBoutons() {
       nouveau: () => socle.nouveauFichier(),
       exporter: () => socle.exporter(),
       retrouver: ouvrirRetrouver,
+      logo: choisirLogo,
       enligne: () => socle.reglerEnLigne(),
       outils: () => socle.reglerOutils(),
       actualiser: () => socle.actualiser(),
