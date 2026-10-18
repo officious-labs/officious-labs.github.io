@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018185916">
+<meta name="officious-page" content="20261018192132">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -749,8 +749,11 @@ body.avec-fiche #principal {
   margin-top: 0.15rem;
 }
 .eleves {
-  font-size: 0.85rem;
+  /* sous le titre, comme un sous-titre */
+  font-size: 0.92rem;
+  font-weight: 500;
   color: #0070c0; /* bleu de « Élèves concernés » dans les mails du conservatoire */
+  margin-top: 0.05rem;
 }
 .pratique {
   font-size: 0.85rem;
@@ -778,6 +781,9 @@ body.avec-fiche #principal {
   padding: 0.22em 0.6em 0.28em;
   vertical-align: 0.06em;
   white-space: nowrap;
+}
+.pastille.libre {
+  white-space: normal; /* un lieu en toutes lettres peut être long */
 }
 .lieu-libre {
   color: #64707d; /* autres lieux */
@@ -1824,7 +1830,7 @@ dialog.completer {
     </div>
     <div id="affPeriodes" class="puces"></div>
     <span class="espace"></span>
-    <button id="affImprimer" class="primaire" title="Ouvre la boîte d’impression : choisis « Enregistrer au format PDF » (ou une imprimante)">PDF…</button>
+    <button id="affImprimer" class="primaire" title="Ouvre la boîte d’impression : une imprimante, ou « Enregistrer au format PDF »">Imprimer…</button>
     <button id="affFermer" class="icone" title="Fermer (Échap)">×</button>
   </div>
   <div id="pages"></div>
@@ -4114,12 +4120,25 @@ function rich(s) {
     .replace(/\b(\d+)(res?|ers?|es?)\b/g, '$1<sup>$2</sup>');
 }
 function lieuDe(e) {
-  const L = lieux(doc)[e.lieu];
-  return L
-    ? { ...L, hex: COULEURS[L.couleur] || COULEURS.gris }
-    : e.lieu
-      ? { cle: '', nom: e.lieu, libre: true, hex: COULEURS.gris } /* autres lieux : la cinquième couleur */
-      : null;
+  if (!e.lieu) return null;
+  const tous = lieux(doc);
+  const L = tous[e.lieu] || Object.values(tous).find(x => sansAccents(x.nom) === sansAccents(e.lieu));
+  if (L) return { ...L, hex: COULEURS[L.couleur] || COULEURS.gris };
+  /* texte libre qui commence par un bâtiment connu (« Conservatoire, salle Schubert ») : il en prend la couleur, et
+     la pastille ne garde que ce qui suit la virgule (« Salle Schubert ») */
+  const tete = sansAccents(e.lieu.split(',')[0].trim());
+  const B = Object.values(tous).find(x => {
+    const b = sansAccents(x.nom.split(',')[0].trim());
+    return x.couleur && (tete === b || tete === sansAccents(x.cle) || b.startsWith(tete + ' '));
+  });
+  const reste = e.lieu.includes(',') ? majuscule(e.lieu.slice(e.lieu.indexOf(',') + 1).trim()) : '';
+  if (B) return { cle: '', nom: e.lieu, court: reste || e.lieu, libre: true, couleur: B.couleur, hex: COULEURS[B.couleur] };
+  return { cle: '', nom: e.lieu, libre: true, hex: COULEURS.gris }; /* autres lieux : la cinquième couleur */
+}
+/** « élèves de la classe de violon » se lit seul ; « classe de piano » prend l'étiquette. → [étiquette, texte] */
+function elevesEnTete(s) {
+  const t = (s || '').trim();
+  return /^(les\s+)?élèves?\b/i.test(t) ? ['', majuscule(t.replace(/^les\s+/i, ''))] : ['Élèves concernés', t];
 }
 function reglage(cle) {
   const r = doc.reglages.find(x => x.cle === cle);
@@ -4202,6 +4221,15 @@ function dateValide(y, m, j) {
   return d.getMonth() === m - 1 && d.getDate() === j;
 }
 
+const RX_ELEVES =
+  /(?:[,;]\s*|\s(?:avec|pour)\s+(?:les\s+)?|\s(?=élèves\s+concernés\s*:))(élèves\s+(?:concernés\s*:\s*)?[^,;]+)/i;
+/** Titre de fiche « Carte blanche de rodage pour les élèves de la classe de violon » → [titre, élèves] ou null. */
+function couperEleves(titre) {
+  const m = RX_ELEVES.exec(' ' + titre);
+  if (!m || m.index === 0) return null;
+  const t = (' ' + titre).slice(0, m.index).trim().replace(/[,;:–-]\s*$/, '').trim();
+  return t ? [t, m[1].replace(/^élèves\s+concernés\s*:\s*/i, '').replace(/\s+/g, ' ').trim()] : null;
+}
 /** Lit une ligne de saisie rapide → {d1, d2, heures, semaine, titre, lieu, eleves, pratique} ou {erreur}. */
 function lireSaisie(texte, pers, lieuxRef, ref) {
   let t = ' ' + texte.trim() + ' ';
@@ -4341,7 +4369,9 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
   }
   /* élèves concernés : « élèves de la classe de piano », « élèves concernés : ateliers théâtre », jusqu'à la
      virgule ou la fin ; en dernier, une fois date, heure et lieu retirés */
-  if ((m = /[\s,;](?:avec\s+|pour\s+)?(?:les\s+)?(élèves\s+(?:concernés\s*:\s*)?[^,;]+)/i.exec(t))) {
+  /* « pour les élèves… », « avec les élèves… », « , élèves de… », « élèves concernés : … » ; pas « Concert des élèves
+     de piano », qui reste un titre */
+  if ((m = RX_ELEVES.exec(t))) {
     ev.eleves = m[1]
       .replace(/^élèves\s+concernés\s*:\s*/i, '')
       .replace(/\s+/g, ' ')
@@ -4413,8 +4443,11 @@ function blocDate(e, sansMois) {
 }
 function pastille(L) {
   if (!L) return '';
-  if (L.libre) return '<span class="lieu-libre">' + rich(L.nom) + '</span>';
-  return '<span class="pastille" style="--c:' + L.hex + '" title="' + esc(L.nom) + '">' + esc(L.cle) + '</span>';
+  return (
+    '<span class="pastille' + (L.libre ? ' libre' : '') + '" style="--c:' + L.hex + '" title="' + esc(L.nom) + '">' +
+    rich(L.court || L.cle || L.nom) +
+    '</span>'
+  );
 }
 /** Ligne « quand » : heures, horaire à préciser, libellé imposé, plage longue. */
 function metaQuand(e) {
@@ -4459,9 +4492,13 @@ function ligneHtml(e) {
     rich(e.titre) +
     (tags.length ? ' ' + tags.join(' ') : '') +
     '</div>';
+  if (e.eleves) {
+    /* sous le titre : « Carte blanche de rodage » / « Élèves de la classe de violon » */
+    const [et, t] = elevesEnTete(e.eleves);
+    h += '<div class="eleves">' + (et ? et + '\u00a0: ' : '') + rich(t) + '</div>';
+  }
   if (meta) h += '<div class="meta">' + meta + '</div>';
   if (e.detail) h += '<div class="detail">' + rich(e.detail).replace(/\n/g, '<br>') + '</div>';
-  if (e.eleves) h += '<div class="eleves">Élèves concernés\u00a0: ' + rich(e.eleves) + '</div>';
   if (e.pratique) h += '<div class="pratique">' + rich(e.pratique).replace(/\n/g, '<br>') + '</div>';
   if (e.accomp || e.remarque) {
     h +=
@@ -4864,6 +4901,24 @@ function initListe() {
     $(sel).addEventListener('input', () => modifier(champ, $(sel).value.replace(/\s+$/, '')));
     $(sel).addEventListener('blur', () => (editSnap = null));
   }
+  /* « Carte blanche de rodage pour les élèves de la classe de violon » : en quittant le titre, la fin passe dans
+     « Élèves concernés », qui s'affiche sous le titre (si ce champ est encore vide) */
+  $('#fTitre').addEventListener('change', () => {
+    const e = evSel();
+    if (!e || e.eleves) return;
+    const c = couperEleves(e.titre);
+    if (!c) return;
+    snapshot();
+    editSnap = null;
+    e.titre = c[0];
+    e.eleves = c[1];
+    changed();
+    afficherListe();
+    afficherControles();
+    $('#fTitre').value = c[0];
+    $('#fEleves').value = c[1];
+    toast('« ' + majuscule(c[1]) + ' » passe sous le titre');
+  });
   $('#fD1').addEventListener('change', () => {
     const e = evSel(),
       v = $('#fD1').value;
@@ -5260,9 +5315,9 @@ function pageA3() {
   /* légende : une entrée par couleur (les salles du conservatoire n'en font qu'une), nom avant la virgule */
   const parCouleur = new Map();
   for (const l of Object.values(lieux(doc)))
-    if (evts.some(e => e.lieu === l.cle) && !parCouleur.has(l.couleur))
+    if (evts.some(e => (lieuDe(e) || {}).cle === l.cle || (lieuDe(e) || {}).couleur === l.couleur) && !parCouleur.has(l.couleur))
       parCouleur.set(l.couleur, l.nom.replace(/,.*$/, ''));
-  if (evts.some(e => e.lieu && !lieux(doc)[e.lieu])) parCouleur.set('gris', 'Autres lieux');
+  if (evts.some(e => e.lieu && lieuDe(e).libre && !lieuDe(e).couleur)) parCouleur.set('gris', 'Autres lieux');
   if (parCouleur.size)
     h +=
       '<div class="pg-legende">' +
@@ -5327,7 +5382,7 @@ function pageAffiche(p, interne) {
     .filter(e => interne || estPublic(e))
     .sort(ordre);
   const Lx = lieux(doc);
-  const utilises = Object.values(Lx).filter(l => evts.some(e => e.lieu === l.cle));
+  const utilises = Object.values(Lx).filter(l => evts.some(e => (lieuDe(e) || {}).cle === l.cle));
   const orga = blocOrga();
   const adr = reglage('adresse');
   let h = '<article class="page' + (interne ? ' interne' : '') + '">';
@@ -6162,6 +6217,15 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-18 21:40',
+    v: '0.24',
+    items: [
+      'Affiche : le bouton redevient « Imprimer… » (il ouvre toujours la boîte d’impression, où « Enregistrer au format PDF » reste proposé).',
+      'Liste : les élèves concernés s’affichent juste sous le titre. Dans une fiche, un titre comme « Carte blanche de rodage pour les élèves de la classe de violon » se coupe tout seul en quittant le champ : « Carte blanche de rodage », et dessous « Élèves de la classe de violon ».',
+      'Lieux : une pastille de couleur partout, avec le nom court (« Schubert »). Un lieu écrit en toutes lettres prend la couleur de son bâtiment (« Conservatoire, salle Schubert » → pastille bleue « Salle Schubert »).'
+    ]
+  },
+  {
     d: '2026-10-18 21:10',
     v: '0.23',
     items: [
@@ -6346,6 +6410,7 @@ function planningVide() {
       { cle: 'période', val: 'Mars – avril ' + b + ' = ' + b + '-03-01..' + b + '-04-30' },
       { cle: 'période', val: 'Mai – juillet ' + b + ' = ' + b + '-05-01..' + b + '-07-31' },
       { cle: 'lieu', val: 'Bach = Conservatoire, salle Bach · bleu' },
+      { cle: 'lieu', val: 'Schubert = Conservatoire, salle Schubert · bleu' },
       { cle: 'lieu', val: 'CCED = Centre culturel Edmond Desouches · rouge' },
       { cle: 'lieu', val: 'Médiathèque = Médiathèque George Sand · vert' },
       { cle: 'lieu', val: 'Conciergerie = Conciergerie · ocre' }
