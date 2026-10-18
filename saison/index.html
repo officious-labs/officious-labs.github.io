@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018081706">
+<meta name="officious-page" content="20261018082713">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1557,7 +1557,7 @@ button.lien {
     <div id="fLieux" class="puces"></div>
     <input id="fLieuLibre" placeholder="Autre lieu, en toutes lettres">
   </div>
-  <label class="champ">Détail, pour tout le monde<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
+  <label class="champ">Descriptif, pour le public<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
   <label class="champ">Élèves concernés<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
   <label class="champ">Infos pratiques<textarea id="fPratique" rows="2" placeholder="Gratuit sur réservation auprès du conservatoire"></textarea></label>
   <div class="champ">État
@@ -1569,7 +1569,7 @@ button.lien {
   <fieldset class="interne">
     <legend>🔒 Interne</legend>
     <label class="champ">Accompagnement<input id="fAccomp" list="accomps"></label>
-    <label class="champ">Remarque<textarea id="fRemarque" rows="2"></textarea></label>
+    <label class="champ">Remarque (organisation)<textarea id="fRemarque" rows="2"></textarea></label>
   </fieldset>
   <details class="plus">
     <summary>Libellé de date imposé</summary>
@@ -1602,7 +1602,7 @@ button.lien {
   <div class="mail-reglages">
     <div class="bascule" role="group" aria-label="Destinataires">
       <button data-pour="familles" aria-pressed="true" title="« Demandez le programme » : ce que voient les familles">Familles</button>
-      <button data-pour="equipe" aria-pressed="false" title="Toutes les dates et toutes les informations, en texte simple">Équipe</button>
+      <button data-pour="equipe" aria-pressed="false" title="Toutes les dates, avec l’organisation, en texte simple">Équipe</button>
     </div>
     <select id="mailPeriode" aria-label="Période"></select>
     <label class="coche"><input id="mailAvenir" type="checkbox" checked> seulement les dates à venir</label>
@@ -4968,7 +4968,7 @@ function initAffiche() {
 /* 08-mail.js : deux mails, copiés en texte riche pour Outlook.
    - Familles : « Demandez le programme », version publique mise en page (tableaux et styles en ligne seulement :
      Outlook rend le HTML avec le moteur de Word).
-   - Équipe : toutes les dates et toutes les informations, en texte simple, sans police, couleur ni tableau, comme un
+   - Équipe : toutes les dates, avec les informations d'organisation (lieu, accompagnement, remarque), en texte simple, sans police, couleur ni tableau, comme un
      mail écrit à la main (François, 17/10/2026 : rien ne doit trahir un outil automatisé). */
 
 const MF = "'Segoe UI',Arial,Helvetica,sans-serif";
@@ -5335,9 +5335,7 @@ function blocEquipe(e) {
   const lignes = [titre];
   if (L) lignes.push('Lieu : ' + L.nom);
   if (e.accomp) lignes.push('Accompagnement : ' + e.accomp);
-  for (const l of (e.detail || '').split('\n')) if (l.trim()) lignes.push(l.trim());
-  if (e.eleves) lignes.push('Élèves concernés : ' + e.eleves);
-  for (const l of (e.pratique || '').split('\n')) if (l.trim()) lignes.push(l.trim());
+  /* descriptif, élèves concernés et infos pratiques : mail public seulement (François, 18/10/2026) ; ici, l'organisation */
   const rem = (e.remarque || '').split('\n').filter(l => l.trim());
   rem.forEach((l, i) => lignes.push((i ? '' : 'Remarque : ') + l.trim()));
   return [typo(quand), lignes.map(typo)];
@@ -5392,7 +5390,7 @@ function choisirPour(v) {
   const eq = v === 'equipe';
   $('#mailTitre').textContent = eq ? 'Planning pour l’équipe' : 'Demandez le programme';
   $('#mailAide').textContent = eq
-    ? 'Toutes les dates, internes et annulées comprises, avec toutes les informations. Colle le message dans un nouveau mail Outlook.'
+    ? 'Toutes les dates, internes et annulées comprises, avec l’organisation : lieu, accompagnement, remarques. Colle le message dans un nouveau mail Outlook.'
     : 'Version publique. Colle le message dans un nouveau mail Outlook.';
   $('#mailApercu').classList.toggle('simple', eq);
   afficherMail();
@@ -5480,6 +5478,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 10:45',
+    v: '0.14',
+    items: [
+      'Mail « Équipe » plus sobre : seulement l’organisation (date, heure, lieu, accompagnement, remarques). Descriptif, élèves concernés et infos pratiques ne servent plus qu’au mail public.',
+      'Fiche : « Descriptif, pour le public » et « Remarque (organisation) ».'
+    ]
+  },
   {
     d: '2026-10-18 10:30',
     v: '0.13',
