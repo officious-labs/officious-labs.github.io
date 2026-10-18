@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261017224922">
+<meta name="officious-page" content="20261018073655">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4625,6 +4625,19 @@ function decalerMois(n) {
   calMois = isoDe(d).slice(0, 7);
   calJour = '';
   afficherCalendrier();
+  /* le nouveau mois arrive du côté où l'on a glissé */
+  const g = $('.cal-grille');
+  if (g && !matchMedia('(prefers-reduced-motion: reduce)').matches)
+    g.animate(
+      [
+        { transform: 'translateX(' + (n > 0 ? 40 : -40) + 'px)', opacity: 0.3 },
+        { transform: 'none', opacity: 1 }
+      ],
+      {
+        duration: 180,
+        easing: 'ease-out'
+      }
+    );
 }
 function evtsDuJour(iso) {
   return doc.evts.filter(e => visible(e) && e.d1 <= iso && e.d2 >= iso).sort(ordre);
@@ -4705,7 +4718,36 @@ function afficherCalendrier() {
 function initCalendrier() {
   $('#bVue').onclick = () => changerVue(vue === 'calendrier' ? 'liste' : 'calendrier');
   $('#bVue').textContent = vue === 'calendrier' ? 'Liste' : 'Calendrier';
-  $('#calendrier').addEventListener('click', ev => {
+  /* glisser vers la gauche : mois suivant ; vers la droite : mois précédent (geste nettement horizontal) */
+  let t0 = null,
+    glisse = false;
+  const cal = $('#calendrier');
+  cal.addEventListener(
+    'touchstart',
+    ev => {
+      const t = ev.touches[0];
+      t0 = ev.touches.length === 1 && t.target.closest('.cal-grille, .cal-nav') ? { x: t.clientX, y: t.clientY } : null;
+    },
+    { passive: true }
+  );
+  cal.addEventListener(
+    'touchend',
+    ev => {
+      if (!t0) return;
+      const t = ev.changedTouches[0],
+        dx = t.clientX - t0.x,
+        dy = t.clientY - t0.y;
+      t0 = null;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+      glisse = true; /* le « clic » qui suit le geste ne choisit pas de journée */
+      setTimeout(() => (glisse = false), 400);
+      socle.vibrer('tick');
+      decalerMois(dx < 0 ? 1 : -1);
+    },
+    { passive: true }
+  );
+  cal.addEventListener('click', ev => {
+    if (glisse) return;
     const nav = ev.target.closest('[data-cal]');
     if (nav) {
       const n = +nav.dataset.cal;
@@ -5423,7 +5465,7 @@ const NOUVEAUTES = [
     d: '2026-10-18 01:20',
     v: '0.12',
     items: [
-      'Vue calendrier (bouton « Calendrier » en haut) : un mois à la fois, chaque manifestation dans la couleur de son lieu ; un clic ouvre la fiche. Au téléphone, des pastilles : touche une journée pour voir ses manifestations en dessous.'
+      'Vue calendrier (bouton « Calendrier » en haut) : un mois à la fois, chaque manifestation dans la couleur de son lieu ; un clic ouvre la fiche. Au téléphone, des pastilles : touche une journée pour voir ses manifestations en dessous, glisse à gauche ou à droite pour changer de mois.'
     ]
   },
   {
