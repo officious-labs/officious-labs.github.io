@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018084136">
+<meta name="officious-page" content="20261018163202">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1546,7 +1546,7 @@ button.lien {
   </div>
   <label class="coche"><input id="fSemaine" type="checkbox"> Écrire « semaine du… »</label>
   <div class="ligne2">
-    <label class="champ">Heure<input id="fHeures" placeholder="18h30, 10h30-12h30"></label>
+    <label class="champ">Heure<input id="fHeures" placeholder="18h30 · 10h30-12h30 · 14h-14h45 et 15h15-16h"></label>
     <label class="coche bas"><input id="fHeureInc" type="checkbox"> horaire à préciser</label>
   </div>
   <div class="champ">Lieu
@@ -3457,6 +3457,23 @@ function normHeures(s) {
     .join(',');
 }
 
+/**
+ * Heures saisies librement → forme du fichier. Plusieurs créneaux le même jour (séances scolaires en deux fois) :
+ * « 14h-14h45, 15h15-16h », « de 14h à 14h45 puis de 15h15 à 16h », « 14h-14h45 et 15h15-16h » → '14:00-14:45,15:15-16:00'.
+ */
+function lireHeures(s) {
+  return normHeures(
+    (s || '')
+      .toLowerCase()
+      .replace(/\s*(?:,|;|\/|\bet\b|\bpuis\b)\s*/g, ',')
+      .replace(/\bde\s+/g, '')
+      .replace(/\s*(?:à|–|-)\s*/g, '-')
+      .replace(/\s+/g, '')
+      .replace(/(\d)h(?=\d{2}\b)/g, '$1h')
+      .replace(/^,+|,+$/g, '')
+  );
+}
+
 function idNouveau() {
   return Math.random().toString(36).slice(2, 8);
 }
@@ -4018,9 +4035,15 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
     }
   }
   if (!ev.d1) return { erreur: 'pas de date reconnue' };
-  /* heures : « 18h », « 18h30 », « 18:30 », « 10h30-12h30 », « de 14h à 17h » */
+  /* heures : « 18h », « 18h30 », « 18:30 », « 10h30-12h30 », « de 14h à 17h », et plusieurs créneaux le même jour :
+     « de 14h à 14h45 puis de 15h15 à 16h », « 14h-14h45 et 15h15-16h » */
   const H = '(\\d{1,2})\\s?(?:h|:)\\s?(\\d{2})?';
-  if ((m = new RegExp('\\s(?:de\\s+)?' + H + '\\s*(?:-|–|à)\\s*' + H + '(?=\\s)', 'i').exec(t))) {
+  const Hs = '\\d{1,2}\\s?(?:h|:)\\s?(?:\\d{2})?';
+  const PLAGE = '(?:de\\s+)?' + Hs + '\\s*(?:-|–|à)\\s*' + Hs;
+  if ((m = new RegExp('\\s(' + PLAGE + '(?:\\s*(?:,|et|puis)\\s*' + PLAGE + ')+)(?=[\\s,;])', 'i').exec(t))) {
+    ev.heures = lireHeures(m[1]);
+    fait(m);
+  } else if ((m = new RegExp('\\s(?:de\\s+)?' + H + '\\s*(?:-|–|à)\\s*' + H + '(?=\\s)', 'i').exec(t))) {
     ev.heures = normHeures(m[1] + ':' + (m[2] || '00') + '-' + m[3] + ':' + (m[4] || '00'));
     fait(m);
   } else if ((m = new RegExp('\\s(?:à\\s+)?' + H + '(?=\\s)', 'i').exec(t))) {
@@ -4531,9 +4554,7 @@ function initListe() {
     changed();
     toutAfficher();
   };
-  $('#fHeures').addEventListener('change', () =>
-    modifier('heures', normHeures($('#fHeures').value.replace(/\s+/g, '').replace(/à/g, '-')))
-  );
+  $('#fHeures').addEventListener('change', () => modifier('heures', lireHeures($('#fHeures').value)));
   $('#fHeures').addEventListener('blur', () => {
     editSnap = null;
     const e = evSel();
@@ -4594,7 +4615,6 @@ function supprimer(id) {
   toutAfficher();
   toast('Supprimé : ' + typo(e.titre), 'Annuler', annuler);
 }
-
 /* 06b-calendrier.js : vue calendrier, un mois à la fois (lundi en tête). Les dates prennent la couleur de leur lieu ;
    au téléphone, des pastilles, et la journée touchée s'affiche en dessous. Mêmes règles que la liste : version
    interne ou publique, annulées rayées, un clic ouvre la fiche. */
@@ -5485,6 +5505,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 18:45',
+    v: '0.16',
+    items: [
+      'Plusieurs créneaux le même jour (séances scolaires en deux fois) : dans la fiche ou la saisie rapide, écris « 14h-14h45 et 15h15-16h » ou « de 14h à 14h45 puis de 15h15 à 16h ». Partout, ils s’affichent « 14 h – 14 h 45 et 15 h 15 – 16 h ».'
+    ]
+  },
   {
     d: '2026-10-18 11:00',
     v: '0.15',
