@@ -45,7 +45,7 @@ import java.util.concurrent.Executors;
  * à son fichier par le pont « Compagnon ». Dérivé de la coquille de Tâches (15/10/2026), via celle de Saison.
  *
  * Contrat du pont : request(id, méthode, argument) ; la réponse revient par window.compagnonReply(id, ok, valeur).
- * Méthodes : name, local, pick, create, read, write, spLogin, spRead, spWrite, spCreate, spList, spRecycle, copy, paste, haptic,
+ * Méthodes : name, local, pick, create, print, read, write, spLogin, spRead, spWrite, spCreate, spList, spRecycle, copy, paste, haptic,
  * outils, afficherOutil, version, checkUpdate, update. Les erreurs portent un code en tête (connexion:, introuvable:, conflit:, http:, reseau:).
  */
 public abstract class MainActivity extends Activity {
@@ -323,6 +323,25 @@ public abstract class MainActivity extends Activity {
                             ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                             cm.setPrimaryClip(ClipData.newHtmlText(appli(), o.optString("text"), o.optString("html")));
                             repondre(id, true, Build.VERSION.SDK_INT >= 33 ? "systeme" : "");
+                        } catch (Exception e) { repondre(id, false, message(e)); }
+                    });
+                    break;
+                case "print":
+                    // la WebView ignore window.print() : on passe par l'impression d'Android (imprimante ou PDF)
+                    runOnUiThread(() -> {
+                        try {
+                            JSONObject o = new JSONObject(arg == null || arg.isEmpty() ? "{}" : arg);
+                            String nom = o.optString("nom", appli());
+                            android.print.PrintManager pm = (android.print.PrintManager) getSystemService(PRINT_SERVICE);
+                            android.print.PrintAttributes.MediaSize taille = "a3".equals(o.optString("format"))
+                                    ? android.print.PrintAttributes.MediaSize.ISO_A3.asLandscape()
+                                    : android.print.PrintAttributes.MediaSize.ISO_A4;
+                            android.print.PrintAttributes attr = new android.print.PrintAttributes.Builder()
+                                    .setMediaSize(taille)
+                                    .setMinMargins(android.print.PrintAttributes.Margins.NO_MARGINS)
+                                    .build();
+                            pm.print(nom, web.createPrintDocumentAdapter(nom), attr);
+                            repondre(id, true, "");
                         } catch (Exception e) { repondre(id, false, message(e)); }
                     });
                     break;
