@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018201154">
+<meta name="officious-page" content="20261018233102">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -983,8 +983,43 @@ dialog h2 {
 #aide dd {
   margin: 0;
 }
+#aide {
+  width: min(640px, calc(100vw - 2rem));
+}
+#aide h3 {
+  font-size: 0.95rem;
+  margin: 1.1rem 0 0.4rem;
+}
 #aide p {
-  max-width: 30rem;
+  max-width: 36rem;
+}
+.ou-va {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  width: 100%;
+}
+.ou-va th,
+.ou-va td {
+  border-bottom: 1px solid var(--filet, #e3e6ea);
+  padding: 0.3rem 0.4rem;
+  text-align: center;
+  vertical-align: bottom;
+}
+.ou-va tbody th {
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ou-va thead th {
+  font-weight: 500;
+  color: var(--gris);
+  font-size: 0.78rem;
+}
+.ou-va td {
+  color: #3d7a45;
+}
+.ou-va td.non {
+  color: #b7bec6;
 }
 #mail {
   width: min(760px, calc(100vw - 2rem));
@@ -1374,21 +1409,22 @@ button.lien {
   margin: 1mm 0 3.5mm;
 }
 .a3-grille {
+  /* trois colonnes de lecture continue (19/10/2026) : assez larges pour que titres et lieux tiennent sur une ligne ;
+     les périodes se suivent et peuvent passer d'une colonne à l'autre */
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1fr);
-  gap: 0 6mm;
+  column-count: 3;
+  column-gap: 9mm;
+  column-fill: auto;
   margin: 5mm 0 4mm;
 }
 .a3-mois {
-  overflow: hidden;
-  min-height: 0;
   border-top: 0.6mm solid #2e5e8c;
   padding-top: 1.5mm;
+  margin-bottom: calc(3.5mm * var(--s));
 }
 .a3-mois h2 {
+  break-after: avoid;
   margin: 0 0 calc(1.6mm * var(--s));
   font:
     italic 500 calc(12.5pt * var(--s)) / 1.1 Lora,
@@ -1396,7 +1432,12 @@ button.lien {
     serif;
   color: #2e5e8c;
 }
+.a3-sm,
+.a3-ev {
+  break-inside: avoid;
+}
 .a3-sm {
+  break-after: avoid;
   font-size: calc(7.6pt * var(--s));
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1459,6 +1500,9 @@ button.lien {
   color: #5b6470;
   font-size: 0.9em;
   margin-top: 0.3mm;
+}
+.a3-lieu {
+  font-weight: 600;
 }
 .a3-rien {
   color: #b7bec6;
@@ -1781,7 +1825,7 @@ dialog.completer {
     <hr>
     <button data-act="nouveautes" role="menuitem">Nouveautés</button>
     <button data-act="journal" role="menuitem">Copier le journal de synchronisation</button>
-    <button data-act="aide" role="menuitem">Raccourcis clavier</button>
+    <button data-act="aide" role="menuitem">Aide</button>
   </div>
 </header>
 
@@ -1822,6 +1866,7 @@ dialog.completer {
   <label class="champ">Descriptif, pour « Demandez le programme »<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
   <label class="champ">Élèves concernés, pour « Demandez le programme »<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
   <label class="champ">Infos pratiques, pour « Demandez le programme »<textarea id="fPratique" rows="2" placeholder="Gratuit sur réservation auprès du conservatoire"></textarea></label>
+  <p class="aide"><button type="button" id="fOuVa" class="lien">Où va chaque champ ?</button></p>
   <div class="champ">État
     <div id="fStatut" class="bascule large" role="group">
       <button data-v="">Confirmé</button><button data-v="à confirmer">À confirmer</button><button data-v="en attente">En attente</button><button data-v="annulé">Annulé</button>
@@ -1902,7 +1947,24 @@ dialog.completer {
 </dialog>
 
 <dialog id="aide">
-  <h2>Raccourcis</h2>
+  <h2>Aide</h2>
+  <h3>Où va chaque champ</h3>
+  <table class="ou-va">
+    <thead><tr><th></th><th>Liste</th><th>Affiches A3 et A4</th><th>Mail d’équipe</th><th>Demandez le programme</th></tr></thead>
+    <tbody>
+      <tr><th>Titre</th><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><th>Sous-titre</th><td>✓</td><td>✓</td><td>✓</td><td>✓ (et « En bref »)</td></tr>
+      <tr><th>Descriptif</th><td>✓</td><td class="non">—</td><td class="non">—</td><td>✓</td></tr>
+      <tr><th>Élèves concernés</th><td>✓</td><td class="non">—</td><td class="non">—</td><td>✓</td></tr>
+      <tr><th>Infos pratiques</th><td>✓</td><td class="non">—</td><td class="non">—</td><td>✓</td></tr>
+      <tr><th>Remarque</th><td>✓</td><td class="non">—</td><td>✓</td><td class="non">—</td></tr>
+    </tbody>
+  </table>
+  <p class="aide">L’export « Complet » reprend tout. Avant d’envoyer « Demandez le programme », chaque date doit avoir date, heure, lieu, titre, descriptif, élèves concernés et infos pratiques ; un sous-titre qui parle d’élèves compte pour « élèves concernés ». Une manifestation « réservée à l’équipe » n’apparaît ni sur les affiches ni dans « Demandez le programme ».</p>
+  <h3>Saisie rapide</h3>
+  <p class="aide">Jour, date, heure, titre, puis le lieu (« au CCED », « salle Bach » ou « @Bach »). Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ». « … pour les élèves de la classe de violon » devient le sous-titre ; « , élèves de CHAM 5e » remplit « Élèves concernés » ; « entrée libre », « gratuit », un tarif ou un numéro de téléphone vont dans les infos pratiques.</p>
+  <div id="aideClavier">
+  <h3>Raccourcis clavier</h3>
   <dl>
     <dt>Alt+N</dt><dd>ajouter un événement</dd>
     <dt>Ctrl+Z / Ctrl+Y</dt><dd>annuler / rétablir</dd>
@@ -1910,7 +1972,7 @@ dialog.completer {
     <dt>Alt+M</dt><dd>mail « Demandez le programme »</dd>
     <dt>Échap</dt><dd>fermer la fiche ou la fenêtre</dd>
   </dl>
-  <p class="aide">Saisie rapide : jour, date, heure, titre, puis le lieu après @. Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ».</p>
+  </div>
   <form method="dialog"><button class="primaire">Fermer</button></form>
 </dialog>
 
@@ -5283,8 +5345,11 @@ function ligneA3(e) {
   const large = n > 0; /* « 22–27 » : en plus petit, pour tenir dans la colonne */
   const jr =
     n === 0 ? JOURS[a.getDay()].slice(0, 3) + '.' : e.semaine ? 'sem.' : n === 1 && a.getDay() === 6 ? 'w.-e.' : 'du';
-  /* lieu en toutes lettres, en gris après l'heure : la couleur est sur le quantième (choix du 18/10/2026) */
-  const quand = [e.heures ? libHeures(e.heures) : '', L ? L.nom : ''].filter(Boolean).map(x => esc(typo(x)));
+  /* lieu : nom court dans sa couleur (« Salle Schubert », « CCED »), la légende donne les bâtiments (19/10/2026) */
+  const quand = [
+    e.heures ? esc(typo(libHeures(e.heures))) : '',
+    L ? '<span class="a3-lieu" style="color:' + L.hex + '">' + rich(nomCourt(L)) + '</span>' : ''
+  ].filter(Boolean);
   return (
     '<li class="a3-ev' +
     (e.statut === 'annulé' ? ' annule' : '') +
@@ -5368,11 +5433,25 @@ function legende(evts) {
 }
 /** A3 : même principe que l'A4, la densité baisse jusqu'à ce que chaque mois tienne dans sa case. */
 function ajusterA3(pg) {
-  let s = 1.4;
-  const deborde = () => $$('.a3-mois', pg).some(c => c.scrollHeight > c.clientHeight + 1);
+  let s = 1.6;
+  const g = $('.a3-grille', pg),
+    pages = $('#pages');
+  const z = Math.min(1, (pages.clientWidth - 48) / 1587);
+  /* trop long : une quatrième colonne apparaît à droite. On vérifie à l'échelle 1 (l'impression) et à celle de
+     l'aperçu, où le zoom arrondit les hauteurs de ligne et peut faire déborder ce qui tient sur le papier. */
+  const deb1 = () => g.scrollWidth > g.clientWidth + 1;
+  const deborde = () => {
+    if (deb1()) return true;
+    pages.classList.remove('mesure');
+    pages.style.setProperty('--zoom', z.toFixed(3));
+    const d = deb1();
+    pages.classList.add('mesure');
+    pages.style.setProperty('--zoom', 1);
+    return d;
+  };
   pg.style.setProperty('--s', s);
   while (deborde() && s > 0.6) {
-    s = Math.round((s - 0.03) * 100) / 100;
+    s = Math.round((s - 0.02) * 100) / 100;
     pg.style.setProperty('--s', s);
   }
   pg.classList.toggle('deborde', deborde());
@@ -5505,7 +5584,7 @@ function ajuster(pg) {
     $('.pg-pied', pg).offsetHeight -
     parseFloat(getComputedStyle(pg).paddingTop) -
     parseFloat(getComputedStyle(pg).paddingBottom) -
-    12;
+    40; /* une respiration d'environ 1 cm entre la dernière date et la légende (19/10/2026) */
   let s = 1.12;
   pg.style.setProperty('--s', s);
   pg.style.setProperty('--g', '0px');
@@ -6250,6 +6329,15 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-19 02:00',
+    v: '0.26',
+    items: [
+      'Affiche A3 : trois colonnes plus larges, où les périodes se suivent ; titres et lieux tiennent presque tous sur une ligne. Le lieu s’écrit en nom court, dans sa couleur (« Salle Schubert », « CCED »).',
+      'Affiche A4 : un peu d’air entre la dernière date et la légende.',
+      'Menu ⋯ → « Aide », aussi au téléphone : où va chaque champ (liste, affiches, mails), saisie rapide, raccourcis. La fiche y mène par « Où va chaque champ ? ».'
+    ]
+  },
+  {
     d: '2026-10-18 22:20',
     v: '0.25',
     items: [
@@ -6477,7 +6565,8 @@ function initBoutons() {
     $('[data-act=ouvrir]').textContent = 'Ouvrir une copie…';
     $('[data-act=nouveau]').hidden = true;
   }
-  if (TACTILE) $('[data-act=aide]').hidden = true; /* pas de clavier : pas de raccourcis */
+  if (TACTILE) $('#aideClavier').hidden = true; /* pas de clavier : pas de raccourcis ; le reste de l'aide sert partout */
+  $('#fOuVa').onclick = () => $('#aide').showModal();
   $('#mMaj').onclick = () => socle.mettreAJourAppli();
   const menu = $('#menu');
   $('#bMenu').onclick = ev => {
