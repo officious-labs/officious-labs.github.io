@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018163202">
+<meta name="officious-page" content="20261018164052">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1510,6 +1510,7 @@ button.lien {
     <button data-act="nouveau" role="menuitem">Enregistrer dans un nouveau fichier…</button>
     <button data-act="actualiser" role="menuitem" hidden>Actualiser</button>
     <button data-act="exporter" role="menuitem">Télécharger une copie</button>
+    <button data-act="retrouver" role="menuitem">Retrouver une manifestation disparue…</button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
     <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
     <button id="mMaj" role="menuitem" hidden>Mettre à jour l’appli</button>
@@ -1614,6 +1615,13 @@ button.lien {
     <button id="mailForcer" class="lien" hidden>copier quand même</button>
     <button id="mailCopier" class="primaire">Copier le message</button>
   </div>
+</dialog>
+
+<dialog id="retrouver" class="s-dialogue" aria-label="Manifestations disparues">
+  <h2>Manifestations disparues</h2>
+  <p class="aide">Manifestations présentes dans les versions précédentes gardées par ce navigateur, mais plus dans le planning (supprimées volontairement, ou perdues). Coche celles à remettre.</p>
+  <div id="retrouverListe"></div>
+  <form method="dialog" class="s-pied"><button value="non">Fermer</button> <button id="retrouverOk" class="primaire" value="oui">Remettre</button></form>
 </dialog>
 
 <dialog id="aide">
@@ -3437,7 +3445,11 @@ const COULEURS = {
   orange: '#c2620a',
   violet: '#6a3d9a'
 };
-const RX_EV = /^- (\d{4}-\d{2}-\d{2})(?:\.\.(\d{4}-\d{2}-\d{2}))?(?: ([0-9:h,\-]+))? · (.*)$/;
+/* ligne d'événement : la zone des heures accepte n'importe quoi jusqu'au « · » (18/10/2026 : une heure écrite
+   « 14h-14h45et15h15-16h » rendait la ligne illisible, et l'événement disparaissait du fichier à l'écriture suivante) */
+const RX_EV = /^- (\d{4}-\d{2}-\d{2})(?:\.\.(\d{4}-\d{2}-\d{2}))?(?: ([^·]*?))? · (.*)$/;
+/** Heures au format du fichier (« 14:00-14:45,15:15-16:00 ») ? */
+const heuresValides = h => /^(\d{2}:\d{2}(-\d{2}:\d{2})?)(,\d{2}:\d{2}(-\d{2}:\d{2})?)*$/.test(h);
 const RX_JETON = /\s*\{([^{}]*)\}\s*$/;
 
 /** Heures tolérées à la lecture (« 20h », « 20h30 », « 20:00 ») → « HH:MM », plages « - », créneaux « , ». */
@@ -3465,6 +3477,7 @@ function lireHeures(s) {
   return normHeures(
     (s || '')
       .toLowerCase()
+      .replace(/(\d)(?:et|puis)(?=\d)/g, '$1,') /* « 14h45et15h15 », tapé sans espaces */
       .replace(/\s*(?:,|;|\/|\bet\b|\bpuis\b)\s*/g, ',')
       .replace(/\bde\s+/g, '')
       .replace(/\s*(?:à|–|-)\s*/g, '-')
@@ -3547,7 +3560,15 @@ function parse(texte) {
     ev = evVide();
     ev.d1 = m[1];
     ev.d2 = m[2] || m[1];
-    ev.heures = normHeures(m[3]);
+    if (m[3] && m[3].trim()) {
+      const h = lireHeures(m[3]);
+      if (heuresValides(h)) ev.heures = h;
+      else {
+        /* illisible : l'événement est gardé, l'horaire mis de côté pour qu'on le corrige */
+        ev.heureInconnue = true;
+        ev.remarque = 'Horaire illisible : ' + m[3].trim();
+      }
+    }
     let reste = m[4],
       j;
     const jetons = [];
@@ -4373,6 +4394,53 @@ function ajouter(r) {
   toast('Ajouté : ' + typo(e.titre), 'Ouvrir la fiche', () => ouvrirFiche(e.id));
 }
 
+/* ---------- manifestations disparues ----------
+   Le navigateur garde les dix dernières versions lues ou écrites du fichier (« vus », socle) et la copie de secours :
+   on y cherche les manifestations qui ne sont plus dans le planning, pour les remettre (18/10/2026 : une ligne au
+   format d'heure illisible avait disparu à l'écriture suivante). */
+function disparues() {
+  const textes = [];
+  try {
+    textes.push(...JSON.parse(localStorage.getItem('saison-vus') || '[]'));
+  } catch (e) {}
+  try {
+    const c = JSON.parse(localStorage.getItem('saison-copie') || 'null');
+    if (c) textes.push(c.texte, c.base);
+  } catch (e) {}
+  const ici = new Set(doc.evts.map(e => e.id)),
+    trouvees = new Map();
+  for (const t of textes.reverse())
+    if (t) for (const e of parse(t).evts) if (!ici.has(e.id) && !trouvees.has(e.id)) trouvees.set(e.id, e);
+  return [...trouvees.values()].sort(ordre);
+}
+function ouvrirRetrouver() {
+  const L = disparues();
+  $('#retrouverListe').innerHTML = L.length
+    ? L.map(
+        e =>
+          '<label class="coche"><input type="checkbox" value="' +
+          esc(e.id) +
+          '"> ' +
+          esc(majuscule(libDate(e))) +
+          (e.heures ? ', ' + esc(libHeures(e.heures)) : '') +
+          ' · <b>' +
+          rich(e.titre) +
+          '</b></label>'
+      ).join('')
+    : '<p>Aucune : tout ce que ce navigateur a vu passer est dans le planning.</p>';
+  $('#retrouverOk').hidden = !L.length;
+  $('#retrouverOk').onclick = () => {
+    const ids = $$('#retrouverListe input:checked').map(i => i.value);
+    if (!ids.length) return;
+    snapshot();
+    for (const e of L) if (ids.includes(e.id)) doc.evts.push(e);
+    changed();
+    toutAfficher();
+    toast(ids.length + ' manifestation' + (ids.length > 1 ? 's remises' : ' remise') + ' dans le planning');
+  };
+  $('#retrouver').showModal();
+}
+
 /* ---------- fiche ---------- */
 function evSel() {
   return doc.evts.find(e => e.id === selId);
@@ -4554,7 +4622,14 @@ function initListe() {
     changed();
     toutAfficher();
   };
-  $('#fHeures').addEventListener('change', () => modifier('heures', lireHeures($('#fHeures').value)));
+  $('#fHeures').addEventListener('change', () => {
+    const v = $('#fHeures').value.trim(),
+      h = lireHeures(v);
+    /* jamais d'heure illisible dans le fichier : on la refuse ici plutôt que de l'écrire */
+    if (v && !heuresValides(h))
+      return toast('Heure non comprise : écris par exemple « 18h30 » ou « 14h-14h45 et 15h15-16h »');
+    modifier('heures', h);
+  });
   $('#fHeures').addEventListener('blur', () => {
     editSnap = null;
     const e = evSel();
@@ -5506,6 +5581,14 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-18 19:00',
+    v: '0.17',
+    items: [
+      'Correction : une heure mal comprise (par exemple « 14h-14h45 et 15h15-16h » tapé avant la 0.16) rendait la ligne illisible, et la manifestation disparaissait. Désormais la ligne est toujours gardée ; une heure que l’appli ne comprend pas est refusée dans la fiche.',
+      'Menu ⋯ → « Retrouver une manifestation disparue… » : cherche dans les versions précédentes gardées par l’appli les manifestations qui ne sont plus dans le planning, et les remet.'
+    ]
+  },
+  {
     d: '2026-10-18 18:45',
     v: '0.16',
     items: [
@@ -5677,6 +5760,7 @@ function initBoutons() {
       ouvrir: () => socle.ouvrir(),
       nouveau: () => socle.nouveauFichier(),
       exporter: () => socle.exporter(),
+      retrouver: ouvrirRetrouver,
       enligne: () => socle.reglerEnLigne(),
       outils: () => socle.reglerOutils(),
       actualiser: () => socle.actualiser(),
