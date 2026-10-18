@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018172055">
+<meta name="officious-page" content="20261018172955">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5753,12 +5753,18 @@ function afficherMail() {
   sel.innerHTML =
     pers.map(p => '<option>' + esc(p.nom) + '</option>').join('') +
     (mailPour !== 'familles' ? '<option value="' + TOUTE + '">Toute la saison</option>' : '');
-  if (avant && (pers.some(p => p.nom === avant) || (avant === TOUTE && mailPour !== 'familles'))) sel.value = avant;
+  if (!afficherMail.choisir && avant && (pers.some(p => p.nom === avant) || (avant === TOUTE && mailPour !== 'familles')))
+    sel.value = avant;
   else {
-    const a = auj();
-    const cur = pers.find(p => p.d2 >= a);
+    /* période proposée : avec « seulement les dates à venir », la première qui en a encore (pour ce mail-là) ;
+       sinon, la période en cours */
+    const a = auj(),
+      aVenir = p =>
+        (mailPour === 'familles' ? evtsMail(p, true) : evtsEquipe(p, true)).length > 0;
+    const cur = $('#mailAvenir').checked ? pers.find(aVenir) || pers.find(p => p.d2 >= a) : pers.find(p => p.d2 >= a);
     if (cur) sel.value = cur.nom;
   }
+  afficherMail.choisir = false;
   if (!pers.length && mailPour === 'familles') return;
   const c = contenuMail();
   $('#mailObjet').textContent = c.objet;
@@ -5768,13 +5774,17 @@ function afficherMail() {
 const copierRiche = (html, texte) => socle.copierRiche(html, texte);
 function ouvrirMail() {
   if (!socle.ouvert) return;
+  afficherMail.choisir = true; /* à chaque ouverture, la période est choisie d'après les dates à venir */
   choisirPour('familles');
   $('#mail').showModal();
 }
 function initMail() {
   $('#mailFermer').onclick = () => $('#mail').close();
   $('#mailPeriode').onchange = afficherMail;
-  $('#mailAvenir').onchange = afficherMail;
+  $('#mailAvenir').onchange = () => {
+    afficherMail.choisir = true;
+    afficherMail();
+  };
   for (const b of $$('[data-pour]')) b.onclick = () => choisirPour(b.dataset.pour);
   $('#mailManques').addEventListener('click', async ev => {
     if (ev.target.id === 'mailVersTaches') {
@@ -5824,7 +5834,8 @@ const NOUVEAUTES = [
     items: [
       '« Demandez le programme » : le bouton « N dates à compléter → » ouvre une vue où chaque date incomplète montre seulement les champs qui manquent, à remplir sur place (enregistrés dès qu’on quitte le champ). « Copier pour Tâches » y est aussi.',
       'Au téléphone, l’objet du mail n’est plus affiché : il ne sert qu’au PC.',
-      'Mail « Équipe » : plus de « (interne) » après le titre.'
+      'Mail « Équipe » : plus de « (interne) » après le titre.',
+      'Mail : avec « seulement les dates à venir », la période proposée est la première qui a encore des dates à venir.'
     ]
   },
   {
