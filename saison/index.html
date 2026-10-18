@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018083543">
+<meta name="officious-page" content="20261018084136">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1501,10 +1501,6 @@ button.lien {
 <header id="tete">
   <h1 id="titre">Saison</h1>
   <span id="etat" title="Fichier et enregistrement"></span>
-  <div class="bascule" role="group" aria-label="Version affichée">
-    <button id="vInterne" aria-pressed="true" title="Tout, avec les remarques internes">Interne</button>
-    <button id="vPublic" aria-pressed="false" title="Ce que voient les familles">Publique</button>
-  </div>
   <button id="bVue" title="Voir le mois en calendrier">Calendrier</button>
   <button id="bAffiche" title="Affiche à imprimer, une page par période (Alt+P)">Affiche</button>
   <button id="bMail" title="Corps du mail « Demandez le programme » (Alt+M)">Mail</button>
@@ -1603,6 +1599,7 @@ button.lien {
     <div class="bascule" role="group" aria-label="Destinataires">
       <button data-pour="familles" aria-pressed="true" title="« Demandez le programme » : ce que voient les familles">Familles</button>
       <button data-pour="equipe" aria-pressed="false" title="Toutes les dates, avec l’organisation, en texte simple">Équipe</button>
+      <button data-pour="complet" aria-pressed="false" title="Tout : l’information des familles et l’organisation (pour la direction)">Complet</button>
     </div>
     <select id="mailPeriode" aria-label="Période"></select>
     <label class="coche"><input id="mailAvenir" type="checkbox" checked> seulement les dates à venir</label>
@@ -1626,7 +1623,6 @@ button.lien {
     <dt>Ctrl+Z / Ctrl+Y</dt><dd>annuler / rétablir</dd>
     <dt>Alt+P</dt><dd>affiche</dd>
     <dt>Alt+M</dt><dd>mail « Demandez le programme »</dd>
-    <dt>Alt+V</dt><dd>version interne / publique</dd>
     <dt>Échap</dt><dd>fermer la fiche ou la fenêtre</dd>
   </dl>
   <p class="aide">Saisie rapide : jour, date, heure, titre, puis le lieu après @. Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ».</p>
@@ -3762,10 +3758,8 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const { AND, TACTILE, hasFS } = socle;
 
 let doc = { titre: '', evts: [], reglages: [] };
-let version = 'interne'; /* version affichée dans la liste : 'interne' ou 'public' */
-try {
-  if (localStorage.getItem('saison-version') === 'public') version = 'public';
-} catch (e) {}
+/* une seule vue, qui montre tout (François, 18/10/2026) : ce qui n'ira pas aux familles est signalé (rayé, étiquettes,
+   remarques 🔒) ; les versions se voient à l'export (affiche, mails Familles, Équipe, Complet) */
 
 /* ---- annuler / rétablir : l'état entier, sous forme de texte (quelques Ko) ---- */
 const pileA = [],
@@ -4057,7 +4051,7 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
 let selId = null; /* événement ouvert dans la fiche */
 
 function visible(e) {
-  return version === 'interne' || estPublic(e);
+  return true;
 }
 
 /** Bloc date commun à la liste et à l'affiche : jour de la semaine, quantième (couleur du lieu), mois. */
@@ -4157,7 +4151,7 @@ function ligneHtml(e) {
   if (e.detail) h += '<div class="detail">' + rich(e.detail).replace(/\n/g, '<br>') + '</div>';
   if (e.eleves) h += '<div class="eleves">Élèves concernés\u00a0: ' + rich(e.eleves) + '</div>';
   if (e.pratique) h += '<div class="pratique">' + rich(e.pratique).replace(/\n/g, '<br>') + '</div>';
-  if (version === 'interne' && (e.accomp || e.remarque)) {
+  if (e.accomp || e.remarque) {
     h +=
       '<div class="rem">🔒 ' +
       [e.accomp ? 'Accompagnement : ' + rich(e.accomp) : '', rich(e.remarque || '').replace(/\n/g, '<br>')]
@@ -4482,7 +4476,6 @@ function initListe() {
     const a = ev.target.closest('a[data-id]');
     if (!a) return;
     ev.preventDefault();
-    if (version === 'public' && !estPublic(doc.evts.find(e => e.id === a.dataset.id) || {})) changerVersion('interne');
     ouvrirFiche(a.dataset.id);
     const li = $('.ev[data-id="' + a.dataset.id + '"]');
     if (li) li.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -4601,16 +4594,7 @@ function supprimer(id) {
   toutAfficher();
   toast('Supprimé : ' + typo(e.titre), 'Annuler', annuler);
 }
-function changerVersion(v) {
-  version = v;
-  try {
-    localStorage.setItem('saison-version', v);
-  } catch (e) {}
-  $('#vInterne').setAttribute('aria-pressed', String(v === 'interne'));
-  $('#vPublic').setAttribute('aria-pressed', String(v === 'public'));
-  document.body.classList.toggle('vpublic', v === 'public');
-  afficherListe();
-}
+
 /* 06b-calendrier.js : vue calendrier, un mois à la fois (lundi en tête). Les dates prennent la couleur de leur lieu ;
    au téléphone, des pastilles, et la journée touchée s'affiche en dessous. Mêmes règles que la liste : version
    interne ou publique, annulées rayées, un clic ouvre la fiche. */
@@ -5318,13 +5302,18 @@ function evtsEquipe(p, avenir) {
     .filter(e => !avenir || e.d2 >= a)
     .sort(ordre);
 }
-function objetEquipe(p) {
-  if (p) return typo('Planning des manifestations, ' + p.nom.charAt(0).toLowerCase() + p.nom.slice(1));
+function objetEquipe(p, complet) {
+  const nom = 'Planning ' + (complet ? 'complet ' : '') + 'des manifestations';
+  if (p) return typo(nom + ', ' + p.nom.charAt(0).toLowerCase() + p.nom.slice(1));
   const an = (doc.titre.match(/\d{4}\s*[-–]\s*\d{4}/) || [''])[0].replace(/\s/g, '');
-  return 'Planning des manifestations' + (an ? ' ' + an : '');
+  return nom + (an ? ' ' + an : '');
 }
-/** Une date : [première ligne (en gras dans le mail), lignes suivantes]. Texte brut, typographie française. */
-function blocEquipe(e) {
+/**
+ * Une date : [première ligne (en gras dans le mail), lignes suivantes, nombre de lignes publiques]. Texte brut,
+ * typographie française. « Complet » (pour la direction) ajoute ce que voient les familles : descriptif, élèves
+ * concernés, infos pratiques ; l'organisation suit, en italique dans le mail.
+ */
+function blocEquipe(e, complet) {
   const L = lieuDe(e);
   let quand = majuscule(libDate(e));
   if (e.heures) quand += ', ' + libHeures(e.heures);
@@ -5334,11 +5323,17 @@ function blocEquipe(e) {
   if (e.interne) titre += ' (interne)';
   const lignes = [titre];
   if (L) lignes.push('Lieu : ' + L.nom);
+  /* descriptif, élèves concernés et infos pratiques : mail public et « Complet » seulement (François, 18/10/2026) */
+  if (complet) {
+    for (const l of (e.detail || '').split('\n')) if (l.trim()) lignes.push(l.trim().replace(/^[-•]\s+/, '• '));
+    if (e.eleves) lignes.push('Élèves concernés : ' + e.eleves);
+    for (const l of (e.pratique || '').split('\n')) if (l.trim()) lignes.push(l.trim());
+  }
+  const publiques = lignes.length;
   if (e.accomp) lignes.push('Accompagnement : ' + e.accomp);
-  /* descriptif, élèves concernés et infos pratiques : mail public seulement (François, 18/10/2026) ; ici, l'organisation */
   /* la remarque, telle quelle, en début de ligne (sans « Remarque : ») */
   for (const l of (e.remarque || '').split('\n')) if (l.trim()) lignes.push(l.trim());
-  return [typo(quand), lignes.map(typo)];
+  return [typo(quand), lignes.map(typo), publiques];
 }
 /** Les dates regroupées par mois : [[« Novembre 2026 », [événements]], …] */
 function parMois(evts) {
@@ -5351,7 +5346,7 @@ function parMois(evts) {
   }
   return g;
 }
-function htmlEquipe(p, avenir) {
+function htmlEquipe(p, avenir, complet) {
   const evts = evtsEquipe(p, avenir);
   if (!evts.length) return '<p>Aucune date pour le moment.</p>';
   /* *italique* garde son sens (titres d'œuvres) ; le reste : texte, gras pour la date, rien d'autre */
@@ -5360,22 +5355,26 @@ function htmlEquipe(p, avenir) {
   for (const [m, L] of parMois(evts)) {
     h += '<p><b><u>' + esc(m) + '</u></b></p>';
     for (const e of L) {
-      const [q, lignes] = blocEquipe(e);
-      const corps = '<b>' + r(q) + '</b><br>' + lignes.map(r).join('<br>');
+      const [q, lignes, pub] = blocEquipe(e, complet);
+      const corps =
+        '<b>' +
+        r(q) +
+        '</b><br>' +
+        lignes.map((l, i) => (complet && i >= pub ? '<i>' + r(l) + '</i>' : r(l))).join('<br>');
       /* annulé : grisé et rayé, comme dans la liste (la seule couleur du mail ; <s> est compris par Outlook) */
       h += e.statut === 'annulé' ? '<p style="color:#808080"><s>' + corps + '</s></p>' : '<p>' + corps + '</p>';
     }
   }
   return h;
 }
-function texteEquipe(p, avenir) {
+function texteEquipe(p, avenir, complet) {
   const evts = evtsEquipe(p, avenir);
   if (!evts.length) return 'Aucune date pour le moment.';
   const out = [];
   for (const [m, L] of parMois(evts)) {
     out.push(m.toUpperCase(), '');
     for (const e of L) {
-      const [q, lignes] = blocEquipe(e);
+      const [q, lignes] = blocEquipe(e, complet);
       out.push(q, ...lignes.map(l => l.replace(/\*/g, '')), '');
     }
   }
@@ -5387,25 +5386,34 @@ let mailPour = 'familles';
 function choisirPour(v) {
   mailPour = v;
   for (const b of $$('[data-pour]')) b.setAttribute('aria-pressed', String(b.dataset.pour === v));
-  const eq = v === 'equipe';
-  $('#mailTitre').textContent = eq ? 'Planning pour l’équipe' : 'Demandez le programme';
-  $('#mailAide').textContent = eq
-    ? 'Toutes les dates, internes et annulées comprises, avec l’organisation : lieu, accompagnement, remarques. Colle le message dans un nouveau mail Outlook.'
-    : 'Version publique. Colle le message dans un nouveau mail Outlook.';
+  const eq = v !== 'familles';
+  $('#mailTitre').textContent = {
+    familles: 'Demandez le programme',
+    equipe: 'Planning pour l’équipe',
+    complet: 'Planning complet'
+  }[v];
+  $('#mailAide').textContent = {
+    familles: 'Version publique. Colle le message dans un nouveau mail Outlook.',
+    equipe:
+      'Toutes les dates, internes et annulées comprises, avec l’organisation : lieu, accompagnement, remarques. Colle le message dans un nouveau mail Outlook.',
+    complet:
+      'Tout : ce que voient les familles (descriptif, élèves concernés, infos pratiques) et l’organisation, en italique. Colle le message dans un nouveau mail Outlook.'
+  }[v];
   $('#mailApercu').classList.toggle('simple', eq);
   afficherMail();
 }
 /** Période choisie ; null pour « Toute la saison » (mail « Équipe » seulement). */
 function periodeMail() {
   const pers = periodes(doc);
-  if (mailPour === 'equipe' && $('#mailPeriode').value === TOUTE) return null;
+  if (mailPour !== 'familles' && $('#mailPeriode').value === TOUTE) return null;
   return pers.find(p => p.nom === $('#mailPeriode').value) || pers[0];
 }
 function contenuMail() {
   const p = periodeMail(),
     av = $('#mailAvenir').checked;
-  return mailPour === 'equipe'
-    ? { objet: objetEquipe(p), html: htmlEquipe(p, av), texte: texteEquipe(p, av) }
+  const cp = mailPour === 'complet';
+  return mailPour !== 'familles'
+    ? { objet: objetEquipe(p, cp), html: htmlEquipe(p, av, cp), texte: texteEquipe(p, av, cp) }
     : { objet: objetMail(p), html: htmlMail(p, av), texte: texteMail(p, av) };
 }
 function afficherMail() {
@@ -5414,14 +5422,14 @@ function afficherMail() {
   const avant = sel.value;
   sel.innerHTML =
     pers.map(p => '<option>' + esc(p.nom) + '</option>').join('') +
-    (mailPour === 'equipe' ? '<option value="' + TOUTE + '">Toute la saison</option>' : '');
-  if (avant && (pers.some(p => p.nom === avant) || (avant === TOUTE && mailPour === 'equipe'))) sel.value = avant;
+    (mailPour !== 'familles' ? '<option value="' + TOUTE + '">Toute la saison</option>' : '');
+  if (avant && (pers.some(p => p.nom === avant) || (avant === TOUTE && mailPour !== 'familles'))) sel.value = avant;
   else {
     const a = auj();
     const cur = pers.find(p => p.d2 >= a);
     if (cur) sel.value = cur.nom;
   }
-  if (!pers.length && mailPour !== 'equipe') return;
+  if (!pers.length && mailPour === 'familles') return;
   const c = contenuMail();
   $('#mailObjet').textContent = c.objet;
   $('#mailApercu').innerHTML = c.html;
@@ -5430,7 +5438,7 @@ function afficherMail() {
 const copierRiche = (html, texte) => socle.copierRiche(html, texte);
 function ouvrirMail() {
   if (!socle.ouvert) return;
-  choisirPour(version === 'interne' ? 'equipe' : 'familles'); /* suit la version affichée dans la liste */
+  choisirPour('familles');
   $('#mail').showModal();
 }
 function initMail() {
@@ -5450,7 +5458,6 @@ function initMail() {
     const b = ev.target.closest('[data-id]');
     if (!b) return;
     $('#mail').close();
-    if (version === 'public') changerVersion('interne');
     ouvrirFiche(b.dataset.id);
   });
   $('#mailForcer').onclick = () => {
@@ -5478,6 +5485,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 11:00',
+    v: '0.15',
+    items: [
+      'Une seule vue, qui montre tout : la bascule Interne / Publique disparaît. Ce qui n’ira pas aux familles reste signalé (annulé rayé, étiquettes « équipe », « en attente », « à confirmer », remarques 🔒).',
+      'Mail : troisième version, « Complet », pour la direction : tout ce que voient les familles et toute l’organisation (en italique). Le mail s’ouvre toujours sur « Familles ».',
+      'Mail « Équipe » : la remarque arrive en début de ligne, sans « Remarque : ».'
+    ]
+  },
   {
     d: '2026-10-18 10:45',
     v: '0.14',
@@ -5603,8 +5619,6 @@ function planningVide() {
 }
 
 function initBoutons() {
-  $('#vInterne').onclick = () => changerVersion('interne');
-  $('#vPublic').onclick = () => changerVersion('public');
   $('#bAffiche').onclick = ouvrirAffiche;
   $('#bMail').onclick = ouvrirMail;
   $('#vOuvrir').onclick = () => socle.ouvrir();
@@ -5683,9 +5697,6 @@ function raccourcis(ev) {
     } else if (k === 'm') {
       ev.preventDefault();
       ouvrirMail();
-    } else if (k === 'v') {
-      ev.preventDefault();
-      changerVersion(version === 'interne' ? 'public' : 'interne');
     }
     return;
   }
@@ -5715,7 +5726,7 @@ initCalendrier();
 initAffiche();
 initMail();
 document.addEventListener('keydown', raccourcis);
-changerVersion(version);
+afficherListe(); /* premier rendu (écran « aucun planning » tant que rien n'est ouvert) */
 socle.demarrer({
   appli: 'saison',
   titre: 'Saison',
