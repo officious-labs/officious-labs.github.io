@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018165039">
+<meta name="officious-page" content="20261018172055">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1481,6 +1481,10 @@ button.lien {
   #tete .lib {
     display: none;
   }
+  /* l'objet ne sert qu'au PC, d'où le mail part */
+  .mail-objet {
+    display: none;
+  }
   #tete .ico {
     display: block;
   }
@@ -1525,6 +1529,44 @@ button.lien {
     animation: none !important;
     transition: none !important;
   }
+}
+#mailCopier.a-completer {
+  background: #a0661c; /* ocre : il reste à faire, pas une erreur */
+  border-color: #a0661c;
+}
+dialog.completer {
+  width: min(40rem, 100vw - 1rem);
+}
+#cListe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: 65vh;
+  overflow: auto;
+  margin: 0.4rem 0;
+}
+.c-date {
+  border: 1px solid var(--filet);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: opacity 0.3s;
+}
+.c-date.fait {
+  opacity: 0.45;
+}
+.c-quand {
+  font-weight: 600;
+}
+.c-champ.fait input,
+.c-champ.fait textarea {
+  border-color: #3d7a45;
+  background: color-mix(in srgb, #3d7a45 6%, var(--papier));
+}
+.c-champ .erreur {
+  border-color: var(--rouge);
 }
 #mailCopier:disabled {
   opacity: 0.6;
@@ -1656,6 +1698,14 @@ button.lien {
     <button id="mailForcer" class="lien" hidden>copier quand même</button>
     <button id="mailCopier" class="primaire">Copier le message</button>
   </div>
+</dialog>
+
+<dialog id="completer" class="s-dialogue completer" aria-label="À compléter">
+  <div class="mail-tete"><h2 id="cTitre">À compléter</h2><button id="cFermer" class="icone" title="Fermer (Échap)">×</button></div>
+  <p class="aide">Chaque champ s’enregistre dès que tu le quittes. <button type="button" id="cTaches" class="lien">Copier pour Tâches</button></p>
+  <div id="cListe"></div>
+  <datalist id="cLieux"></datalist>
+  <div class="mail-pied"><span id="cReste" class="aide"></span><button id="cMail" class="primaire">Revenir au mail</button></div>
 </dialog>
 
 <dialog id="retrouver" class="s-dialogue" aria-label="Manifestations disparues">
@@ -5385,7 +5435,7 @@ function manques(p, avenir) {
       if (!g.detail) m.push('descriptif');
       if (!g.eleves) m.push('élèves concernés');
       if (!g.pratique) m.push('infos pratiques');
-      if (m.length) out.push({ e, m });
+      if (m.length) out.push({ e, m, g: g.evts[0] }); /* g : la date qui porte les textes du bloc */
     }
   return out;
 }
@@ -5410,10 +5460,10 @@ function texteTaches(p, avenir) {
 function afficherManques(p, avenir) {
   const box = $('#mailManques');
   const L = mailPour === 'familles' && p ? manques(p, avenir) : [];
-  box.hidden = !L.length;
-  $('#mailCopier').disabled = !!L.length;
+  box.hidden = true; /* la liste vit dans la vue « À compléter », ouverte par le bouton */
+  $('#mailCopier').classList.toggle('a-completer', !!L.length);
   $('#mailCopier').textContent = L.length
-    ? L.length + ' date' + (L.length > 1 ? 's' : '') + ' à compléter'
+    ? L.length + ' date' + (L.length > 1 ? 's' : '') + ' à compléter →'
     : 'Copier le message';
   $('#mailForcer').hidden = !L.length;
   if (!L.length) return (box.innerHTML = '');
@@ -5432,6 +5482,138 @@ function afficherManques(p, avenir) {
         '</span></button></li>'
     ).join('') +
     '</ul>';
+}
+
+/* ---- vue « À compléter » : chaque date incomplète, avec ses champs manquants à remplir sur place ----
+   (François, 18/10/2026 : le bouton « 10 dates à compléter » donnait envie de cliquer). Une saisie est enregistrée
+   dès qu'on quitte le champ ; le champ rempli passe en vert, la date complète s'estompe. Rien n'est retiré de la liste
+   pendant la saisie, pour que le doigt ne tombe pas sur une autre date. */
+const CHAMP_DE = {
+  heure: 'heures',
+  lieu: 'lieu',
+  descriptif: 'detail',
+  'élèves concernés': 'eleves',
+  'infos pratiques': 'pratique'
+};
+function champCompleter(id, nom) {
+  const ph = {
+    heure: '18h30 · 14h-14h45 et 15h15-16h',
+    lieu: 'CCED, Bach, Conciergerie… ou en toutes lettres',
+    descriptif: 'Pour les familles, une ou deux phrases',
+    'élèves concernés': 'classe de piano, ateliers théâtre…',
+    'infos pratiques': 'Gratuit sur réservation auprès du conservatoire'
+  }[nom];
+  const long = nom === 'descriptif' || nom === 'infos pratiques';
+  return (
+    '<label class="champ c-champ">' +
+    majuscule(nom) +
+    (long
+      ? '<textarea rows="2" data-id="' +
+        esc(id) +
+        '" data-champ="' +
+        nom +
+        '" placeholder="' +
+        esc(ph) +
+        '"></textarea>'
+      : '<input data-id="' +
+        esc(id) +
+        '" data-champ="' +
+        nom +
+        '" placeholder="' +
+        esc(ph) +
+        '"' +
+        (nom === 'lieu' ? ' list="cLieux"' : '') +
+        '>') +
+    '</label>'
+  );
+}
+function ouvrirCompleter() {
+  const p = periodeMail(),
+    L = manques(p, $('#mailAvenir').checked);
+  $('#cTitre').textContent = 'À compléter · ' + typo(p.nom);
+  $('#cLieux').innerHTML = Object.values(lieux(doc))
+    .map(l => '<option value="' + esc(l.cle) + '">' + esc(l.nom) + '</option>')
+    .join('');
+  $('#cListe').innerHTML = L.map(({ e, m, g }) => {
+    const Lx = lieuDe(e);
+    return (
+      '<section class="c-date" data-id="' +
+      esc(e.id) +
+      '"><div class="c-tete"><span class="c-quand" style="color:' +
+      (Lx ? Lx.hex : 'var(--encre)') +
+      '">' +
+      esc(majuscule(libDate(e))) +
+      '</span> <b>' +
+      rich(e.titre) +
+      '</b> <button type="button" class="lien" data-fiche="' +
+      esc(e.id) +
+      '">fiche</button></div>' +
+      m.map(n => champCompleter(n === 'heure' || n === 'lieu' ? e.id : g.id, n)).join('') +
+      '</section>'
+    );
+  }).join('');
+  $('#mail').close();
+  $('#completer').showModal();
+  const premier = $('#cListe input, #cListe textarea');
+  if (premier && !TACTILE) premier.focus();
+}
+function initCompleter() {
+  $('#cFermer').onclick = () => $('#completer').close();
+  $('#cMail').onclick = () => {
+    $('#completer').close();
+    afficherMail();
+    $('#mail').showModal();
+  };
+  $('#cTaches').onclick = async () => {
+    const t = texteTaches(periodeMail(), $('#mailAvenir').checked);
+    toast(
+      (await copierRiche(esc(t).replace(/\n/g, '<br>'), t))
+        ? 'Copié : colle-le dans une nouvelle note de Tâches'
+        : 'Copie impossible'
+    );
+  };
+  $('#cListe').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-fiche]');
+    if (!b) return;
+    $('#completer').close();
+    ouvrirFiche(b.dataset.fiche);
+  });
+  $('#cListe').addEventListener('change', ev => {
+    const f = ev.target.closest('[data-champ]');
+    if (!f) return;
+    const e = doc.evts.find(x => x.id === f.dataset.id);
+    if (!e) return;
+    let v = f.value.trim();
+    const nom = f.dataset.champ;
+    if (nom === 'heure') {
+      v = lireHeures(v);
+      if (f.value.trim() && !heuresValides(v)) {
+        f.classList.add('erreur');
+        return toast('Heure non comprise : écris par exemple « 18h30 » ou « 14h-14h45 et 15h15-16h »');
+      }
+    }
+    if (nom === 'lieu') {
+      const L = Object.values(lieux(doc)).find(
+        l => l.cle.toLowerCase() === v.toLowerCase() || l.nom.toLowerCase() === v.toLowerCase()
+      );
+      if (L) v = L.cle;
+    }
+    f.classList.remove('erreur');
+    snapshot();
+    e[CHAMP_DE[nom]] = v;
+    changed();
+    afficherListe();
+    f.closest('.c-champ').classList.toggle('fait', !!v);
+    const sec = f.closest('.c-date');
+    sec.classList.toggle(
+      'fait',
+      $$('[data-champ]', sec).every(x => x.closest('.c-champ').classList.contains('fait'))
+    );
+    const reste = $$('#cListe .c-date:not(.fait)').length;
+    $('#cReste').textContent = reste
+      ? reste + ' date' + (reste > 1 ? 's' : '') + ' encore à compléter'
+      : 'Tout est complet : le mail peut partir.';
+  });
 }
 
 /* ---- mail « Équipe » ---- */
@@ -5609,10 +5791,13 @@ function initMail() {
     ouvrirFiche(b.dataset.id);
   });
   $('#mailForcer').onclick = () => {
-    $('#mailCopier').disabled = false;
+    $('#mailCopier').classList.remove('a-completer');
     $('#mailCopier').click();
+    afficherMail();
   };
+  initCompleter();
   $('#mailCopier').onclick = async () => {
+    if ($('#mailCopier').classList.contains('a-completer')) return ouvrirCompleter();
     const c = contenuMail();
     const r = await copierRiche(c.html, c.texte);
     toast(
@@ -5633,6 +5818,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 19:45',
+    v: '0.19',
+    items: [
+      '« Demandez le programme » : le bouton « N dates à compléter → » ouvre une vue où chaque date incomplète montre seulement les champs qui manquent, à remplir sur place (enregistrés dès qu’on quitte le champ). « Copier pour Tâches » y est aussi.',
+      'Au téléphone, l’objet du mail n’est plus affiché : il ne sert qu’au PC.',
+      'Mail « Équipe » : plus de « (interne) » après le titre.'
+    ]
+  },
   {
     d: '2026-10-18 19:15',
     v: '0.18',
