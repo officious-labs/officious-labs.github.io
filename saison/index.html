@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018182050">
+<meta name="officious-page" content="20261018184203">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1715,7 +1715,6 @@ dialog.completer {
     <button data-act="actualiser" role="menuitem" hidden>Actualiser</button>
     <button data-act="exporter" role="menuitem">Télécharger une copie</button>
     <button data-act="retrouver" role="menuitem">Retrouver une manifestation disparue…</button>
-    <button data-act="logo" role="menuitem">Logo de l’affiche…</button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
     <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
     <button id="mMaj" role="menuitem" hidden>Mettre à jour l’appli</button>
@@ -5102,50 +5101,11 @@ function initCalendrier() {
 let affChoix = null; /* noms des périodes cochées ; null = la période en cours et les suivantes */
 let affFormat = 'a4'; /* 'a4' : une page par période ; 'a3' : toute la saison sur une feuille A3 à l'italienne */
 
-/* ---- logo de la Ville : choisi une fois au PC, rangé dans les réglages de planning.md (« - logo : data:… »).
-   Ainsi tous les appareils l'ont, même hors connexion et hors des heures de travail (copie de secours), et il n'est
-   jamais dans la page publiée. Réduit à 360 px en WebP (quelques Ko) ; imprimé en monochrome. ---- */
+/* ---- logo de la Ville : à venir, lu dans un fichier logo.png posé à côté de planning.md (choix de François,
+   18/10/2026 : ni dans planning.md, ni dans la page publiée) ; il faut d'abord au socle l'accès aux fichiers voisins.
+   La place est prête dans l'en-tête de l'A3 (.pg-logo). ---- */
 function logoAffiche() {
-  const src = reglage('logo');
-  return /^data:image\//.test(src) ? '<img class="pg-logo" src="' + esc(src) + '" alt="">' : '';
-}
-function choisirLogo() {
-  if (AND) return toast('Le logo se choisit au PC (menu ⋯ → « Logo de l’affiche… ») ; il arrive ensuite ici tout seul');
-  const i = document.createElement('input');
-  i.type = 'file';
-  i.accept = 'image/png,image/svg+xml,image/jpeg,image/webp';
-  i.onchange = () => {
-    const f = i.files[0];
-    if (!f) return;
-    const r = new FileReader();
-    r.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        /* 360 px suffisent (plus de 400 points par pouce à la taille imprimée) ; fond blanc, comme l'affiche, et
-           WebP : quelques Ko dans planning.md (en PNG transparent, 150 Ko) */
-        const k = Math.min(1, 360 / Math.max(img.naturalWidth || 360, img.naturalHeight || 360));
-        const c = document.createElement('canvas');
-        c.width = Math.round((img.naturalWidth || 600) * k);
-        c.height = Math.round((img.naturalHeight || 600) * k);
-        const g = c.getContext('2d');
-        g.fillStyle = '#fff';
-        g.fillRect(0, 0, c.width, c.height);
-        g.drawImage(img, 0, 0, c.width, c.height);
-        let url = c.toDataURL('image/webp', 0.8);
-        if (!url.startsWith('data:image/webp')) url = c.toDataURL('image/jpeg', 0.8);
-        snapshot();
-        doc.reglages = doc.reglages.filter(x => x.cle !== 'logo');
-        doc.reglages.push({ cle: 'logo', val: url });
-        changed();
-        toast('Logo enregistré dans planning.md : tous les appareils l’auront');
-        if (!$('#affiche').hidden) afficherAffiche();
-      };
-      img.onerror = () => toast('Image illisible');
-      img.src = r.result;
-    };
-    r.readAsDataURL(f);
-  };
-  i.click();
+  return '';
 }
 
 /* ---- A3 : la saison entière, une colonne par période (François, 18/10/2026) ---- */
@@ -6141,7 +6101,7 @@ const NOUVEAUTES = [
     d: '2026-10-18 20:30',
     v: '0.22',
     items: [
-      'Affiche A3 : sans le filet tricolore ; logo de la Ville en tête, en monochrome. Choisis l’image une fois au PC (menu ⋯ → « Logo de l’affiche… ») : elle est rangée dans planning.md, et tous les appareils l’ont, même hors connexion.'
+      'Affiche A3 : sans le filet tricolore.'
     ]
   },
   {
@@ -6354,7 +6314,6 @@ function initBoutons() {
       nouveau: () => socle.nouveauFichier(),
       exporter: () => socle.exporter(),
       retrouver: ouvrirRetrouver,
-      logo: choisirLogo,
       enligne: () => socle.reglerEnLigne(),
       outils: () => socle.reglerOutils(),
       actualiser: () => socle.actualiser(),
