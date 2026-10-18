@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018184203">
+<meta name="officious-page" content="20261018184513">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1177,7 +1177,7 @@ button.lien {
   top: 6mm;
   right: 15mm;
 }
-.page.a3 .pg-tete {
+.pg-tete {
   border-bottom: 0.3mm solid #e3e6ea;
   padding-bottom: 3mm;
 }
@@ -1788,8 +1788,8 @@ dialog.completer {
 <section id="affiche" hidden aria-label="Affiche">
   <div class="outils">
     <div id="affFormat" class="bascule" role="group" aria-label="Format">
-      <button data-f="a4" aria-pressed="true" title="Une page A4 par période">A4 · période</button>
-      <button data-f="a3" aria-pressed="false" title="Toute la saison sur une feuille A3 à l’italienne">A3 · saison</button>
+      <button data-f="a3" aria-pressed="true" title="Toute la saison sur une feuille A3 à l’italienne">A3 · saison</button>
+      <button data-f="a4" aria-pressed="false" title="Une page A4 par période">A4 · période</button>
     </div>
     <div id="affPeriodes" class="puces"></div>
     <span class="espace"></span>
@@ -5099,7 +5099,8 @@ function initCalendrier() {
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
 
 let affChoix = null; /* noms des périodes cochées ; null = la période en cours et les suivantes */
-let affFormat = 'a4'; /* 'a4' : une page par période ; 'a3' : toute la saison sur une feuille A3 à l'italienne */
+let affFormat =
+  'a3'; /* A3 par défaut (François, 18/10/2026) */ /* 'a4' : une page par période ; 'a3' : toute la saison sur une feuille A3 à l'italienne */
 
 /* ---- logo de la Ville : à venir, lu dans un fichier logo.png posé à côté de planning.md (choix de François,
    18/10/2026 : ni dans planning.md, ni dans la page publiée) ; il faut d'abord au socle l'accès aux fichiers voisins.
@@ -5271,10 +5272,7 @@ function pageAffiche(p, interne) {
     (interne ? 'Document interne · imprimé le ' : 'Mis à jour le ') +
     dateLongue(auj()) +
     '</div>';
-  h +=
-    '<h1 class="pg-titre">' +
-    esc(typo(p.nom)) +
-    '</h1><div class="pg-filet" aria-hidden="true"><i></i><i></i><i></i></div></header>';
+  h += '<h1 class="pg-titre">' + esc(typo(p.nom)) + '</h1></header>'; /* sans filet tricolore (François, 18/10/2026) */
   /* les événements groupés par mois : le mois s'écrit une fois, le bloc date n'a plus que le jour et le quantième */
   let liste = '',
     mois = '';
@@ -6101,7 +6099,7 @@ const NOUVEAUTES = [
     d: '2026-10-18 20:30',
     v: '0.22',
     items: [
-      'Affiche A3 : sans le filet tricolore.'
+      'Affiches sans le filet tricolore ; l’affiche s’ouvre sur l’A3 de la saison (l’A4 par période reste à un clic).'
     ]
   },
   {
