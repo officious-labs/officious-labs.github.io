@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018082713">
+<meta name="officious-page" content="20261018083543">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5336,8 +5336,8 @@ function blocEquipe(e) {
   if (L) lignes.push('Lieu : ' + L.nom);
   if (e.accomp) lignes.push('Accompagnement : ' + e.accomp);
   /* descriptif, élèves concernés et infos pratiques : mail public seulement (François, 18/10/2026) ; ici, l'organisation */
-  const rem = (e.remarque || '').split('\n').filter(l => l.trim());
-  rem.forEach((l, i) => lignes.push((i ? '' : 'Remarque : ') + l.trim()));
+  /* la remarque, telle quelle, en début de ligne (sans « Remarque : ») */
+  for (const l of (e.remarque || '').split('\n')) if (l.trim()) lignes.push(l.trim());
   return [typo(quand), lignes.map(typo)];
 }
 /** Les dates regroupées par mois : [[« Novembre 2026 », [événements]], …] */
