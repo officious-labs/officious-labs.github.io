@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018175811">
+<meta name="officious-page" content="20261018180409">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1306,9 +1306,9 @@ button.lien {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 4mm 5mm;
+  grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0 6mm;
   margin: 5mm 0 4mm;
 }
 .a3-mois {
@@ -1320,14 +1320,22 @@ button.lien {
 .a3-mois h2 {
   margin: 0 0 calc(1.6mm * var(--s));
   font:
-    italic 500 calc(15pt * var(--s)) / 1.1 Lora,
+    italic 500 calc(12.5pt * var(--s)) / 1.1 Lora,
     Georgia,
     serif;
   color: #2e5e8c;
 }
-.a3-mois h2 span {
-  font-size: 0.7em;
+.a3-sm {
+  font-size: calc(7.6pt * var(--s));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: #8a929c;
+  padding: calc(2.4mm * var(--s)) 0 calc(0.6mm * var(--s));
+  border-bottom: 0.2mm solid #e3e6ea;
+}
+.a3-sm:first-child {
+  padding-top: 0;
 }
 .a3-mois ol {
   list-style: none;
@@ -5075,7 +5083,7 @@ function initCalendrier() {
 let affChoix = null; /* noms des périodes cochées ; null = la période en cours et les suivantes */
 let affFormat = 'a4'; /* 'a4' : une page par période ; 'a3' : toute la saison sur une feuille A3 à l'italienne */
 
-/* ---- A3 : la saison entière, un bloc par mois (François, 18/10/2026) ---- */
+/* ---- A3 : la saison entière, une colonne par période (François, 18/10/2026) ---- */
 function moisSaison() {
   const pers = periodes(doc);
   if (!pers.length) return [];
@@ -5130,17 +5138,29 @@ function pageA3() {
     '<h1 class="pg-titre">Saison ' +
     esc(an) +
     '</h1><div class="pg-filet" aria-hidden="true"><i></i><i></i><i></i></div></header>';
-  h += '<div class="a3-grille">';
-  for (const mk of moisSaison()) {
-    const [y, m] = mk.split('-').map(Number);
-    const L = evts.filter(e => e.d1.slice(0, 7) === mk);
+  /* une colonne par période (François, 18/10/2026 : par mois, trop de blanc), les mois en intertitres */
+  const pers = periodes(doc);
+  h += '<div class="a3-grille" style="--n:' + pers.length + '">';
+  for (const p of pers) {
+    const L = evts.filter(e => {
+      const q = periodeDe(e, pers);
+      return q && q.nom === p.nom;
+    });
+    let corps = '',
+      mois = '';
+    for (const e of L) {
+      const m = e.d1.slice(0, 7);
+      if (m !== mois) {
+        mois = m;
+        corps += '<li class="a3-sm">' + majuscule(MOIS[+m.slice(5) - 1]) + '</li>';
+      }
+      corps += ligneA3(e);
+    }
     h +=
       '<section class="a3-mois"><h2>' +
-      majuscule(MOIS[m - 1]) +
-      ' <span>' +
-      y +
-      '</span></h2>' +
-      (L.length ? '<ol>' + L.map(ligneA3).join('') + '</ol>' : '<p class="a3-rien">—</p>') +
+      esc(typo(p.nom)) +
+      '</h2>' +
+      (L.length ? '<ol>' + corps + '</ol>' : '<p class="a3-rien">Programme à venir</p>') +
       '</section>';
   }
   h += '</div><footer class="pg-pied">';
@@ -6054,7 +6074,7 @@ const NOUVEAUTES = [
     d: '2026-10-18 20:15',
     v: '0.21',
     items: [
-      'Affiche : nouveau format « A3 · saison », toute la saison sur une feuille A3 à l’italienne, un bloc par mois, les dates dans la couleur de leur lieu. Choisir A3 dans la boîte d’impression.'
+      'Affiche : nouveau format « A3 · saison », toute la saison sur une feuille A3 à l’italienne, une colonne par période, les dates dans la couleur de leur lieu. Choisir A3 dans la boîte d’impression.'
     ]
   },
   {
