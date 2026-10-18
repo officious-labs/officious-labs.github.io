@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018192132">
+<meta name="officious-page" content="20261018192704">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1432,10 +1432,29 @@ button.lien {
   font-style: normal;
   font-size: 0.9em;
 }
+.a3-s {
+  /* élèves concernés, sous le titre */
+  display: block;
+  color: #0070c0;
+  font-size: 0.92em;
+}
 .a3-m {
   display: block;
   color: #5b6470;
   font-size: 0.9em;
+  margin-top: 0.3mm;
+}
+.a3-m .pastille {
+  font-size: 0.9em;
+  padding: 0.12em 0.5em 0.18em;
+}
+.a3-m .pastille.libre {
+  /* lieu long : la pastille coule sur deux lignes comme du texte, chaque morceau garde son contour */
+  display: inline;
+  line-height: 1.75;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  hyphens: manual;
 }
 .a3-rien {
   color: #b7bec6;
@@ -5244,6 +5263,17 @@ function moisSaison() {
   }
   return out;
 }
+/** Nom court pour le public : ce qui suit la virgule (« Salle Schubert »), sinon la clé (« CCED »). */
+function nomCourt(L) {
+  if (L.libre) return L.court || L.nom;
+  const v = L.nom.indexOf(',');
+  return v > 0 ? majuscule(L.nom.slice(v + 1).trim()) : L.cle || L.nom;
+}
+function pastilleA3(L) {
+  return (
+    '<span class="pastille' + (L.libre ? ' libre' : '') + '" style="--c:' + L.hex + '">' + rich(nomCourt(L)) + '</span>'
+  );
+}
 function ligneA3(e) {
   const L = lieuDe(e),
     a = jour(e.d1),
@@ -5252,7 +5282,9 @@ function ligneA3(e) {
   const large = n > 0; /* « 22–27 » : en plus petit, pour tenir dans la colonne */
   const jr =
     n === 0 ? JOURS[a.getDay()].slice(0, 3) + '.' : e.semaine ? 'sem.' : n === 1 && a.getDay() === 6 ? 'w.-e.' : 'du';
-  const quand = [e.heures ? libHeures(e.heures) : '', L ? L.nom : ''].filter(Boolean).map(x => esc(typo(x)));
+  /* lieu en pastille, nom court (« Salle Schubert », « CCED ») : la légende en bas donne les bâtiments */
+  const quand = [e.heures ? esc(libHeures(e.heures)) : '', L ? pastilleA3(L) : ''].filter(Boolean);
+  const [et, el] = elevesEnTete(e.eleves);
   return (
     '<li class="a3-ev' +
     (e.statut === 'annulé' ? ' annule' : '') +
@@ -5268,7 +5300,8 @@ function ligneA3(e) {
     rich(e.titre) +
     '</b>' +
     (e.statut === 'à confirmer' ? ' <i>(sous réserve)</i>' : '') +
-    (quand.length ? '<span class="a3-m">' + quand.join(' · ') + '</span>' : '') +
+    (el ? '<span class="a3-s">' + (et ? et + '\u00a0: ' : '') + rich(el) + '</span>' : '') +
+    (quand.length ? '<span class="a3-m">' + quand.join(' ') + '</span>' : '') +
     '</span></li>'
   );
 }
@@ -6221,6 +6254,7 @@ const NOUVEAUTES = [
     v: '0.24',
     items: [
       'Affiche : le bouton redevient « Imprimer… » (il ouvre toujours la boîte d’impression, où « Enregistrer au format PDF » reste proposé).',
+      'Affiche A3 : sous le titre, la ligne des élèves concernés ; les lieux en pastilles de couleur avec un nom court (« Salle Schubert », « CCED »), la légende en bas donnant les bâtiments.',
       'Liste : les élèves concernés s’affichent juste sous le titre. Dans une fiche, un titre comme « Carte blanche de rodage pour les élèves de la classe de violon » se coupe tout seul en quittant le champ : « Carte blanche de rodage », et dessous « Élèves de la classe de violon ».',
       'Lieux : une pastille de couleur partout, avec le nom court (« Schubert »). Un lieu écrit en toutes lettres prend la couleur de son bâtiment (« Conservatoire, salle Schubert » → pastille bleue « Salle Schubert »).'
     ]
