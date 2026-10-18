@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018174402">
+<meta name="officious-page" content="20261018175811">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1292,6 +1292,99 @@ button.lien {
   font-size: 8.5pt;
   color: #5b6470;
 }
+/* ---- A3 à l'italienne : la saison, un bloc par mois ---- */
+.page.a3 {
+  width: 420mm;
+  height: 297mm;
+  padding: 13mm 15mm 10mm;
+}
+.page.a3 .pg-titre {
+  font-size: 34pt;
+  margin: 1mm 0 3.5mm;
+}
+.a3-grille {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 4mm 5mm;
+  margin: 5mm 0 4mm;
+}
+.a3-mois {
+  overflow: hidden;
+  min-height: 0;
+  border-top: 0.6mm solid #2e5e8c;
+  padding-top: 1.5mm;
+}
+.a3-mois h2 {
+  margin: 0 0 calc(1.6mm * var(--s));
+  font:
+    italic 500 calc(15pt * var(--s)) / 1.1 Lora,
+    Georgia,
+    serif;
+  color: #2e5e8c;
+}
+.a3-mois h2 span {
+  font-size: 0.7em;
+  color: #8a929c;
+}
+.a3-mois ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.a3-ev {
+  display: grid;
+  grid-template-columns: calc(11mm * var(--s)) 1fr;
+  gap: 2mm;
+  padding: calc(1.2mm * var(--s)) 0;
+  border-bottom: 0.2mm solid #e3e6ea;
+  font-size: calc(8.6pt * var(--s));
+  line-height: 1.22;
+}
+.a3-d {
+  font-weight: 700;
+  font-size: 1.45em;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+.a3-d.large {
+  font-size: 1.1em;
+  letter-spacing: -0.02em;
+}
+.a3-d small {
+  display: block;
+  font-size: 0.48em;
+  font-weight: 500;
+  color: #5b6470;
+  margin-bottom: 0.3mm;
+}
+.a3-c b {
+  font-weight: 600;
+}
+.a3-c i {
+  color: #5b6470;
+  font-style: normal;
+  font-size: 0.9em;
+}
+.a3-m {
+  display: block;
+  color: #5b6470;
+  font-size: 0.9em;
+}
+.a3-rien {
+  color: #b7bec6;
+}
+.a3-pt {
+  display: inline-block;
+  width: 2.6mm;
+  height: 2.6mm;
+  border-radius: 50%;
+  margin-right: 1.5mm;
+  vertical-align: -0.2mm;
+}
 .pg-legende {
   display: flex;
   flex-wrap: wrap;
@@ -1668,6 +1761,10 @@ dialog.completer {
 
 <section id="affiche" hidden aria-label="Affiche">
   <div class="outils">
+    <div id="affFormat" class="bascule" role="group" aria-label="Format">
+      <button data-f="a4" aria-pressed="true" title="Une page A4 par période">A4 · période</button>
+      <button data-f="a3" aria-pressed="false" title="Toute la saison sur une feuille A3 à l’italienne">A3 · saison</button>
+    </div>
     <div id="affPeriodes" class="puces"></div>
     <span class="espace"></span>
     <button id="affImprimer" class="primaire">Imprimer…</button>
@@ -4976,6 +5073,111 @@ function initCalendrier() {
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
 
 let affChoix = null; /* noms des périodes cochées ; null = la période en cours et les suivantes */
+let affFormat = 'a4'; /* 'a4' : une page par période ; 'a3' : toute la saison sur une feuille A3 à l'italienne */
+
+/* ---- A3 : la saison entière, un bloc par mois (François, 18/10/2026) ---- */
+function moisSaison() {
+  const pers = periodes(doc);
+  if (!pers.length) return [];
+  const out = [];
+  let [y, m] = pers[0].d1.split('-').map(Number);
+  const fin = pers[pers.length - 1].d2.slice(0, 7);
+  for (let k = 0; k < 24; k++) {
+    const cle = y + '-' + String(m).padStart(2, '0');
+    if (cle > fin) break;
+    out.push(cle);
+    if (++m > 12) ((m = 1), y++);
+  }
+  return out;
+}
+function ligneA3(e) {
+  const L = lieuDe(e),
+    a = jour(e.d1),
+    n = ecartJours(e.d1, e.d2);
+  const num = n === 0 ? quantieme(a).replace('1er', '1<sup>er</sup>') : a.getDate() + '–' + jour(e.d2).getDate();
+  const large = n > 0; /* « 22–27 » : en plus petit, pour tenir dans la colonne */
+  const jr =
+    n === 0 ? JOURS[a.getDay()].slice(0, 3) + '.' : e.semaine ? 'sem.' : n === 1 && a.getDay() === 6 ? 'w.-e.' : 'du';
+  const quand = [e.heures ? libHeures(e.heures) : '', L ? L.nom : ''].filter(Boolean).map(x => esc(typo(x)));
+  return (
+    '<li class="a3-ev' +
+    (e.statut === 'annulé' ? ' annule' : '') +
+    '"><span class="a3-d' +
+    (large ? ' large' : '') +
+    '" style="color:' +
+    (L ? L.hex : '#1f2933') +
+    '"><small>' +
+    jr +
+    '</small>' +
+    num +
+    '</span><span class="a3-c"><b>' +
+    rich(e.titre) +
+    '</b>' +
+    (e.statut === 'à confirmer' ? ' <i>(sous réserve)</i>' : '') +
+    (quand.length ? '<span class="a3-m">' + quand.join(' · ') + '</span>' : '') +
+    '</span></li>'
+  );
+}
+function pageA3() {
+  const evts = doc.evts.filter(estPublic).sort(ordre);
+  const orga = reglage('organisme') || 'Conservatoire de Lucé';
+  const adr = reglage('adresse');
+  const an = (doc.titre.match(/\d{4}\s*[-–]\s*\d{4}/) || [''])[0].replace(/\s*[-–]\s*/, '-');
+  let h = '<article class="page a3">';
+  h += '<header class="pg-tete"><div class="pg-orga">' + rich(orga) + '</div>';
+  h += '<div class="pg-mention">Mis à jour le ' + dateLongue(auj()) + '</div>';
+  h +=
+    '<h1 class="pg-titre">Saison ' +
+    esc(an) +
+    '</h1><div class="pg-filet" aria-hidden="true"><i></i><i></i><i></i></div></header>';
+  h += '<div class="a3-grille">';
+  for (const mk of moisSaison()) {
+    const [y, m] = mk.split('-').map(Number);
+    const L = evts.filter(e => e.d1.slice(0, 7) === mk);
+    h +=
+      '<section class="a3-mois"><h2>' +
+      majuscule(MOIS[m - 1]) +
+      ' <span>' +
+      y +
+      '</span></h2>' +
+      (L.length ? '<ol>' + L.map(ligneA3).join('') + '</ol>' : '<p class="a3-rien">—</p>') +
+      '</section>';
+  }
+  h += '</div><footer class="pg-pied">';
+  /* légende : une entrée par couleur (les salles du conservatoire n'en font qu'une), nom avant la virgule */
+  const parCouleur = new Map();
+  for (const l of Object.values(lieux(doc)))
+    if (evts.some(e => e.lieu === l.cle) && !parCouleur.has(l.couleur))
+      parCouleur.set(l.couleur, l.nom.replace(/,.*$/, ''));
+  if (evts.some(e => e.lieu && !lieux(doc)[e.lieu])) parCouleur.set('gris', 'Autres lieux');
+  if (parCouleur.size)
+    h +=
+      '<div class="pg-legende">' +
+      [...parCouleur]
+        .map(
+          ([c, nom]) =>
+            '<span><i class="a3-pt" style="background:' +
+            (COULEURS[c] || COULEURS.gris) +
+            '"></i>' +
+            rich(nom) +
+            '</span>'
+        )
+        .join('') +
+      '</div>';
+  if (adr) h += '<div class="pg-adresse">' + rich(adr) + '</div>';
+  return h + '</footer></article>';
+}
+/** A3 : même principe que l'A4, la densité baisse jusqu'à ce que chaque mois tienne dans sa case. */
+function ajusterA3(pg) {
+  let s = 1.4;
+  const deborde = () => $$('.a3-mois', pg).some(c => c.scrollHeight > c.clientHeight + 1);
+  pg.style.setProperty('--s', s);
+  while (deborde() && s > 0.6) {
+    s = Math.round((s - 0.03) * 100) / 100;
+    pg.style.setProperty('--s', s);
+  }
+  pg.classList.toggle('deborde', deborde());
+}
 
 function ligneAffiche(e, interne) {
   const L = lieuDe(e);
@@ -5077,9 +5279,21 @@ function afficherAffiche() {
         '</button>'
     )
     .join('');
+  $$('#affFormat button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === affFormat)));
+  $('#affPeriodes').hidden = affFormat === 'a3';
+  /* format d'impression : @page suit le format choisi */
+  let fmt = $('#affPage');
+  if (!fmt) document.head.append((fmt = Object.assign(document.createElement('style'), { id: 'affPage' })));
+  fmt.textContent = affFormat === 'a3' ? '@page { size: A3 landscape; margin: 0; }' : '@page { size: A4; margin: 0; }';
   const pages = $('#pages');
   pages.style.setProperty('--zoom', 1);
   pages.classList.add('mesure');
+  if (affFormat === 'a3') {
+    pages.innerHTML = pageA3();
+    ajusterA3($('.page', pages));
+    pages.classList.remove('mesure');
+    return zoomPages();
+  }
   pages.innerHTML = periodesChoisies()
     .map(p => pageAffiche(p, false))
     .join('');
@@ -5117,7 +5331,7 @@ function ajuster(pg) {
 function zoomPages() {
   const pages = $('#pages');
   const larg = pages.clientWidth - 48;
-  pages.style.setProperty('--zoom', Math.min(1, larg / 794).toFixed(3));
+  pages.style.setProperty('--zoom', Math.min(1, larg / (affFormat === 'a3' ? 1587 : 794)).toFixed(3));
 }
 
 function ouvrirAffiche() {
@@ -5133,6 +5347,12 @@ function fermerAffiche() {
 function initAffiche() {
   $('#affFermer').onclick = fermerAffiche;
   $('#affImprimer').onclick = () => window.print();
+  $('#affFormat').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-f]');
+    if (!b) return;
+    affFormat = b.dataset.f;
+    afficherAffiche();
+  });
   $('#affPeriodes').addEventListener('click', ev => {
     const b = ev.target.closest('button');
     if (!b) return;
@@ -5830,6 +6050,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-18 20:15',
+    v: '0.21',
+    items: [
+      'Affiche : nouveau format « A3 · saison », toute la saison sur une feuille A3 à l’italienne, un bloc par mois, les dates dans la couleur de leur lieu. Choisir A3 dans la boîte d’impression.'
+    ]
+  },
   {
     d: '2026-10-18 19:50',
     v: '0.20',
