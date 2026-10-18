@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018184513">
+<meta name="officious-page" content="20261018185046">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1159,9 +1159,40 @@ button.lien {
   outline: 3px solid #c8102e;
 }
 .pg-orga {
-  font-weight: 600;
-  font-size: 10.5pt;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
   color: #5b6470;
+  font-size: 8.5pt;
+}
+.pg-orga .o1 {
+  font-weight: 600;
+  font-size: 10pt;
+  color: #1f2933;
+}
+.pg-orga .o3 {
+  font-weight: 600;
+  color: #2e5e8c;
+}
+/* A3 : le bloc à droite, en face du titre, pour ne rien prendre en hauteur */
+.page.a3 .pg-tete {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+.page.a3 .pg-orga {
+  font-size: 11pt;
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+  padding-bottom: 4.5mm;
+}
+.page.a3 .pg-orga .o1 {
+  font-size: 13pt;
+}
+.page.a3 .pg-titre {
+  grid-column: 1;
+  grid-row: 1;
 }
 .pg-logo {
   position: absolute;
@@ -5102,6 +5133,19 @@ let affChoix = null; /* noms des périodes cochées ; null = la période en cour
 let affFormat =
   'a3'; /* A3 par défaut (François, 18/10/2026) */ /* 'a4' : une page par période ; 'a3' : toute la saison sur une feuille A3 à l'italienne */
 
+/* ---- en-tête : trois lignes (François, 18/10/2026). Le réglage « organisme » les donne séparées par « / » ;
+   une ancienne valeur sur une ligne est remplacée par celles-ci. ---- */
+const ORGA = ['Conservatoire à rayonnement communal', 'musique et art dramatique', 'Ville de Lucé'];
+function blocOrga() {
+  const r = reglage('organisme');
+  const L = r && r.includes(' / ') ? r.split(' / ').map(x => x.trim()) : ORGA;
+  return (
+    '<div class="pg-orga">' +
+    L.map((l, i) => '<span class="o' + (i + 1) + '">' + rich(l) + '</span>').join('') +
+    '</div>'
+  );
+}
+
 /* ---- logo de la Ville : à venir, lu dans un fichier logo.png posé à côté de planning.md (choix de François,
    18/10/2026 : ni dans planning.md, ni dans la page publiée) ; il faut d'abord au socle l'accès aux fichiers voisins.
    La place est prête dans l'en-tête de l'A3 (.pg-logo). ---- */
@@ -5154,11 +5198,11 @@ function ligneA3(e) {
 }
 function pageA3() {
   const evts = doc.evts.filter(estPublic).sort(ordre);
-  const orga = reglage('organisme') || 'Conservatoire de Lucé';
+  const orga = blocOrga();
   const adr = reglage('adresse');
   const an = (doc.titre.match(/\d{4}\s*[-–]\s*\d{4}/) || [''])[0].replace(/\s*[-–]\s*/, '-');
   let h = '<article class="page a3">';
-  h += '<header class="pg-tete"><div class="pg-orga">' + rich(orga) + '</div>';
+  h += '<header class="pg-tete">' + orga;
   h += '<div class="pg-mention">Mis à jour le ' + dateLongue(auj()) + '</div>';
   h +=
     '<h1 class="pg-titre">Saison ' +
@@ -5263,10 +5307,10 @@ function pageAffiche(p, interne) {
     .sort(ordre);
   const Lx = lieux(doc);
   const utilises = Object.values(Lx).filter(l => evts.some(e => e.lieu === l.cle));
-  const orga = reglage('organisme') || 'Conservatoire de Lucé';
+  const orga = blocOrga();
   const adr = reglage('adresse');
   let h = '<article class="page' + (interne ? ' interne' : '') + '">';
-  h += '<header class="pg-tete"><div class="pg-orga">' + rich(orga) + '</div>';
+  h += '<header class="pg-tete">' + orga;
   h +=
     '<div class="pg-mention">' +
     (interne ? 'Document interne · imprimé le ' : 'Mis à jour le ') +
@@ -6099,7 +6143,8 @@ const NOUVEAUTES = [
     d: '2026-10-18 20:30',
     v: '0.22',
     items: [
-      'Affiches sans le filet tricolore ; l’affiche s’ouvre sur l’A3 de la saison (l’A4 par période reste à un clic).'
+      'Affiches sans le filet tricolore ; l’affiche s’ouvre sur l’A3 de la saison (l’A4 par période reste à un clic).',
+      'En-tête des affiches sur trois lignes : « Conservatoire à rayonnement communal · musique et art dramatique · Ville de Lucé ».'
     ]
   },
   {
