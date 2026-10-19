@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019213356">
+<meta name="officious-page" content="20261019215442">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -923,6 +923,7 @@ body.avec-fiche #principal {
 .meta {
   font-size: 0.88rem;
   margin-top: 0.15rem;
+  color: var(--gris);
 }
 .detail {
   font-size: 0.88rem;
@@ -930,8 +931,12 @@ body.avec-fiche #principal {
   margin-top: 0.15rem;
 }
 .soustitre {
+  /* fait partie du nom : à l'encre, sans gras ; le gris reste aux heure, lieu, tarif (19/10/2026) */
   font-size: 0.92rem;
-  color: #3e4652;
+  color: var(--encre);
+}
+.ev.annule .soustitre {
+  color: var(--pale);
 }
 .eleves {
   font-size: 0.85rem;
@@ -1567,7 +1572,7 @@ button.lien {
 }
 .pg-soustitre {
   font-size: calc(11pt * var(--s));
-  color: #3e4652;
+  color: #1f2933;
   margin-top: calc(0.3mm * var(--s));
 }
 .pg-pratique {
@@ -1588,6 +1593,7 @@ button.lien {
 }
 .pg-meta {
   font-size: calc(10.5pt * var(--s));
+  color: #5b6470; /* gris : quand ; le sous-titre, lui, est à l'encre */
   margin-top: calc(1mm * var(--s));
 }
 .pg-detail {
@@ -1605,6 +1611,9 @@ button.lien {
 }
 .pg-ev.annule .pg-t {
   text-decoration: line-through;
+  color: #8a929c;
+}
+.pg-ev.annule .pg-soustitre {
   color: #8a929c;
 }
 .pg-ev.annule .bd-num {
@@ -1730,9 +1739,9 @@ button.lien {
   font-size: 0.9em;
 }
 .a3-s {
-  /* sous-titre */
+  /* sous-titre : à l'encre comme le titre, sans gras */
   display: block;
-  color: #3e4652;
+  color: #1f2933;
   font-size: 0.92em;
 }
 .a3-m {
@@ -6621,7 +6630,7 @@ function htmlMail(p, avenir) {
       ENCRE,
       'font-weight:bold;padding-top:2px;'
     );
-    if (g.soustitre) h += ligne(rich(g.soustitre), 15, '#3e4652');
+    if (g.soustitre) h += ligne(rich(g.soustitre), 15, ENCRE);
     if (un) h += heure(g.evts[0]) + lieu(g.evts[0]);
     else for (const e of g.evts) h += '<div style="padding-top:4px">' + jourL(e) + heure(e) + lieu(e) + '</div>';
     if (g.detail) h += '<div style="padding-top:6px">' + paragraphesMail(g.detail, t(15, '#3e4652')) + '</div>';
@@ -7140,6 +7149,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-20 00:00',
+    v: '0.55',
+    items: ['Sous-titres plus lisibles : à l’encre comme le titre (sans gras), partout ; l’heure, le lieu et le tarif restent en gris.']
+  },
   {
     d: '2026-10-19 23:45',
     v: '0.54',
