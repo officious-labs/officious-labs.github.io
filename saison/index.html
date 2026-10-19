@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019115302">
+<meta name="officious-page" content="20261019125034">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -470,6 +470,21 @@ sup {
   vertical-align: 0.42em;
 }
 
+/* bandeau « nouvelle version dans le dossier » (PC) : flottant en bas, visible où qu'on soit dans la liste
+   (19/10/2026 ; à reporter dans le socle) */
+#s-version {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 70;
+  max-width: calc(100vw - 6rem);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
+}
+body:has(#s-version:not([hidden])) #s-toast {
+  bottom: 5rem; /* le message passe au-dessus du bandeau */
+}
 /* bouton « recentrer », comme sur un GPS : revient à la prochaine date (ou au mois en cours) */
 .flottant {
   position: fixed;
@@ -6792,6 +6807,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 15:00',
+    v: '0.41',
+    items: ['Au PC, le bandeau « Une nouvelle version de Saison est dans le dossier » flotte en bas de l’écran : il reste visible où qu’on soit dans la liste.']
+  },
   {
     d: '2026-10-19 14:00',
     v: '0.40',
