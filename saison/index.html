@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019105615">
+<meta name="officious-page" content="20261019110924">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -999,17 +999,26 @@ body.avec-fiche #principal {
   font-size: 0.82rem;
   padding: 0.35rem 0.2rem;
 }
-fieldset.interne {
-  border: 1px solid color-mix(in srgb, var(--ocre) 35%, transparent);
+fieldset.interne,
+fieldset.public {
+  border: 1px solid color-mix(in srgb, var(--equipe) 35%, transparent);
   border-radius: 9px;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   padding: 0.4rem 0.8rem 0.8rem;
 }
-fieldset.interne legend {
+fieldset.interne legend,
+fieldset.public legend {
   font-size: 0.8rem;
-  color: var(--ocre);
+  font-weight: 600;
+  color: var(--equipe);
+}
+fieldset.public {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+fieldset.public legend {
+  color: var(--accent);
 }
 .plus summary {
   font-size: 0.85rem;
@@ -1936,7 +1945,7 @@ dialog.completer {
     <button id="ficheFermer" class="icone" title="Fermer (Échap)">×</button>
   </div>
   <label class="champ">Titre<textarea id="fTitre" rows="1" title="Entrée : choisir où le titre passe à la ligne s’il ne tient pas sur une ligne"></textarea></label>
-  <label class="champ">Sous-titre, pour tous (affiches et mails)<input id="fSousTitre" placeholder="avec Félix Bacik · élèves de la classe de violon"></label>
+  <label class="champ">Sous-titre<input id="fSousTitre" placeholder="avec Félix Bacik · élèves de la classe de violon"></label>
   <div class="champ">Date
     <div id="fPrec" class="bascule large" role="group">
       <button data-v="precise">Précise</button><button data-v="mois">Mois</button><button data-v="periode">Période</button><button data-v="aucune">Inconnue</button>
@@ -1960,20 +1969,24 @@ dialog.completer {
     <div id="fLieux" class="puces"></div>
     <input id="fLieuLibre" placeholder="Autre lieu, en toutes lettres">
   </div>
-  <label class="champ">Descriptif, pour « Demandez le programme »<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
-  <label class="champ">Élèves concernés, pour « Demandez le programme »<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
-  <label class="champ">Infos pratiques, pour « Demandez le programme »<textarea id="fPratique" rows="2" placeholder="Gratuit sur réservation auprès du conservatoire"></textarea></label>
-  <p class="aide"><button type="button" id="fOuVa" class="lien">Où va chaque champ ?</button></p>
   <div class="champ">État
     <div id="fStatut" class="bascule large" role="group">
       <button data-v="">Confirmé</button><button data-v="à confirmer">À confirmer</button><button data-v="en attente">En attente</button><button data-v="annulé">Annulé</button>
     </div>
   </div>
-  <label class="coche"><input id="fInterne" type="checkbox"> Réservé à l’équipe (absent de la version publique)</label>
+  <label class="coche"><input id="fInterne" type="checkbox"> Réservé à l’équipe (ni affiches, ni « Demandez le programme »)</label>
+  <!-- trois blocs (19/10/2026) : ce qui est au-dessus va partout ; puis le public, masqué pour une manifestation
+       réservée à l'équipe ; puis l'équipe -->
+  <fieldset id="fPublic" class="public">
+    <legend>Pour « Demandez le programme »</legend>
+    <label class="champ">Descriptif<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
+    <label class="champ">Élèves concernés<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
+    <label class="champ">Infos pratiques<textarea id="fPratique" rows="2" placeholder="Gratuit sur réservation auprès du conservatoire"></textarea></label>
+  </fieldset>
   <fieldset class="interne">
     <legend>Pour l’équipe seulement</legend>
     <label class="champ">Accompagnement<input id="fAccomp" list="accomps"></label>
-    <label class="champ">Remarque (organisation)<textarea id="fRemarque" rows="2"></textarea></label>
+    <label class="champ">Remarque<textarea id="fRemarque" rows="2" placeholder="Organisation, matériel, qui fait quoi…"></textarea></label>
   </fieldset>
   <details class="plus">
     <summary>Libellé de date imposé</summary>
@@ -5190,6 +5203,7 @@ function remplirFiche() {
   set('#fPratique', e.pratique);
   $$('#fStatut button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === e.statut)));
   $('#fInterne').checked = e.interne;
+  $('#fPublic').hidden = e.interne; /* réservé à l'équipe : les champs du public ne servent à rien (19/10/2026) */
   set('#fAccomp', e.accomp);
   set('#fRemarque', e.remarque);
   set('#fLibelle', e.libelle);
@@ -5420,6 +5434,7 @@ function initListe() {
   $('#fInterne').onchange = () => {
     editSnap = null;
     modifier('interne', $('#fInterne').checked);
+    remplirFiche();
   };
   $('#fSupprimer').onclick = () => supprimer(selId);
   $('#fDupliquer').onclick = () => {
@@ -6748,6 +6763,14 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-19 13:25',
+    v: '0.37',
+    items: [
+      'Fiche en trois temps : en haut, ce qui va partout (titre, sous-titre, date, heure, lieu, état) ; puis le bloc « Pour « Demandez le programme » » (descriptif, élèves concernés, infos pratiques) ; puis « Pour l’équipe seulement ». Le bloc du public disparaît quand la manifestation est réservée à l’équipe (son contenu est gardé).',
+      'Le lien « Où va chaque champ ? » quitte la fiche (le tableau reste dans menu ⋯ → Aide).'
+    ]
+  },
+  {
     d: '2026-10-19 13:15',
     v: '0.36',
     items: ['La couleur « équipe » (remarques, étiquette, date des manifestations internes) passe du violet à une prune sourde, qui s’accorde mieux aux couleurs des lieux.']
@@ -7061,7 +7084,6 @@ function initBoutons() {
     $('[data-act=nouveau]').hidden = true;
   }
   if (TACTILE) $('#aideClavier').hidden = true; /* pas de clavier : pas de raccourcis ; le reste de l'aide sert partout */
-  $('#fOuVa').onclick = () => $('#aide').showModal();
   $('#mMaj').onclick = () => socle.mettreAJourAppli();
   const menu = $('#menu');
   $('#bMenu').onclick = ev => {
