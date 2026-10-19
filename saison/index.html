@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019080650">
+<meta name="officious-page" content="20261019081339">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1430,7 +1430,6 @@ button.lien {
     serif;
   color: #8a929c;
   break-inside: avoid;
-  break-after: avoid;
 }
 .a3-vac::before,
 .a3-vac::after {
@@ -4239,6 +4238,10 @@ function lieuDe(e) {
   if (B) return { cle: '', nom: e.lieu, court: reste || e.lieu, libre: true, couleur: B.couleur, hex: COULEURS[B.couleur] };
   return { cle: '', nom: e.lieu, libre: true, hex: COULEURS.gris }; /* autres lieux : la cinquième couleur */
 }
+/** Couleur franche, pour le papier (affiches). */
+function vif(L) {
+  return L ? COULEURS_VIVES[L.couleur] || COULEURS_VIVES.gris : '';
+}
 function reglage(cle) {
   const r = doc.reglages.find(x => x.cle === cle);
   return r ? r.val : '';
@@ -4499,7 +4502,7 @@ function visible(e) {
 }
 
 /** Bloc date commun à la liste et à l'affiche : jour de la semaine, quantième (couleur du lieu), mois. */
-function blocDate(e, sansMois) {
+function blocDate(e, sansMois, papier) {
   const a = jour(e.d1),
     b = jour(e.d2 || e.d1),
     n = ecartJours(e.d1, e.d2 || e.d1);
@@ -4530,7 +4533,7 @@ function blocDate(e, sansMois) {
     bas = mo(a);
   }
   const L = lieuDe(e);
-  const coul = L && L.hex ? ' style="--c:' + L.hex + '"' : '';
+  const coul = L && L.hex ? ' style="--c:' + (papier ? vif(L) : L.hex) + '"' : '';
   return (
     '<div class="bdate"' +
     coul +
@@ -5363,7 +5366,7 @@ function ligneA3(e) {
   /* lieu : nom court dans sa couleur (« Salle Schubert », « CCED »), la légende donne les bâtiments (19/10/2026) */
   const quand = [
     e.heures ? esc(typo(libHeures(e.heures))) : '',
-    L ? '<span class="a3-lieu" style="color:' + (COULEURS_VIVES[L.couleur] || COULEURS_VIVES.gris) + '">' + rich(nomCourt(L)) + '</span>' : ''
+    L ? '<span class="a3-lieu" style="color:' + vif(L) + '">' + rich(nomCourt(L)) + '</span>' : ''
   ].filter(Boolean);
   return (
     '<li class="a3-ev' +
@@ -5371,7 +5374,7 @@ function ligneA3(e) {
     '"><span class="a3-d' +
     (large ? ' large' : '') +
     '" style="color:' +
-    (L ? L.hex : '#1f2933') +
+    (L ? vif(L) : '#1f2933') +
     '"><small>' +
     jr +
     '</small>' +
@@ -5401,7 +5404,7 @@ function pageA3() {
     '</header>'; /* sans le filet tricolore (François, 18/10/2026) */
   /* une colonne par période (François, 18/10/2026 : par mois, trop de blanc), les mois en intertitres */
   const pers = periodes(doc);
-  let vu = false;
+  const sections = [];
   h += '<div class="a3-grille">';
   for (const p of pers) {
     const L = evts.filter(e => {
@@ -5423,14 +5426,15 @@ function pageA3() {
     /* toute l'année est sous les yeux : pas de nom de période, seulement une coupure qui dit les vacances entre
        deux périodes (19/10/2026) ; une période sans date n'apparaît pas */
     if (!L.length) continue;
-    h +=
-      (vu ? '<div class="a3-vac" aria-label="Vacances"><span>vacances</span></div>' : '') +
-      '<section class="a3-mois">' +
-      corps +
-      '</section>';
-    vu = true;
+    sections.push(corps);
   }
-  if (!vu) h += '<p class="a3-rien">Programme à venir</p>';
+  /* la coupure « vacances » ferme la période qui s'achève : rangée dans son dernier mois, elle reste en bas de la
+     colonne plutôt qu'en tête de la suivante (19/10/2026) */
+  const VAC = '<div class="a3-vac" aria-label="Vacances"><span>vacances</span></div>';
+  h += sections
+    .map((c, i) => '<section class="a3-mois">' + (i < sections.length - 1 ? c.replace(/<\/div>$/, VAC + '</div>') : c) + '</section>')
+    .join('');
+  if (!sections.length) h += '<p class="a3-rien">Programme à venir</p>';
   h += '</div><footer class="pg-pied">';
   h += legende(evts);
   if (adr) h += '<div class="pg-adresse">' + rich(adr) + '</div>';
@@ -5448,7 +5452,7 @@ function legende(evts) {
   return (
     '<div class="pg-legende">' +
     [...parCouleur]
-      .map(([c, nom]) => '<span><i class="a3-pt" style="background:' + (COULEURS[c] || COULEURS.gris) + '"></i>' + rich(nom) + '</span>')
+      .map(([c, nom]) => '<span><i class="a3-pt" style="background:' + (COULEURS_VIVES[c] || COULEURS_VIVES.gris) + '"></i>' + rich(nom) + '</span>')
       .join('') +
     '</div>'
   );
@@ -5507,7 +5511,7 @@ function ajusterA3(pg) {
 function ligneAffiche(e, interne) {
   const L = lieuDe(e);
   let h =
-    '<li class="pg-ev' + (e.statut === 'annulé' ? ' annule' : '') + '">' + blocDate(e, true) + '<div class="pg-corps">';
+    '<li class="pg-ev' + (e.statut === 'annulé' ? ' annule' : '') + '">' + blocDate(e, true, true) + '<div class="pg-corps">';
   const tags = [];
   if (interne && e.statut)
     tags.push(
@@ -5533,7 +5537,7 @@ function ligneAffiche(e, interne) {
       '</div>';
   /* le lieu toujours au même endroit : colonne de droite, filet de sa couleur, nom court (la légende donne les
      bâtiments) — choix du 18/10/2026 */
-  h += '</div><div class="pg-lieu"' + (L ? ' style="--c:' + L.hex + '">' + rich(nomCourt(L)) : '>') + '</div>';
+  h += '</div><div class="pg-lieu"' + (L ? ' style="--c:' + vif(L) + '">' + rich(nomCourt(L)) : '>') + '</div>';
   return h + '</li>';
 }
 
@@ -6375,6 +6379,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 10:25',
+    v: '0.29',
+    items: [
+      'Affiches : les dates (et la colonne des lieux de l’A4) passent aux couleurs franches, comme les lieux de l’A3.',
+      'Affiche A3 : la coupure « vacances » ferme la période qui s’achève ; elle reste en bas de colonne plutôt qu’en tête de la suivante.'
+    ]
+  },
   {
     d: '2026-10-19 10:30',
     v: '0.28',
