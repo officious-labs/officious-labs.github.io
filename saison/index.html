@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261018233102">
+<meta name="officious-page" content="20261019074538">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1418,19 +1418,26 @@ button.lien {
   column-fill: auto;
   margin: 5mm 0 4mm;
 }
-.a3-mois {
-  border-top: 0.6mm solid #2e5e8c;
-  padding-top: 1.5mm;
-  margin-bottom: calc(3.5mm * var(--s));
-}
-.a3-mois h2 {
-  break-after: avoid;
-  margin: 0 0 calc(1.6mm * var(--s));
+.a3-vac {
+  /* coupure entre deux périodes : les vacances */
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  margin: calc(3.2mm * var(--s)) 0 calc(2.4mm * var(--s));
   font:
-    italic 500 calc(12.5pt * var(--s)) / 1.1 Lora,
+    italic calc(8.5pt * var(--s)) / 1 Lora,
     Georgia,
     serif;
-  color: #2e5e8c;
+  color: #8a929c;
+  break-inside: avoid;
+  break-after: avoid;
+}
+.a3-vac::before,
+.a3-vac::after {
+  content: '';
+  flex: 1;
+  border-top: 0.5mm solid #2e5e8c;
+  opacity: 0.55;
 }
 .a3-sm,
 .a3-ev {
@@ -5386,7 +5393,8 @@ function pageA3() {
     '</header>'; /* sans le filet tricolore (François, 18/10/2026) */
   /* une colonne par période (François, 18/10/2026 : par mois, trop de blanc), les mois en intertitres */
   const pers = periodes(doc);
-  h += '<div class="a3-grille" style="--n:' + pers.length + '">';
+  let vu = false;
+  h += '<div class="a3-grille">';
   for (const p of pers) {
     const L = evts.filter(e => {
       const q = periodeDe(e, pers);
@@ -5402,13 +5410,17 @@ function pageA3() {
       }
       corps += ligneA3(e);
     }
+    /* toute l'année est sous les yeux : pas de nom de période, seulement une coupure qui dit les vacances entre
+       deux périodes (19/10/2026) ; une période sans date n'apparaît pas */
+    if (!L.length) continue;
     h +=
-      '<section class="a3-mois"><h2>' +
-      esc(typo(p.nom)) +
-      '</h2>' +
-      (L.length ? '<ol>' + corps + '</ol>' : '<p class="a3-rien">Programme à venir</p>') +
-      '</section>';
+      (vu ? '<div class="a3-vac" aria-label="Vacances"><span>vacances</span></div>' : '') +
+      '<section class="a3-mois"><ol>' +
+      corps +
+      '</ol></section>';
+    vu = true;
   }
+  if (!vu) h += '<p class="a3-rien">Programme à venir</p>';
   h += '</div><footer class="pg-pied">';
   h += legende(evts);
   if (adr) h += '<div class="pg-adresse">' + rich(adr) + '</div>';
@@ -6328,6 +6340,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 09:55',
+    v: '0.27',
+    items: [
+      'Affiche A3 : plus de nom de période (« Novembre – décembre 2026 ») ; entre deux périodes, une simple coupure marquée « vacances ». Les noms de mois restent. L’A4 garde le nom de sa période.'
+    ]
+  },
   {
     d: '2026-10-19 02:00',
     v: '0.26',
