@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019130750">
+<meta name="officious-page" content="20261019131223">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1717,8 +1717,26 @@ button.lien {
   cursor: pointer;
   min-width: 0;
 }
+.cal-j.vac {
+  /* vacances scolaires : hachures légères */
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--pale) 16%, transparent) 6px 8px);
+}
+.alerte-vac {
+  color: #8a5a00;
+  font-size: 0.85rem;
+}
+p.alerte-vac {
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  background: #fff4dc;
+}
+p.alerte-vac::before,
+span.alerte-vac::before {
+  content: '⚠ ';
+}
 .cal-j.hors {
-  background: var(--fond);
+  background-color: var(--fond);
 }
 .cal-j.hors .n {
   color: var(--pale);
@@ -1976,6 +1994,7 @@ dialog.completer {
     </div>
     <label class="coche"><input id="fSemaine" type="checkbox"> Écrire « semaine du… »</label>
   </div>
+  <p class="alerte-vac" id="fVacAlerte" hidden></p>
   <label class="champ" id="fMoisBloc" hidden>Mois<input id="fMois" type="month"></label>
   <label class="champ" id="fPeriodeBloc" hidden>Période<select id="fPeriode"></select></label>
   <p class="aide" id="fAucuneAide" hidden>L’événement reste dans « À dater », en haut de la liste ; il n’ira ni sur les affiches ni dans « Demandez le programme ».</p>
@@ -4443,6 +4462,15 @@ function libFlou(e) {
   const p = e.d1 && periodes(doc).find(p => p.d1 === e.d1 && p.d2 === e.d2);
   return p ? p.nom : libApprox(e);
 }
+/** « vacances de la Toussaint », « vacances d’hiver »… */
+function libVacances(v) {
+  return 'vacances ' + (/^[aeéèiouh]/i.test(v.nom) ? 'd’' : /^Toussaint$/i.test(v.nom) ? 'de la ' : 'de ') + v.nom;
+}
+/** Vacances scolaires qui touchent l'événement (date réelle seulement), ou null. */
+function vacancesDe(e) {
+  if (!estDatee(e)) return null;
+  return vacances(doc).find(v => e.d1 <= v.d2 && (e.d2 || e.d1) >= v.d1) || null;
+}
 function dateLongue(iso) {
   const d = jour(iso);
   return d.getDate() + NBSP + MOIS[d.getMonth()] + ' ' + d.getFullYear();
@@ -5096,6 +5124,7 @@ function apercuSaisie() {
     (r.soustitre ? ' — ' + rich(r.soustitre) : '') +
     (L ? ' · ' + pastille(L) : '') +
     (r.lieu && !lieux(doc)[r.lieu] ? ' <span class="flou">(lieu hors liste)</span>' : '') +
+    (vacancesDe(r) ? ' <span class="alerte-vac">pendant les ' + esc(libVacances(vacancesDe(r))) + '</span>' : '') +
     (plus.length ? '<br>' + plus.join(' · ') : '');
   a.className = 'ok';
   return r;
@@ -5238,6 +5267,10 @@ function remplirFiche() {
   $('#fMoisBloc').hidden = mode !== 'mois';
   $('#fPeriodeBloc').hidden = mode !== 'periode';
   $('#fAucuneAide').hidden = mode !== 'aucune';
+  /* pendant des vacances scolaires : le signaler (19/10/2026) */
+  const vac = vacancesDe(e);
+  $('#fVacAlerte').hidden = !vac;
+  if (vac) $('#fVacAlerte').textContent = 'Pendant les ' + libVacances(vac) + ' (du ' + jourMois(jour(vac.d1)) + ' au ' + jourMois(jour(vac.d2)) + ').';
   set('#fMois', e.aDater && moisEntier(e) >= 0 ? e.d1.slice(0, 7) : '');
   $('#fPeriode').innerHTML =
     '<option value="">Choisir…</option>' +
@@ -5405,6 +5438,8 @@ function initListe() {
     precChoisie = '';
     changed();
     toutAfficher();
+    const vac = vacancesDe(e);
+    if (vac) toast('Attention : pendant les ' + libVacances(vac));
   });
   /* précision de la date */
   const fixeFenetre = (d1, d2, aDater) => {
@@ -5610,6 +5645,8 @@ function afficherCalendrier() {
   h += ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.']
     .map(j => '<div class="cal-tete">' + j + '</div>')
     .join('');
+  const VAC = vacances(doc); /* jours de vacances scolaires : fond hachuré (19/10/2026) */
+  const vacJ = iso => VAC.find(v => iso >= v.d1 && iso <= v.d2);
   const d = new Date(debut);
   for (let k = 0; k < 42; k++) {
     const iso = isoDe(d);
@@ -5620,9 +5657,12 @@ function afficherCalendrier() {
       (d.getMonth() !== m - 1 ? ' hors' : '') +
       (iso === auj0 ? ' auj' : '') +
       (iso < auj0 ? ' passe' : '') +
+      (vacJ(iso) ? ' vac' : '') +
       (iso === calJour ? ' choisi' : '') +
       (evts.length ? ' plein' : '') +
-      '" data-jour="' +
+      '"' +
+      (vacJ(iso) ? ' title="' + esc(majuscule(libVacances(vacJ(iso)))) + '"' : '') +
+      ' data-jour="' +
       iso +
       '"><span class="n">' +
       d.getDate() +
@@ -5858,7 +5898,7 @@ function pageA3() {
 function nomVacances(fin) {
   /* les vacances qui commencent dans le mois qui précède la fin de la période, ou juste après */
   const v = vacances(doc).find(v => v.d1 <= plusJours(fin, 10) && v.d2 >= plusJours(fin, -30));
-  if (v) return 'vacances ' + (/^[aeéèiouh]/i.test(v.nom) ? 'd’' : /^Toussaint$/i.test(v.nom) ? 'de la ' : 'de ') + v.nom;
+  if (v) return libVacances(v);
   const m = +fin.slice(5, 7);
   return m >= 9 && m <= 11
     ? 'vacances de la Toussaint'
@@ -6851,6 +6891,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 15:50',
+    v: '0.46',
+    items: [
+      'Calendrier : les jours de vacances scolaires sont hachurés (le nom des vacances s’affiche au survol).',
+      'Une date pendant des vacances est signalée : dans la fiche (encadré « Pendant les vacances d’hiver… »), par un message quand on change la date, et dans l’aperçu de la saisie rapide.'
+    ]
+  },
   {
     d: '2026-10-19 15:40',
     v: '0.45',
