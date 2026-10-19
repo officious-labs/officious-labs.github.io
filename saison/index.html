@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019141626">
+<meta name="officious-page" content="20261019181841">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1333,6 +1333,13 @@ button.lien {
   min-height: 12rem;
 }
 /* mail « Équipe » : aperçu dans la police par défaut d'Outlook, comme il arrivera */
+/* familles : aperçu à la largeur d'un téléphone, là où le mail est surtout lu (19/10/2026) */
+#mailApercu:not(.simple) {
+  width: min(100%, 390px);
+  margin: 0 auto;
+  border-radius: 18px;
+  box-shadow: 0 0 0 6px #e9ecef;
+}
 #mailApercu.simple {
   padding: 14px 16px;
   font-family: Aptos, Calibri, Arial, sans-serif;
@@ -6427,11 +6434,8 @@ function evtsMail(p, avenir) {
 function objetMail(p) {
   return typo('Demandez le programme : ' + p.nom.charAt(0).toLowerCase() + p.nom.slice(1));
 }
-/* ---- mail « Familles » : pensé pour la lecture sur téléphone, la clarté avant tout (François, 18/10/2026).
-   En-tête court, « En bref » (une ligne par événement), puis un bloc par événement rangé sous son mois : colonne de
-   date à gauche, à droite titre, quand et où (une ligne par date), description, élèves concernés, infos pratiques. */
+/* ---- mail « Familles » : pensé pour la lecture sur téléphone, la clarté avant tout (voir htmlMail). */
 
-const BLEU_ELEVES = '#0070C0'; /* « Élèves concernés » : le repère des mails du conservatoire */
 const JOURS_C = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 
 /** Champs publics comparés pour regrouper deux dates d'un même événement. */
@@ -6472,68 +6476,6 @@ function groupes(evts) {
   }
   return G;
 }
-/** « mer. 29 avril », « 2–3 mai », « 30 mai – 2 juin » (pour « En bref »). */
-function dateCourte(g) {
-  const a = jour(g.d1),
-    b = jour(g.d2);
-  if (g.d1 === g.d2) return JOURS_C[a.getDay()] + ' ' + jourMois(a);
-  if (a.getMonth() === b.getMonth()) return quantieme(a) + '–' + jourMois(b);
-  return jourMois(a) + ' – ' + jourMois(b);
-}
-/** Une ligne « quand et où » : « Samedi 2 mai, 18 h 30 — Église Saint-Pierre de Dreux ». En HTML, le lieu prend
-    sa couleur, celle de l'affiche (demandé par la direction) ; un lieu saisi en toutes lettres prend le gris des autres lieux. */
-function quandOu(e, html) {
-  const L = lieuDe(e);
-  let q = majuscule(libDate(e));
-  if (e.heures) q += ', ' + libHeures(e.heures);
-  else if (e.heureInconnue) q += ', horaire à préciser';
-  if (!html) return typo(q) + (L ? ' — ' + typo(L.nom) : '');
-  if (!L) return esc(typo(q));
-  const nom = '<b style="color:' + L.hex + '">' + esc(typo(L.nom)) + '</b>';
-  return esc(typo(q)) + ' — ' + nom;
-}
-/** Couleur des dates d'un bloc : celle de son lieu (de l'affiche) si toutes ses dates y ont lieu, sinon l'encre. */
-function couleurDate(g) {
-  const c = g.evts.map(e => {
-    const L = lieuDe(e);
-    return L ? L.hex : ENCRE;
-  });
-  return c.every(x => x === c[0]) ? c[0] : ENCRE;
-}
-/** Colonne de date d'un bloc : jour abrégé, quantième (ou « 2–3 »), dans le bleu de Lucé. */
-function colonneDate(g) {
-  const a = jour(g.d1),
-    b = jour(g.d2);
-  const memeMois = a.getMonth() === b.getMonth();
-  const haut = g.d1 === g.d2 ? JOURS_C[a.getDay()] : JOURS_C[a.getDay()] + '–' + JOURS_C[b.getDay()];
-  const num =
-    g.d1 === g.d2
-      ? a.getDate() === 1
-        ? '1<sup>er</sup>'
-        : a.getDate()
-      : memeMois
-        ? a.getDate() + '–' + b.getDate()
-        : a.getDate();
-  const bas = memeMois ? '' : 'au ' + jourMois(b);
-  const petit = 'font-family:' + MF + ';font-size:11px;line-height:14px;color:' + GRIS + ';';
-  return (
-    '<div style="' +
-    petit +
-    '">' +
-    haut +
-    '</div>' +
-    '<div style="font-family:' +
-    MF +
-    ';font-size:' +
-    (String(num).length > 3 ? 19 : 22) /* « 22–23 » tient dans la colonne */ +
-    'px;line-height:26px;font-weight:bold;color:' +
-    couleurDate(g) +
-    ';white-space:nowrap">' +
-    num +
-    '</div>' +
-    (bas ? '<div style="' + petit + '">' + esc(bas) + '</div>' : '')
-  );
-}
 /** Texte public saisi → HTML de messagerie : les lignes « - … » deviennent une liste à puces. */
 function paragraphesMail(t, style) {
   let h = '',
@@ -6560,120 +6502,88 @@ function paragraphesMail(t, style) {
   vider();
   return h;
 }
+/**
+ * « Demandez le programme » (19/10/2026, refait pour le téléphone après une relecture sur téléphone) : une seule colonne,
+ * sans tableau ni « En bref » ; pour chaque date, toujours dans cet ordre et une information par ligne : le jour (gras,
+ * noir), le titre, le sous-titre, l'heure, le lieu (seule couleur, celle du lieu), puis descriptif, élèves concernés et
+ * infos pratiques. Une manifestation à plusieurs dates : le titre d'abord, puis chaque date avec son heure et son lieu.
+ */
 function htmlMail(p, avenir) {
   const G = groupes(evtsMail(p, avenir));
-  const adr = reglage('adresse');
-  const txt = (taille, coul, plus = '') =>
-    'font-family:' +
-    MF +
-    ';font-size:' +
-    taille +
-    'px;line-height:' +
-    Math.round(taille * 1.4) +
-    'px;color:' +
-    coul +
-    ';' +
-    plus;
-  let h = '<div style="margin:0;padding:0 10px;font-family:' + MF + ';color:' + ENCRE + '">';
-  h +=
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:620px;border-collapse:collapse">';
-  h +=
-    '<tr><td colspan="2" style="padding:0;' +
-    txt(22, COULEURS.bleu, 'font-weight:bold;') /* titres dans la couleur du conservatoire */ +
-    '">' +
-    esc(typo('Demandez le programme !')) +
-    '</td></tr>';
-  h += '<tr><td colspan="2" style="padding:0 0 14px 0;' + txt(15, GRIS) + '">' + esc(typo(p.nom)) + '</td></tr>';
-  if (!G.length)
-    return h + '<tr><td colspan="2" style="' + txt(15, ENCRE) + '">Programme à venir.</td></tr></table></div>';
-  /* en bref */
-  h +=
-    '<tr><td colspan="2" style="padding:0 0 4px 0;' +
-    txt(11, GRIS, 'font-weight:bold;letter-spacing:1px;') +
-    '">EN BREF</td></tr>';
-  h +=
-    '<tr><td colspan="2" style="padding:0 0 6px 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">';
-  for (const g of G)
-    h +=
-      '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap;vertical-align:top;' +
-      txt(14, couleurDate(g), 'font-weight:bold;') +
-      '">' +
-      esc(dateCourte(g)) +
-      '</td><td style="padding:2px 0;vertical-align:top;' +
-      txt(14, ENCRE) +
-      '">' +
-      rich(g.titre) +
-      (g.soustitre ? ' – ' + rich(g.soustitre) : '') +
-      (g.reserve ? ' <span style="color:' + GRIS + '">(sous réserve)</span>' : '') +
-      '</td></tr>';
-  h += '</table></td></tr>';
-  /* le détail, par mois */
+  const t = (taille, coul, plus = '') =>
+    'font-family:' + MF + ';font-size:' + taille + 'px;line-height:' + Math.round(taille * 1.4) + 'px;color:' + coul + ';margin:0;' + plus;
+  const ligne = (html, taille, coul, plus) => '<div style="' + t(taille, coul, plus) + '">' + html + '</div>';
+  const jourL = e => ligne(esc(typo(majuscule(libDate(e)))), 15, ENCRE, 'font-weight:bold;');
+  const heure = e =>
+    e.heures
+      ? ligne(esc(majuscule(typo(libHeures(e.heures)))), 15, ENCRE)
+      : e.heureInconnue
+        ? ligne('Horaire à préciser', 15, GRIS)
+        : '';
+  const lieu = e => {
+    const L = lieuDe(e);
+    return L ? ligne(esc(typo(L.nom)), 15, vif(L), 'font-weight:bold;') : '';
+  };
+  let h = '<div style="margin:0;padding:0 10px;max-width:620px;font-family:' + MF + ';color:' + ENCRE + '">';
+  h += ligne(esc(typo('Demandez le programme !')), 24, COULEURS.bleu, 'font-weight:bold;');
+  h += ligne(esc(typo(p.nom)), 16, GRIS, 'padding-bottom:6px;');
+  if (!G.length) return h + ligne('Programme à venir.', 15, ENCRE, 'padding-top:12px;') + '</div>';
   let mois = '';
   for (const g of G) {
     const m = MOIS[jour(g.d1).getMonth()];
     if (m !== mois) {
       mois = m;
-      h +=
-        '<tr><td colspan="2" style="padding:18px 0 2px 0;border-bottom:1px solid ' +
-        FILET +
-        ';' +
-        txt(12, COULEURS.bleu, 'font-weight:bold;letter-spacing:1px;') +
-        '">' +
-        m.toUpperCase() +
-        '</td></tr>';
+      h += ligne(m.toUpperCase(), 13, COULEURS.bleu, 'font-weight:bold;letter-spacing:1px;padding-top:22px;');
     }
-    h +=
-      '<tr><td width="58" style="width:58px;padding:12px 10px 12px 0;vertical-align:top;text-align:center;border-bottom:1px solid ' +
-      FILET +
-      '">' +
-      colonneDate(g) +
-      '</td><td style="padding:12px 0;vertical-align:top;border-bottom:1px solid ' +
-      FILET +
-      '">';
-    h +=
-      '<div style="' +
-      txt(16, ENCRE, 'font-weight:bold;') +
-      '">' +
+    h += '<div style="border-top:1px solid ' + FILET + ';padding:12px 0 14px 0">';
+    const un = g.evts.length === 1;
+    if (un) h += jourL(g.evts[0]);
+    h += ligne(
       rich(g.titre) +
-      (g.reserve ? ' <span style="font-weight:normal;font-size:13px;color:' + GRIS + '">(sous réserve)</span>' : '') +
-      '</div>';
-    if (g.soustitre) h += '<div style="' + txt(15, ENCRE) + '">' + rich(g.soustitre) + '</div>';
-    for (const e of g.evts) h += '<div style="' + txt(14, ENCRE) + '">' + quandOu(e, true) + '</div>';
-    if (g.detail) h += '<div style="padding-top:4px"></div>' + paragraphesMail(g.detail, txt(14, '#3e4652'));
-    if (g.eleves)
-      h +=
-        '<div style="padding-top:4px;' +
-        txt(14, BLEU_ELEVES) +
-        '"><b>Élèves concernés' +
-        NBSP +
-        ':</b> ' +
-        rich(g.eleves) +
-        '</div>';
-    if (g.pratique)
-      h += '<div style="padding-top:4px"></div>' + paragraphesMail(g.pratique, txt(13, GRIS, 'font-style:italic;'));
-    h += '</td></tr>';
+        (g.reserve ? ' <span style="font-weight:normal;font-size:14px;color:' + GRIS + '">(sous réserve)</span>' : ''),
+      18,
+      ENCRE,
+      'font-weight:bold;padding-top:2px;'
+    );
+    if (g.soustitre) h += ligne(rich(g.soustitre), 15, '#3e4652');
+    if (un) h += heure(g.evts[0]) + lieu(g.evts[0]);
+    else for (const e of g.evts) h += '<div style="padding-top:4px">' + jourL(e) + heure(e) + lieu(e) + '</div>';
+    if (g.detail) h += '<div style="padding-top:6px">' + paragraphesMail(g.detail, t(15, '#3e4652')) + '</div>';
+    if (g.eleves) h += ligne('<b style="color:#3e4652">Élèves concernés' + NBSP + ':</b> ' + rich(g.eleves), 15, ENCRE, 'padding-top:6px;');
+    if (g.pratique) h += '<div style="padding-top:6px">' + paragraphesMail(g.pratique, t(14, GRIS, 'font-style:italic;')) + '</div>';
+    h += '</div>';
   }
-  if (adr) h += '<tr><td colspan="2" style="padding:12px 0 0 0;' + txt(12, GRIS) + '">' + rich(adr) + '</td></tr>';
-  return h + '</table></div>';
+  const adr = reglage('adresse');
+  if (adr) h += ligne(rich(adr), 12, GRIS, 'border-top:1px solid ' + FILET + ';padding-top:12px;');
+  /* exposants (1re, 2e) sans écarter les lignes */
+  return (h + '</div>').replace(/<sup>/g, '<sup style="font-size:70%;line-height:0;vertical-align:super">');
 }
+/** Version texte, dans le même ordre. */
 function texteMail(p, avenir) {
   const G = groupes(evtsMail(p, avenir));
   const net = s => typo(s).replace(/\*/g, '');
-  const out = [net('Demandez le programme !'), typo(p.nom), ''];
-  if (!G.length) return out.concat('Programme à venir.').join('\n');
-  out.push('EN BREF');
-  for (const g of G)
-    out.push(
-      dateCourte(g) + ' : ' + net(g.titre) + (g.soustitre ? ' – ' + net(g.soustitre) : '') + (g.reserve ? ' (sous réserve)' : '')
-    );
+  const out = [net('Demandez le programme !'), typo(p.nom)];
+  if (!G.length) return out.concat('', 'Programme à venir.').join('\n');
+  const quand = e => {
+    const r = [majuscule(net(libDate(e)))];
+    if (e.heures) r.push(majuscule(net(libHeures(e.heures))));
+    else if (e.heureInconnue) r.push('Horaire à préciser');
+    const L = lieuDe(e);
+    if (L) r.push(net(L.nom));
+    return r;
+  };
   let mois = '';
   for (const g of G) {
     const m = MOIS[jour(g.d1).getMonth()];
     if (m !== mois) out.push('', m.toUpperCase());
     mois = m;
-    out.push('', net(g.titre) + (g.reserve ? ' (sous réserve)' : ''));
+    out.push('');
+    const un = g.evts.length === 1;
+    if (un) out.push(majuscule(net(libDate(g.evts[0]))));
+    out.push(net(g.titre) + (g.reserve ? ' (sous réserve)' : ''));
     if (g.soustitre) out.push(net(g.soustitre));
-    for (const e of g.evts) out.push(quandOu(e));
+    if (un) out.push(...quand(g.evts[0]).slice(1));
+    else for (const e of g.evts) out.push(...quand(e));
     for (const l of (g.detail || '').split('\n')) if (l.trim()) out.push(net(l.replace(/^\s*[-•]\s+/, '• ')));
     if (g.eleves) out.push('Élèves concernés' + NBSP + ': ' + net(g.eleves));
     for (const l of (g.pratique || '').split('\n')) if (l.trim()) out.push(net(l));
@@ -7148,6 +7058,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 21:00',
+    v: '0.52',
+    items: [
+      '« Demandez le programme » refait pour le téléphone : plus de « En bref » ni de colonne de date ; pour chaque date, une information par ligne (jour, titre, sous-titre, heure, lieu en couleur), puis descriptif, élèves concernés et infos pratiques. Dates en noir, la couleur seulement pour le lieu.',
+      'L’aperçu du mail aux familles s’affiche à la largeur d’un téléphone.'
+    ]
+  },
   {
     d: '2026-10-19 17:00',
     v: '0.51',
