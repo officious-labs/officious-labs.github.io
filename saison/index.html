@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019084245">
+<meta name="officious-page" content="20261019085813">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4674,11 +4674,38 @@ function afficherListe() {
     h += '</section>';
   }
   liste.innerHTML = h;
-  /* la période en cours vient sous les yeux à l'ouverture */
+  /* à l'ouverture, la prochaine date vient en haut de l'écran (19/10/2026) ; une seule fois, pas à chaque
+     relecture du fichier */
   if (!afficherListe.vu) {
     afficherListe.vu = true;
-    const cur = $$('.periode', liste).find(s => !s.classList.contains('passee'));
-    if (cur && cur !== liste.firstElementChild) cur.scrollIntoView({ block: 'start' });
+    const proch = doc.evts
+      .filter(e => visible(e) && e.d2 >= auj0 && e.statut !== 'annulé')
+      .sort(ordre)[0];
+    const li = proch && $('.ev[data-id="' + proch.id + '"]', liste);
+    if (li) {
+      /* la première date d'une période : on montre aussi le titre de la période */
+      const cible = li.parentElement.firstElementChild === li ? li.closest('.periode') : li;
+      /* après le chargement des polices : sinon les hauteurs changent encore et la date file sous l'en-tête */
+      /* une fois les polices chargées, puis encore un peu plus tard si personne n'a fait défiler entre-temps : un
+         bandeau du socle ou une relecture peuvent encore décaler la page juste après l'ouverture */
+      const id = proch.id,
+        sc = document.scrollingElement;
+      let pos = -1;
+      const aller = () => {
+        const c = $('.ev[data-id="' + id + '"]', liste);
+        if (!c || (pos >= 0 && Math.abs(sc.scrollTop - pos) > 2)) return;
+        /* calcul à la main : la liste arrondie (overflow caché) fausse scrollIntoView sous l'en-tête collé */
+        const vise = c.parentElement.firstElementChild === c ? c.closest('.periode') : c,
+          haut = ($('#ajout').hidden ? $('#tete') : $('#ajout')).getBoundingClientRect().bottom + 8;
+        sc.scrollTop += vise.getBoundingClientRect().top - haut;
+        pos = sc.scrollTop;
+      };
+      if (cible !== liste.firstElementChild)
+        (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
+          requestAnimationFrame(aller);
+          setTimeout(aller, 600);
+        });
+    }
   }
 }
 
@@ -6418,6 +6445,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 11:20',
+    v: '0.32',
+    items: [
+      'À l’ouverture, la liste défile jusqu’à la prochaine date (les dates annulées sont sautées), juste sous la barre d’ajout. Le calendrier s’ouvrait déjà sur le mois en cours.'
+    ]
+  },
   {
     d: '2026-10-19 11:00',
     v: '0.31',
