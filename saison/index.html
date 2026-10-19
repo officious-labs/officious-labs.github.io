@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019111601">
+<meta name="officious-page" content="20261019111854">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -709,6 +709,9 @@ body.avec-fiche #principal {
 }
 .ev:first-child {
   border-top: 0;
+}
+.ev.interne {
+  background: color-mix(in srgb, var(--equipe) 7%, var(--papier));
 }
 .ev:hover {
   background: var(--survol);
@@ -4780,7 +4783,7 @@ function ligneHtml(e) {
         ETIQUETTES[e.statut] +
         '</span>'
     );
-  if (e.interne) tags.push('<span class="tag t-interne">équipe</span>');
+  /* réservé à l'équipe : fond prune très léger plutôt qu'une étiquette (19/10/2026) */
   let h =
     '<li class="ev' +
     (e.statut === 'annulé' ? ' annule' : '') +
@@ -6787,6 +6790,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 13:45',
+    v: '0.39',
+    items: ['Liste : les manifestations réservées à l’équipe ont un fond prune très léger ; l’étiquette « équipe » disparaît (la date reste en prune).']
+  },
   {
     d: '2026-10-19 13:35',
     v: '0.38',
