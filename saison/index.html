@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019110924">
+<meta name="officious-page" content="20261019111601">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5140,6 +5140,14 @@ function ouvrirFiche(id) {
 }
 function fermerFiche() {
   const id = selId;
+  const e = evSel(),
+    avant = (() => {
+      try {
+        return JSON.parse(ficheAvant || '{}');
+      } catch (x) {
+        return {};
+      }
+    })();
   selId = null;
   $('#fiche').hidden = true;
   document.body.classList.remove('avec-fiche');
@@ -5147,6 +5155,24 @@ function fermerFiche() {
   $$('.ev.sel').forEach(x => x.classList.remove('sel'));
   const li = id && $('.ev[data-id="' + id + '"]');
   if (li) li.focus({ preventScroll: true });
+  /* date « à confirmer » ou « en attente » qu'on vient de compléter : proposer de la confirmer (19/10/2026) */
+  if (
+    e &&
+    (e.statut === 'à confirmer' || e.statut === 'en attente') &&
+    avant.statut === e.statut &&
+    JSON.stringify(e) !== ficheAvant
+  ) {
+    const st = e.statut;
+    toast('Modifications enregistrées. Toujours « ' + st + ' » : la confirmer ?', 'Confirmer', () => {
+      snapshot();
+      e.statut = '';
+      changed();
+      toutAfficher();
+      toast('Date confirmée');
+    }, 9000);
+    return true;
+  }
+  return false;
 }
 function remplirFiche() {
   const e = evSel();
@@ -5283,8 +5309,7 @@ function initListe() {
   $('#fValider').onclick = () => {
     if (document.activeElement) document.activeElement.blur();
     const change = JSON.stringify(evSel() || {}) !== ficheAvant;
-    fermerFiche();
-    if (change) toast('Modifications enregistrées');
+    if (!fermerFiche() && change) toast('Modifications enregistrées');
   };
   for (const [sel, champ] of [
     ['#fTitre', 'titre'],
@@ -6762,6 +6787,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 13:35',
+    v: '0.38',
+    items: [
+      'Quand on modifie une date « à confirmer » ou « en attente », la fiche propose en se fermant de la passer en « Confirmé » (bouton « Confirmer » dans le message).'
+    ]
+  },
   {
     d: '2026-10-19 13:25',
     v: '0.37',
