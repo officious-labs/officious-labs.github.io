@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019091716">
+<meta name="officious-page" content="20261019105038">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -470,6 +470,31 @@ sup {
   vertical-align: 0.42em;
 }
 
+/* bouton « recentrer », comme sur un GPS : revient à la prochaine date (ou au mois en cours) */
+.flottant {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 6;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: var(--papier);
+  color: var(--accent);
+  border: 1px solid var(--filet);
+  box-shadow: 0 3px 12px rgb(0 0 0 / 0.18);
+}
+.flottant[hidden] {
+  display: none;
+}
+.flottant .ico {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
 /* ---------- en-tête ---------- */
 #tete {
   position: sticky;
@@ -704,7 +729,23 @@ body.avec-fiche #principal {
   text-decoration: line-through;
   color: var(--pale);
 }
-.ev.annule .bd-num {
+.ev.annule .bdate.flou .bd-num {
+  font-size: 1.15rem;
+  color: var(--pale);
+  white-space: nowrap;
+}
+.bdate.flou.deux .bd-num {
+  font-size: 0.95rem;
+  line-height: 1.1;
+  text-align: center;
+}
+#fiche [hidden] {
+  display: none !important;
+}
+.a-dater h2 {
+  color: var(--gris);
+}
+.bd-num {
   color: var(--pale);
 }
 .bdate {
@@ -1839,6 +1880,7 @@ dialog.completer {
   <symbol id="i-affiche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(3 -1.5)"><rect x="5" y="2.8" width="14" height="18.4" rx="1.6"/><path d="M8.2 7h7.6M8.2 10.5h7.6M8.2 14h5"/></g><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="none" stroke="var(--papier)" stroke-width="2.4" stroke-linejoin="round"/><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="var(--accent)" stroke="none"/></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(2.5 -2.5) scale(0.95)"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></g><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="none" stroke="var(--papier)" stroke-width="2.4" stroke-linejoin="round"/><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="var(--accent)" stroke="none"/></symbol>
   <symbol id="i-equipe" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 19.5c0-3.9 2.9-6.4 6.5-6.4s6.5 2.5 6.5 6.4z"/><circle cx="16.6" cy="8.9" r="2.7" opacity=".6"/><path d="M15.4 13.3c.4-.1.8-.1 1.2-.1 2.9 0 4.9 2 4.9 5.2v1.1h-4.4c-.2-2.6-.8-4.6-1.7-6.2z" opacity=".6"/></symbol>
+  <symbol id="i-ici" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></symbol>
 </svg>
 <header id="tete">
   <h1 id="titre">Saison</h1>
@@ -1864,6 +1906,7 @@ dialog.completer {
 </header>
 
 <main id="principal">
+  <button id="bIci" class="flottant" hidden title="Revenir à la prochaine date" aria-label="Revenir à la prochaine date"><svg class="ico" aria-hidden="true"><use href="#i-ici"/></svg></button>
   <form id="ajout" autocomplete="off">
     <input id="ajoutTxt" placeholder="Ajouter : jeudi 12 mars 19 h au CCED, Concert des CHAM, entrée libre" aria-label="Ajouter un événement" spellcheck="true">
     <div id="ajoutApercu" aria-live="polite"></div>
@@ -1884,11 +1927,21 @@ dialog.completer {
   </div>
   <label class="champ">Titre<textarea id="fTitre" rows="1" title="Entrée : choisir où le titre passe à la ligne s’il ne tient pas sur une ligne"></textarea></label>
   <label class="champ">Sous-titre, pour tous (affiches et mails)<input id="fSousTitre" placeholder="avec Félix Bacik · élèves de la classe de violon"></label>
-  <div class="ligne2">
-    <label class="champ">Du<input id="fD1" type="date"></label>
-    <label class="champ">Au<input id="fD2" type="date"></label>
+  <div class="champ">Date
+    <div id="fPrec" class="bascule large" role="group">
+      <button data-v="precise">Précise</button><button data-v="mois">Mois</button><button data-v="periode">Période</button><button data-v="aucune">Inconnue</button>
+    </div>
   </div>
-  <label class="coche"><input id="fSemaine" type="checkbox"> Écrire « semaine du… »</label>
+  <div id="fDatePrecise">
+    <div class="ligne2">
+      <label class="champ">Du<input id="fD1" type="date"></label>
+      <label class="champ">Au<input id="fD2" type="date"></label>
+    </div>
+    <label class="coche"><input id="fSemaine" type="checkbox"> Écrire « semaine du… »</label>
+  </div>
+  <label class="champ" id="fMoisBloc" hidden>Mois<input id="fMois" type="month"></label>
+  <label class="champ" id="fPeriodeBloc" hidden>Période<select id="fPeriode"></select></label>
+  <p class="aide" id="fAucuneAide" hidden>L’événement reste dans « À dater », en haut de la liste ; il n’ira ni sur les affiches ni dans « Demandez le programme ».</p>
   <div class="ligne2">
     <label class="champ">Heure<input id="fHeures" placeholder="18h30 · 10h30-12h30 · 14h-14h45 et 15h15-16h"></label>
     <label class="coche bas"><input id="fHeureInc" type="checkbox"> horaire à préciser</label>
@@ -1996,7 +2049,7 @@ dialog.completer {
   </table>
   <p class="aide">L’export « Complet » reprend tout. Avant d’envoyer « Demandez le programme », chaque date doit avoir date, heure, lieu, titre, descriptif, élèves concernés et infos pratiques ; un sous-titre qui parle d’élèves compte pour « élèves concernés ». Une manifestation « réservée à l’équipe » n’apparaît ni sur les affiches ni dans « Demandez le programme ».</p>
   <h3>Saisie rapide</h3>
-  <p class="aide">Jour, date, heure, titre, puis le lieu (« au CCED », « salle Bach » ou « @Bach »). Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ». « … pour les élèves de la classe de violon » devient le sous-titre ; « , élèves de CHAM 5e » remplit « Élèves concernés » ; « entrée libre », « gratuit », un tarif ou un numéro de téléphone vont dans les infos pratiques.</p>
+  <p class="aide">Jour, date, heure, titre, puis le lieu (« au CCED », « salle Bach » ou « @Bach »). Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ». « … pour les élèves de la classe de violon » devient le sous-titre ; « , élèves de CHAM 5e » remplit « Élèves concernés » ; « entrée libre », « gratuit », un tarif ou un numéro de téléphone vont dans les infos pratiques. Sans jour précis (« en mai Concert », « mars-avril Projet », ou pas de date du tout), l’événement va dans « À dater », en haut de la liste : il ne part ni sur les affiches ni dans « Demandez le programme », et apparaît en fin de mail d’équipe sous « Dates à fixer ».</p>
   <div id="aideClavier">
   <h3>Raccourcis clavier</h3>
   <dl>
@@ -3770,8 +3823,25 @@ function jourMois(d) {
  * « semaine du 22 mars », « semaine du 31 mai au 5 juin », « du dimanche 21 au samedi 27 février ».
  * Sans majuscule : celui qui l'affiche décide.
  */
+const MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+/** La fenêtre d1..d2 est-elle un mois entier ? → index du mois, sinon -1. */
+function moisEntier(ev) {
+  if (!ev.d1 || !ev.d2 || ev.d1.slice(0, 7) !== ev.d2.slice(0, 7) || ev.d1.slice(8) !== '01') return -1;
+  return plusJours(ev.d2, 1).slice(8) === '01' ? +ev.d1.slice(5, 7) - 1 : -1;
+}
+/** Date approximative ou inconnue : « date à fixer », « mai 2027 », « entre le 1er mars et le 30 avril 2027 ». */
+function libApprox(ev) {
+  if (!ev.d1) return 'date à fixer';
+  const m = moisEntier(ev);
+  if (m >= 0) return MOIS[m] + ' ' + ev.d1.slice(0, 4);
+  const a = jour(ev.d1),
+    b = jour(ev.d2 || ev.d1);
+  return 'entre le ' + quantieme(a) + ' ' + MOIS[a.getMonth()] + (a.getFullYear() !== b.getFullYear() ? ' ' + a.getFullYear() : '') +
+    ' et le ' + quantieme(b) + ' ' + MOIS[b.getMonth()] + ' ' + b.getFullYear();
+}
 function libDate(ev) {
   if (ev.libelle) return ev.libelle;
+  if (!ev.d1 || ev.aDater) return libApprox(ev);
   const a = jour(ev.d1),
     b = jour(ev.d2 || ev.d1),
     n = ecartJours(ev.d1, ev.d2 || ev.d1),
@@ -3853,7 +3923,8 @@ const COULEURS_VIVES = {
 };
 /* ligne d'événement : la zone des heures accepte n'importe quoi jusqu'au « · » (18/10/2026 : une heure écrite
    « 14h-14h45et15h15-16h » rendait la ligne illisible, et l'événement disparaissait du fichier à l'écriture suivante) */
-const RX_EV = /^- (\d{4}-\d{2}-\d{2})(?:\.\.(\d{4}-\d{2}-\d{2}))?(?: ([^·]*?))? · (.*)$/;
+const RX_EV = /^- (\d{4}-\d{2}-\d{2}|\?)(?:\.\.(\d{4}-\d{2}-\d{2}))?(?: ([^·]*?))? · (.*)$/;
+/* « ? » : date inconnue ; {à dater} : la date n'est connue qu'à peu près (d1..d2 = le mois ou la période) */
 /** Heures au format du fichier (« 14:00-14:45,15:15-16:00 ») ? */
 const heuresValides = h => /^(\d{2}:\d{2}(-\d{2}:\d{2})?)(,\d{2}:\d{2}(-\d{2}:\d{2})?)*$/.test(h);
 const RX_JETON = /\s*\{([^{}]*)\}\s*$/;
@@ -3922,6 +3993,7 @@ function evVide() {
     interne: false,
     semaine: false,
     libelle: '',
+    aDater: false /* date approximative : d1..d2 est une fenêtre (mois, période), pas la date */,
     autres: []
   };
 }
@@ -3965,8 +4037,8 @@ function parse(texte) {
       continue; /* ligne non reconnue : ignorée (le rapport de lecture la signale) */
     }
     ev = evVide();
-    ev.d1 = m[1];
-    ev.d2 = m[2] || m[1];
+    ev.d1 = m[1] === '?' ? '' : m[1];
+    ev.d2 = m[1] === '?' ? '' : m[2] || m[1];
     if (m[3] && m[3].trim()) {
       const h = lireHeures(m[3]);
       if (heuresValides(h)) ev.heures = h;
@@ -3993,6 +4065,7 @@ function parse(texte) {
       else if (t === 'semaine') ev.semaine = true;
       else if (t === 'heure ?') ev.heureInconnue = true;
       else if (t === 'interne') ev.interne = true;
+      else if (t === 'à dater') ev.aDater = true;
       else if (STATUTS.includes(t)) ev.statut = t;
       else ev.autres.push(t);
     }
@@ -4047,9 +4120,10 @@ function ordre(a, b) {
 }
 
 function ligneEv(e) {
-  let q = e.d1 + (e.d2 && e.d2 !== e.d1 ? '..' + e.d2 : '') + (e.heures ? ' ' + e.heures : '');
+  let q = (e.d1 || '?') + (e.d1 && e.d2 && e.d2 !== e.d1 ? '..' + e.d2 : '') + (e.heures ? ' ' + e.heures : '');
   const j = [];
   if (e.libelle) j.push('date « ' + e.libelle + ' »');
+  if (e.aDater && e.d1) j.push('à dater');
   if (e.semaine) j.push('semaine');
   if (e.heureInconnue) j.push('heure ?');
   if (e.lieu) j.push('lieu ' + e.lieu);
@@ -4072,13 +4146,18 @@ function serialize(doc) {
   const out = ['# ' + (doc.titre || 'Planning'), ''];
   const pers = periodes(doc);
   const groupes = pers.map(p => ({ nom: p.nom, evts: [] }));
-  const hors = { nom: 'Hors période', evts: [] };
+  const hors = { nom: 'Hors période', evts: [] },
+    aDater = { nom: 'À dater', evts: [] };
   for (const e of doc.evts) {
+    if (!e.d1 || e.aDater) {
+      aDater.evts.push(e);
+      continue;
+    }
     const p = periodeDe(e, pers);
     (p ? groupes[pers.indexOf(p)] : hors).evts.push(e);
   }
-  for (const g of [...groupes, hors]) {
-    if (!g.evts.length && g === hors) continue;
+  for (const g of [aDater, ...groupes, hors]) {
+    if (!g.evts.length && (g === hors || g === aDater)) continue;
     out.push('## ' + g.nom);
     for (const e of g.evts.slice().sort(ordre)) out.push(...ligneEv(e));
     out.push('');
@@ -4107,6 +4186,7 @@ const CHAMPS = [
   'interne',
   'semaine',
   'libelle',
+  'aDater',
   'autres'
 ];
 const egal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -4194,8 +4274,13 @@ function merge3(B, M, T) {
 /* ---- versions publique et interne ---- */
 
 /** Vrai si l'événement figure dans la version publique (affiche publique, mail aux familles). */
+/** Date réelle (ni inconnue, ni approximative) : seules ces manifestations vont au calendrier, aux affiches, aux mails. */
+function estDatee(e) {
+  return !!e.d1 && !e.aDater;
+}
+/** Rien n'est annoncé au public sans date (François, 19/10/2026). */
 function estPublic(e) {
-  return !e.interne && e.statut !== 'annulé' && e.statut !== 'en attente';
+  return estDatee(e) && !e.interne && e.statut !== 'annulé' && e.statut !== 'en attente';
 }
 /* 03-etat.js : état de la page, copie de secours, annuler / rétablir, petits outils d'affichage. */
 
@@ -4287,6 +4372,11 @@ function reglage(cle) {
 function auj() {
   return isoDe(window.__now ? new Date(window.__now) : new Date());
 }
+/** Date approximative, avec le nom de la période quand la fenêtre est exactement une période. */
+function libFlou(e) {
+  const p = e.d1 && periodes(doc).find(p => p.d1 === e.d1 && p.d2 === e.d2);
+  return p ? p.nom : libApprox(e);
+}
 function dateLongue(iso) {
   const d = jour(iso);
   return d.getDate() + NBSP + MOIS[d.getMonth()] + ' ' + d.getFullYear();
@@ -4373,7 +4463,7 @@ function couperEleves(titre) {
 /** Lit une ligne de saisie rapide → {d1, d2, heures, semaine, titre, lieu, eleves, pratique} ou {erreur}. */
 function lireSaisie(texte, pers, lieuxRef, ref) {
   let t = ' ' + texte.trim() + ' ';
-  const ev = { d1: '', d2: '', heures: '', semaine: false, titre: '', soustitre: '', lieu: '', eleves: '', pratique: '' };
+  const ev = { d1: '', d2: '', heures: '', semaine: false, aDater: false, titre: '', soustitre: '', lieu: '', eleves: '', pratique: '' };
   const fait = m => {
     t = t.slice(0, m.index) + ' ' + t.slice(m.index + m[0].length);
   };
@@ -4491,7 +4581,27 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
       break;
     }
   }
-  if (!ev.d1) return { erreur: 'pas de date reconnue' };
+  /* pas de jour précis : le mois (« en mai », « courant mai », « mai 2027 »), deux mois (« mars-avril »), ou rien du
+     tout ; l'événement est alors « à dater » (19/10/2026) */
+  if (!ev.d1) {
+    ev.aDater = true;
+    const fenetre = (m1, m2, an) => {
+      const y1 = an ? +an : anneePour(m1, 1, pers, ref),
+        y2 = an ? +an : anneePour(m2, 1, pers, ref);
+      const d1 = y1 + '-' + String(m1).padStart(2, '0') + '-01',
+        suiv = m2 === 12 ? y2 + 1 + '-01-01' : y2 + '-' + String(m2 + 1).padStart(2, '0') + '-01';
+      return [d1, plusJours(suiv, -1)];
+    };
+    const AV = '(?:en\\s+|courant\\s+|début\\s+|fin\\s+|mi-?\\s*)?';
+    if ((m = new RegExp('\\s' + AV + RX_M + '\\s*(?:-|–|à|et)\\s*' + RX_M + '(?:\\s+(\\d{4}))?(?=[\\s,;])', 'i').exec(t))) {
+      [ev.d1, ev.d2] = fenetre(moisDe(m[1]), moisDe(m[2]), m[3]);
+      if (ev.d2 < ev.d1) ev.d2 = fenetre(moisDe(m[2]), moisDe(m[2]), +ev.d1.slice(0, 4) + 1)[1];
+      fait(m);
+    } else if ((m = new RegExp('\\s' + AV + RX_M + '(?:\\s+(\\d{4}))?(?=[\\s,;])', 'i').exec(t))) {
+      [ev.d1, ev.d2] = fenetre(moisDe(m[1]), moisDe(m[1]), m[2]);
+      fait(m);
+    }
+  }
   /* heures : « 18h », « 18h30 », « 18:30 », « 10h30-12h30 », « de 14h à 17h », et plusieurs créneaux le même jour :
      « de 14h à 14h45 puis de 15h15 à 16h », « 14h-14h45 et 15h15-16h » */
   const H = '(\\d{1,2})\\s?(?:h|:)\\s?(\\d{2})?';
@@ -4534,6 +4644,7 @@ function lireSaisie(texte, pers, lieuxRef, ref) {
 /* 06-liste.js : la liste par période, la fiche d'un événement, la saisie rapide, les contrôles. */
 
 let selId = null; /* événement ouvert dans la fiche */
+let precChoisie = ''; /* précision de date choisie dans la fiche, avant d'avoir saisi la date */
 
 function visible(e) {
   return true;
@@ -4541,6 +4652,24 @@ function visible(e) {
 
 /** Bloc date commun à la liste et à l'affiche : jour de la semaine, quantième (couleur du lieu), mois. */
 function blocDate(e, sansMois, papier) {
+  if (!e.d1 || e.aDater) {
+    /* à dater : « ? », le mois (« mai ») ou les mois de la fenêtre (« mars–avr. »), l'année dessous */
+    const m = moisEntier(e);
+    const num = !e.d1
+      ? '?'
+      : m >= 0
+        ? MOIS_COURT[m]
+        : MOIS_COURT[+e.d1.slice(5, 7) - 1] + '–<br>' + MOIS_COURT[+e.d2.slice(5, 7) - 1];
+    return (
+      '<div class="bdate flou' +
+      (e.d1 && m < 0 ? ' deux' : '') +
+      '"><span class="bd-haut">à dater</span><span class="bd-num">' +
+      num +
+      '</span><span class="bd-bas">' +
+      (e.d1 ? e.d2.slice(0, 4) : '') +
+      '</span></div>'
+    );
+  }
   const a = jour(e.d1),
     b = jour(e.d2 || e.d1),
     n = ecartJours(e.d1, e.d2 || e.d1);
@@ -4603,7 +4732,8 @@ function pastille(L) {
 function metaQuand(e) {
   const p = [];
   /* le bloc date dit déjà jour, quantième et mois ; on n'écrit la date en toutes lettres que s'il ne suffit pas */
-  if (e.libelle) p.push(esc(typo(e.libelle)));
+  if (!e.d1 || e.aDater) p.push(esc(typo(majuscule(libFlou(e)))));
+  else if (e.libelle) p.push(esc(typo(e.libelle)));
   else if (
     e.d1.slice(0, 7) !== e.d2.slice(0, 7) &&
     !(e.semaine && ecartJours(e.d1, e.d2) === 5 && jour(e.d1).getDay() === 1)
@@ -4675,20 +4805,28 @@ function afficherListe() {
   $('#titre').title = titre;
   const pers = periodes(doc);
   const groupes = pers.map(p => ({ ...p, evts: [] }));
-  const hors = { nom: 'Hors période', evts: [] };
+  const hors = { nom: 'Hors période', evts: [] },
+    aDater = { nom: 'À dater', evts: [], aDater: true };
   for (const e of doc.evts.slice().sort(ordre)) {
+    if (!estDatee(e)) {
+      aDater.evts.push(e);
+      continue;
+    }
     const p = periodeDe(e, pers);
     (p ? groupes[pers.indexOf(p)] : hors).evts.push(e);
   }
+  /* à dater, en tête (19/10/2026) : mois ou période connus d'abord, dans l'ordre ; sans date du tout ensuite */
+  aDater.evts.sort((a, b) => (!a.d1 !== !b.d1 ? (a.d1 ? -1 : 1) : ordre(a, b)));
   const auj0 = auj();
   let h = '';
-  for (const g of [...groupes, hors]) {
-    if (g === hors && !g.evts.length) continue;
+  for (const g of [aDater, ...groupes, hors]) {
+    if ((g === hors || g === aDater) && !g.evts.length) continue;
     const vis = g.evts.filter(visible);
     const passee = g.d2 && g.d2 < auj0;
     h +=
       '<section class="periode' +
       (passee ? ' passee' : '') +
+      (g.aDater ? ' a-dater' : '') +
       '"><h2>' +
       esc(typo(g.nom)) +
       '<span class="compte">' +
@@ -4704,35 +4842,65 @@ function afficherListe() {
      relecture du fichier */
   if (!afficherListe.vu) {
     afficherListe.vu = true;
-    const proch = doc.evts
-      .filter(e => visible(e) && e.d2 >= auj0 && e.statut !== 'annulé')
-      .sort(ordre)[0];
-    const li = proch && $('.ev[data-id="' + proch.id + '"]', liste);
-    if (li) {
-      /* la première date d'une période : on montre aussi le titre de la période */
-      const cible = li.parentElement.firstElementChild === li ? li.closest('.periode') : li;
-      /* après le chargement des polices : sinon les hauteurs changent encore et la date file sous l'en-tête */
-      /* une fois les polices chargées, puis encore un peu plus tard si personne n'a fait défiler entre-temps : un
-         bandeau du socle ou une relecture peuvent encore décaler la page juste après l'ouverture */
-      const id = proch.id,
-        sc = document.scrollingElement;
-      let pos = -1;
-      const aller = () => {
-        const c = $('.ev[data-id="' + id + '"]', liste);
-        if (!c || (pos >= 0 && Math.abs(sc.scrollTop - pos) > 2)) return;
-        /* calcul à la main : la liste arrondie (overflow caché) fausse scrollIntoView sous l'en-tête collé */
-        const vise = c.parentElement.firstElementChild === c ? c.closest('.periode') : c,
-          haut = ($('#ajout').hidden ? $('#tete') : $('#ajout')).getBoundingClientRect().bottom + 8;
-        sc.scrollTop += vise.getBoundingClientRect().top - haut;
-        pos = sc.scrollTop;
-      };
-      if (cible !== liste.firstElementChild)
-        (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
-          requestAnimationFrame(aller);
-          setTimeout(aller, 600);
+    if (prochaineDate())
+      /* une fois les polices chargées (sinon les hauteurs changent encore), puis encore un peu plus tard si personne
+         n'a fait défiler entre-temps : un bandeau du socle ou une relecture peuvent encore décaler la page */
+      (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
+        const sc = document.scrollingElement;
+        requestAnimationFrame(() => {
+          allerProchaine();
+          const pos = sc.scrollTop;
+          setTimeout(() => Math.abs(sc.scrollTop - pos) <= 2 && allerProchaine(), 600);
         });
-    }
+      });
   }
+}
+
+/** La prochaine date réelle, non annulée (aujourd'hui compris). */
+function prochaineDate() {
+  const a = auj();
+  return doc.evts.filter(e => visible(e) && estDatee(e) && e.d2 >= a && e.statut !== 'annulé').sort(ordre)[0];
+}
+/** Ce qu'on amène en haut : la ligne, ou toute la période si c'est sa première date (on voit aussi son titre). */
+function viseProchaine() {
+  const p = socle.ouvert && vue !== 'calendrier' && prochaineDate(),
+    c = p && $('#liste .ev[data-id="' + p.id + '"]');
+  return c ? (c.parentElement.firstElementChild === c ? c.closest('.periode') : c) : null;
+}
+function hautUtile() {
+  return ($('#ajout').hidden ? $('#tete') : $('#ajout')).getBoundingClientRect().bottom + 8;
+}
+/** Amène la prochaine date sous la barre d'ajout. Calcul à la main : la liste arrondie (débordement caché) fausse
+ *  scrollIntoView sous l'en-tête collé. */
+function allerProchaine(doux) {
+  const v = viseProchaine();
+  if (!v) return;
+  window.scrollBy({ top: v.getBoundingClientRect().top - hautUtile(), behavior: doux ? 'smooth' : 'auto' });
+}
+/** Bouton « recentrer » (comme sur un GPS) : visible quand on s'est éloigné d'aujourd'hui (19/10/2026). */
+function majIci() {
+  const b = $('#bIci');
+  if (!b) return;
+  let loin = false;
+  if (socle.ouvert && !selId)
+    if (vue === 'calendrier') loin = calMois !== moisDepart();
+    else {
+      const v = viseProchaine();
+      if (v) {
+        const t = v.getBoundingClientRect().top;
+        loin = t < hautUtile() - 40 || t > innerHeight - 60;
+      }
+    }
+  b.hidden = !loin;
+  b.title = b.ariaLabel = vue === 'calendrier' ? 'Revenir au mois en cours' : 'Revenir à la prochaine date';
+}
+function recentrer() {
+  if (vue === 'calendrier') {
+    calMois = moisDepart();
+    calJour = TACTILE ? auj() : '';
+    afficherCalendrier();
+  } else allerProchaine(true);
+  majIci();
 }
 
 function toutAfficher() {
@@ -4744,13 +4912,14 @@ function toutAfficher() {
   if (!$('#affiche').hidden) afficherAffiche();
   if ($('#mail').open) afficherMail();
   setStatus();
+  requestAnimationFrame(majIci);
 }
 
 /* ---------- contrôles ---------- */
 function controles() {
   const out = [];
   const pers = periodes(doc);
-  const evts = doc.evts.slice().sort(ordre);
+  const evts = doc.evts.filter(estDatee).sort(ordre);
   for (const e of evts) {
     const q = typo(majuscule(libDate(e))) + ', ' + typo(e.titre);
     if (!periodeDe(e, pers)) out.push({ id: e.id, t: q + ' : hors de toute période' });
@@ -4852,7 +5021,7 @@ function apercuSaisie() {
     );
   a.innerHTML =
     '→ ' +
-    esc(majuscule(libDate(r))) +
+    (r.aDater ? '<b>À dater</b>' + (r.d1 ? ' (' + esc(typo(libFlou(r))) + ')' : '') : esc(majuscule(libDate(r)))) +
     (r.heures ? ' · ' + esc(libHeures(r.heures)) : '') +
     ' · <b>' +
     rich(r.titre) +
@@ -4934,9 +5103,11 @@ function evSel() {
 let ficheAvant = ''; /* l'événement à l'ouverture de la fiche, pour dire au « Valider » s'il a changé */
 function ouvrirFiche(id) {
   selId = id;
+  precChoisie = '';
   ficheAvant = JSON.stringify(doc.evts.find(e => e.id === id) || {});
   $('#fiche').hidden = false;
   document.body.classList.add('avec-fiche');
+  majIci();
   remplirFiche();
   $$('.ev.sel').forEach(x => x.classList.remove('sel'));
   const li = $('.ev[data-id="' + id + '"]');
@@ -4948,6 +5119,7 @@ function fermerFiche() {
   selId = null;
   $('#fiche').hidden = true;
   document.body.classList.remove('avec-fiche');
+  requestAnimationFrame(majIci);
   $$('.ev.sel').forEach(x => x.classList.remove('sel'));
   const li = id && $('.ev[data-id="' + id + '"]');
   if (li) li.focus({ preventScroll: true });
@@ -4962,9 +5134,22 @@ function remplirFiche() {
   $('#ficheDate').textContent = typo(majuscule(libDate(e)));
   set('#fTitre', (e.titre || '').replace(/\s*\|\s*/g, '\n'));
   set('#fSousTitre', e.soustitre);
-  set('#fD1', e.d1);
-  set('#fD2', e.d2 !== e.d1 ? e.d2 : '');
+  set('#fD1', estDatee(e) ? e.d1 : '');
+  set('#fD2', estDatee(e) && e.d2 !== e.d1 ? e.d2 : '');
   $('#fSemaine').checked = e.semaine;
+  /* précision de la date : précise, mois, période, inconnue (19/10/2026) */
+  const pers = periodes(doc);
+  const mode = precChoisie || (!e.d1 ? 'aucune' : !e.aDater ? 'precise' : moisEntier(e) >= 0 ? 'mois' : 'periode');
+  $$('#fPrec button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === mode)));
+  $('#fDatePrecise').hidden = mode !== 'precise';
+  $('#fMoisBloc').hidden = mode !== 'mois';
+  $('#fPeriodeBloc').hidden = mode !== 'periode';
+  $('#fAucuneAide').hidden = mode !== 'aucune';
+  set('#fMois', e.aDater && moisEntier(e) >= 0 ? e.d1.slice(0, 7) : '');
+  $('#fPeriode').innerHTML =
+    '<option value="">Choisir…</option>' +
+    pers.map(p => '<option value="' + esc(p.nom) + '">' + esc(typo(p.nom)) + '</option>').join('');
+  $('#fPeriode').value = (e.aDater && (pers.find(p => p.d1 === e.d1 && p.d2 === e.d2) || {}).nom) || '';
   set('#fHeures', e.heures);
   $('#fHeureInc').checked = e.heureInconnue;
   const L = lieux(doc);
@@ -5020,6 +5205,15 @@ function modifier(champ, val, rendre = true) {
 }
 
 function initListe() {
+  $('#bIci').onclick = recentrer;
+  let ici = 0;
+  addEventListener(
+    'scroll',
+    () => {
+      if (!ici) ici = requestAnimationFrame(() => ((ici = 0), majIci()));
+    },
+    { passive: true }
+  );
   $('#ajout').onsubmit = ev => {
     ev.preventDefault();
     const r = apercuSaisie();
@@ -5109,17 +5303,55 @@ function initListe() {
     const e = evSel(),
       v = $('#fD1').value;
     if (!e || !v) return;
-    const duree = Math.max(0, ecartJours(e.d1, e.d2)); /* on déplace l'événement entier, durée comprise */
+    /* on déplace l'événement entier, durée comprise ; une date « à dater » devient précise */
+    const duree = estDatee(e) ? Math.max(0, ecartJours(e.d1, e.d2)) : 0;
     snapshot();
     e.d1 = v;
     e.d2 = plusJours(v, duree);
+    e.aDater = false;
+    precChoisie = '';
     changed();
     toutAfficher();
+  });
+  /* précision de la date */
+  const fixeFenetre = (d1, d2, aDater) => {
+    const e = evSel();
+    if (!e) return;
+    snapshot();
+    Object.assign(e, { d1, d2, aDater, semaine: false, libelle: '' });
+    changed();
+    toutAfficher();
+  };
+  $('#fPrec').addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    const e = evSel();
+    if (!b || !e) return;
+    precChoisie = b.dataset.v;
+    if (precChoisie === 'aucune') {
+      precChoisie = '';
+      fixeFenetre('', '', false);
+    } else remplirFiche();
+    if (b.dataset.v === 'precise') $('#fD1').focus();
+  });
+  $('#fMois').addEventListener('change', () => {
+    const v = $('#fMois').value;
+    if (!v) return;
+    const [y, m] = v.split('-').map(Number);
+    const suiv = m === 12 ? y + 1 + '-01-01' : y + '-' + String(m + 1).padStart(2, '0') + '-01';
+    precChoisie = '';
+    fixeFenetre(v + '-01', plusJours(suiv, -1), true);
+  });
+  $('#fPeriode').addEventListener('change', () => {
+    const p = periodes(doc).find(p => p.nom === $('#fPeriode').value);
+    if (!p) return;
+    precChoisie = '';
+    fixeFenetre(p.d1, p.d2, true);
   });
   $('#fD2').addEventListener('change', () => {
     const e = evSel();
     if (!e) return;
     const v = $('#fD2').value;
+    if (!estDatee(e)) return;
     snapshot();
     e.d2 = v && v > e.d1 ? v : e.d1;
     if (e.d2 === e.d1) e.semaine = false;
@@ -5128,7 +5360,7 @@ function initListe() {
   });
   $('#fSemaine').onchange = () => {
     const e = evSel();
-    if (!e) return;
+    if (!e || !estDatee(e)) return;
     snapshot();
     e.semaine = $('#fSemaine').checked;
     if (e.semaine && e.d1 === e.d2) e.d2 = plusJours(e.d1, 5);
@@ -5258,12 +5490,13 @@ function decalerMois(n) {
     );
 }
 function evtsDuJour(iso) {
-  return doc.evts.filter(e => visible(e) && e.d1 <= iso && e.d2 >= iso).sort(ordre);
+  return doc.evts.filter(e => visible(e) && estDatee(e) && e.d1 <= iso && e.d2 >= iso).sort(ordre);
 }
 function afficherCalendrier() {
   const cal = $('#calendrier');
   const actif = vue === 'calendrier' && socle.ouvert;
   cal.hidden = !actif;
+  requestAnimationFrame(majIci);
   $('#liste').hidden = actif;
   if (!actif) return;
   if (!calMois) calMois = moisDepart();
@@ -5625,7 +5858,7 @@ function ligneAffiche(e, interne) {
 function pageAffiche(p, interne) {
   const evts = doc.evts
     .filter(e => periodeDe(e, periodes(doc)) && periodeDe(e, periodes(doc)).nom === p.nom)
-    .filter(e => interne || estPublic(e))
+    .filter(e => estDatee(e) && (interne || estPublic(e)))
     .sort(ordre);
   const orga = blocOrga();
   const adr = reglage('adresse');
@@ -6096,7 +6329,9 @@ function texteTaches(p, avenir) {
         jourMois(jour(e.d1)) +
         ') : ' +
         m.join(', ')
-    )
+    ),
+    /* et les dates encore à fixer pour la période (19/10/2026) */
+    ...aFixer(p).map(e => '- Fixer la date : ' + typo(e.titre).replace(/\*/g, '') + (e.d1 ? ' (' + typo(libFlou(e)) + ')' : ''))
   ].join('\n');
 }
 function afficherManques(p, avenir) {
@@ -6265,6 +6500,7 @@ const TOUTE = '*'; /* valeur de « Toute la saison » dans la liste des période
 function evtsEquipe(p, avenir) {
   const a = auj();
   return doc.evts
+    .filter(estDatee) /* les dates à fixer viennent à part, en fin de mail */
     .filter(e => {
       if (!p) return true;
       const q = periodeDe(e, periodes(doc));
@@ -6286,7 +6522,7 @@ function objetEquipe(p, complet) {
  */
 function blocEquipe(e, complet) {
   const L = lieuDe(e);
-  let quand = majuscule(libDate(e));
+  let quand = majuscule(estDatee(e) ? libDate(e) : libFlou(e));
   if (e.heures) quand += ', ' + libHeures(e.heures);
   else if (e.heureInconnue) quand += ', horaire à préciser';
   let titre = e.titre;
@@ -6319,9 +6555,16 @@ function parMois(evts) {
   }
   return g;
 }
+/** Événements à dater qui concernent la période (p null : tous) : fenêtre qui la touche, ou date inconnue. */
+function aFixer(p) {
+  return doc.evts
+    .filter(e => !estDatee(e) && e.statut !== 'annulé' && (!p || !e.d1 || (e.d1 <= p.d2 && e.d2 >= p.d1)))
+    .sort((a, b) => (!a.d1 !== !b.d1 ? (a.d1 ? -1 : 1) : ordre(a, b)));
+}
 function htmlEquipe(p, avenir, complet) {
-  const evts = evtsEquipe(p, avenir);
-  if (!evts.length) return '<p>Aucune date pour le moment.</p>';
+  const evts = evtsEquipe(p, avenir),
+    af = aFixer(p);
+  if (!evts.length && !af.length) return '<p>Aucune date pour le moment.</p>';
   /* *italique* garde son sens (titres d'œuvres) ; le reste : texte, gras pour la date, rien d'autre */
   const r = s => esc(s).replace(/\*([^*]+)\*/g, '<i>$1</i>');
   let h = '';
@@ -6338,15 +6581,36 @@ function htmlEquipe(p, avenir, complet) {
       h += e.statut === 'annulé' ? '<p style="color:#808080"><s>' + corps + '</s></p>' : '<p>' + corps + '</p>';
     }
   }
+  /* dates à fixer, en fin de mail (19/10/2026) */
+  if (af.length) {
+    h += '<p><b><u>Dates à fixer</u></b></p>';
+    for (const e of af) {
+      const [q, lignes, pub] = blocEquipe(e, complet);
+      h +=
+        '<p><b>' +
+        r(q) +
+        '</b><br>' +
+        lignes.map((l, i) => (complet && i >= pub ? '<i>' + r(l) + '</i>' : r(l))).join('<br>') +
+        '</p>';
+    }
+  }
   return h;
 }
 function texteEquipe(p, avenir, complet) {
-  const evts = evtsEquipe(p, avenir);
-  if (!evts.length) return 'Aucune date pour le moment.';
+  const evts = evtsEquipe(p, avenir),
+    af = aFixer(p);
+  if (!evts.length && !af.length) return 'Aucune date pour le moment.';
   const out = [];
   for (const [m, L] of parMois(evts)) {
     out.push(m.toUpperCase(), '');
     for (const e of L) {
+      const [q, lignes] = blocEquipe(e, complet);
+      out.push(q, ...lignes.map(l => l.replace(/\*/g, '')), '');
+    }
+  }
+  if (af.length) {
+    out.push('DATES À FIXER', '');
+    for (const e of af) {
       const [q, lignes] = blocEquipe(e, complet);
       out.push(q, ...lignes.map(l => l.replace(/\*/g, '')), '');
     }
@@ -6471,6 +6735,16 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 13:30',
+    v: '0.34',
+    items: [
+      'Événements « à dater » : la saisie rapide accepte une ligne sans date (« Concert des professeurs »), avec seulement le mois (« en mai Concert ») ou deux mois (« mars-avril Projet »). Ils se rangent dans « À dater », en haut de la liste.',
+      'Dans la fiche, « Date » : précise, mois, période ou inconnue. Saisir une date précise fait sortir l’événement de « À dater ».',
+      'Rien n’est annoncé au public sans date : ni affiches, ni « Demandez le programme ». Le mail d’équipe et « Complet » finissent par « Dates à fixer » ; « Copier pour Tâches » ajoute « Fixer la date : … ».',
+      'Bouton rond en bas à droite (comme sur un GPS) : il apparaît quand on s’est éloigné, et ramène la liste à la prochaine date, ou le calendrier au mois en cours.'
+    ]
+  },
   {
     d: '2026-10-19 11:10',
     v: '0.33',
