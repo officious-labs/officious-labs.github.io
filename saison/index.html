@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019132958">
+<meta name="officious-page" content="20261019133442">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4252,13 +4252,14 @@ function parse(texte) {
 
 /* ---- réglages ---- */
 
-/* vacances scolaires, zone B (académie d'Orléans-Tours), du premier au dernier jour sans classe ; un réglage
+/* vacances scolaires, zone B (académie d'Orléans-Tours), du premier au dernier jour sans classe (elles commencent
+   le samedi après les cours : premier jour, le dimanche) ; un réglage
    « - vacances : Nom = AAAA-MM-JJ..AAAA-MM-JJ » les remplace (19/10/2026 : ce sont les vacances qui font les périodes) */
 const VACANCES_ZONE_B = [
-  ['Toussaint', '2026-10-17', '2026-11-01'],
-  ['Noël', '2026-12-19', '2027-01-03'],
-  ['hiver', '2027-02-20', '2027-03-07'],
-  ['printemps', '2027-04-17', '2027-05-02']
+  ['Toussaint', '2026-10-18', '2026-11-01'],
+  ['Noël', '2026-12-20', '2027-01-03'],
+  ['hiver', '2027-02-21', '2027-03-07'],
+  ['printemps', '2027-04-18', '2027-05-02']
 ];
 function vacances(doc) {
   const r = doc.reglages
@@ -7121,6 +7122,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 16:20',
+    v: '0.48',
+    items: ['Vacances : elles commencent le samedi après les cours, donc le premier jour de vacances (hachuré, signalé) est le dimanche.']
+  },
   {
     d: '2026-10-19 16:10',
     v: '0.47',
