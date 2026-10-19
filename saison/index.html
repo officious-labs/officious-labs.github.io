@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019130603">
+<meta name="officious-page" content="20261019130750">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4169,9 +4169,10 @@ function lieux(doc) {
   return o;
 }
 function periodeDe(ev, pers) {
-  /* pendant des vacances : la période qui s'achève (celle où les vacances commencent) */
+  /* pendant des vacances, la coupure passe au milieu (19/10/2026) : première moitié avec la période qui s'achève,
+     seconde moitié avec celle qui commence (un concert la veille de la rentrée vient après les vacances) */
   const v = (pers.vac || []).find(v => ev.d1 >= v.d1 && ev.d1 <= v.d2);
-  const j = v ? v.d1 : ev.d1;
+  const j = !v ? ev.d1 : ev.d1 < plusJours(v.d1, Math.floor(ecartJours(v.d1, v.d2) / 2)) ? v.d1 : plusJours(v.d2, 1);
   return pers.find(p => j >= p.d1 && j <= p.d2) || null;
 }
 
@@ -6850,6 +6851,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 15:40',
+    v: '0.45',
+    items: ['Pendant des vacances scolaires, la coupure passe au milieu : une date de la première moitié reste avec la période qui s’achève, une date de la seconde moitié (la veille de la rentrée, par exemple) va avec la période qui commence.']
+  },
   {
     d: '2026-10-19 15:30',
     v: '0.44',
