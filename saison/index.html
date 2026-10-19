@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019105038">
+<meta name="officious-page" content="20261019105333">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -729,7 +729,7 @@ body.avec-fiche #principal {
   text-decoration: line-through;
   color: var(--pale);
 }
-.ev.annule .bdate.flou .bd-num {
+.bdate.flou .bd-num {
   font-size: 1.15rem;
   color: var(--pale);
   white-space: nowrap;
@@ -745,8 +745,18 @@ body.avec-fiche #principal {
 .a-dater h2 {
   color: var(--gris);
 }
-.bd-num {
+.ev.annule .bd-num {
   color: var(--pale);
+}
+.ev.passe {
+  /* dates passées : en retrait, toujours lisibles (19/10/2026) */
+  opacity: 0.5;
+}
+.ev.passe .bd-num {
+  color: var(--pale);
+}
+.cal-j.passe > * {
+  opacity: 0.5;
 }
 .bdate {
   display: flex;
@@ -4761,6 +4771,7 @@ function ligneHtml(e) {
   let h =
     '<li class="ev' +
     (e.statut === 'annulé' ? ' annule' : '') +
+    (estDatee(e) && e.d2 < auj() ? ' passe' : '') +
     (e.interne ? ' interne' : '') +
     (e.id === selId ? ' sel' : '') +
     '" data-id="' +
@@ -5525,6 +5536,7 @@ function afficherCalendrier() {
       '<div class="cal-j' +
       (d.getMonth() !== m - 1 ? ' hors' : '') +
       (iso === auj0 ? ' auj' : '') +
+      (iso < auj0 ? ' passe' : '') +
       (iso === calJour ? ' choisi' : '') +
       (evts.length ? ' plein' : '') +
       '" data-jour="' +
@@ -6735,6 +6747,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 13:10',
+    v: '0.35',
+    items: [
+      'Les dates passées sont grisées, dans la liste comme dans le calendrier.',
+      'Correction : les dates annulées avaient perdu leur gris dans la 0.34.'
+    ]
+  },
   {
     d: '2026-10-19 13:30',
     v: '0.34',
