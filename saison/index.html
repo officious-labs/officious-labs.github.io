@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019081339">
+<meta name="officious-page" content="20261019082253">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -876,6 +876,17 @@ body.avec-fiche #principal {
 #fTitre {
   font-weight: 600;
   font-size: 1.05rem;
+  min-height: 0;
+  resize: none;
+}
+/* morceau d'un titre à coupure choisie : d'un bloc ; le titre passe à la ligne entre deux morceaux */
+.seg {
+  display: inline-block;
+}
+.ev.annule .seg,
+.pg-ev.annule .seg,
+.a3-ev.annule .seg {
+  text-decoration: line-through;
 }
 .ligne2 {
   display: grid;
@@ -1851,7 +1862,7 @@ dialog.completer {
     <span id="ficheDate"></span>
     <button id="ficheFermer" class="icone" title="Fermer (Échap)">×</button>
   </div>
-  <label class="champ">Titre<input id="fTitre"></label>
+  <label class="champ">Titre<textarea id="fTitre" rows="1" title="Entrée : choisir où le titre passe à la ligne s’il ne tient pas sur une ligne"></textarea></label>
   <label class="champ">Sous-titre, pour tous (affiches et mails)<input id="fSousTitre" placeholder="avec Félix Bacik · élèves de la classe de violon"></label>
   <div class="ligne2">
     <label class="champ">Du<input id="fD1" type="date"></label>
@@ -3784,6 +3795,7 @@ function libHeures(s) {
 function typo(s) {
   if (!s) return '';
   return s
+    .replace(/\s*\|\s*/g, ' ') /* coupure souhaitée du titre : un simple espace partout ailleurs */
     .replace(/'/g, '’')
     .replace(/\b(\d{1,2}) ?h ?(\d{2})\b/g, '$1' + NBSP + 'h' + NBSP + '$2')
     .replace(/\b(\d{1,2}) ?h\b(?! \d)/g, '$1' + NBSP + 'h')
@@ -4222,6 +4234,12 @@ function rich(s) {
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     .replace(/\b(\d+)(res?|ers?|es?)\b/g, '$1<sup>$2</sup>');
 }
+/** Titre en HTML, avec sa coupure souhaitée (« | » dans le fichier, retour à la ligne dans la fiche) : chaque
+ *  morceau reste d'un bloc, et si le titre ne tient pas sur une ligne, il passe à la ligne là (19/10/2026). */
+function titreHtml(t) {
+  const p = (t || '').split('|').map(x => x.trim()).filter(Boolean);
+  return p.length < 2 ? rich(t) : p.map(x => '<span class="seg">' + rich(x) + '</span>').join(' ');
+}
 function lieuDe(e) {
   if (!e.lieu) return null;
   const tous = lieux(doc);
@@ -4594,7 +4612,7 @@ function ligneHtml(e) {
   h +=
     blocDate(e) +
     '<div class="corps"><div class="t">' +
-    rich(e.titre) +
+    titreHtml(e.titre) +
     (tags.length ? ' ' + tags.join(' ') : '') +
     '</div>';
   if (e.soustitre) h += '<div class="soustitre">' + rich(e.soustitre) + '</div>';
@@ -4886,7 +4904,7 @@ function remplirFiche() {
     if (document.activeElement !== el) el.value = v;
   };
   $('#ficheDate').textContent = typo(majuscule(libDate(e)));
-  set('#fTitre', e.titre);
+  set('#fTitre', (e.titre || '').replace(/\s*\|\s*/g, '\n'));
   set('#fSousTitre', e.soustitre);
   set('#fD1', e.d1);
   set('#fD2', e.d2 !== e.d1 ? e.d2 : '');
@@ -5003,7 +5021,14 @@ function initListe() {
     ['#fRemarque', 'remarque'],
     ['#fLibelle', 'libelle']
   ]) {
-    $(sel).addEventListener('input', () => modifier(champ, $(sel).value.replace(/\s+$/, '')));
+    $(sel).addEventListener('input', () =>
+      modifier(
+        champ,
+        champ === 'titre'
+          ? $(sel).value.replace(/\s+$/, '').replace(/\s*\n\s*/g, ' | ') /* retour à la ligne → coupure souhaitée */
+          : $(sel).value.replace(/\s+$/, '')
+      )
+    );
     $(sel).addEventListener('blur', () => (editSnap = null));
   }
   /* « Carte blanche de rodage pour les élèves de la classe de violon » : en quittant le titre, la fin passe en
@@ -5380,7 +5405,7 @@ function ligneA3(e) {
     '</small>' +
     num +
     '</span><span class="a3-c"><b>' +
-    rich(e.titre) +
+    titreHtml(e.titre) +
     '</b>' +
     (e.statut === 'à confirmer' ? ' <i>(sous réserve)</i>' : '') +
     (e.soustitre ? '<span class="a3-s">' + rich(e.soustitre) + '</span>' : '') +
@@ -5523,7 +5548,7 @@ function ligneAffiche(e, interne) {
     );
   else if (e.statut === 'à confirmer') tags.push('<span class="tag t-confirmer">sous réserve</span>');
   if (interne && e.interne) tags.push('<span class="tag t-interne">équipe</span>');
-  h += '<div class="pg-t">' + rich(e.titre) + (tags.length ? ' ' + tags.join(' ') : '') + '</div>';
+  h += '<div class="pg-t">' + titreHtml(e.titre) + (tags.length ? ' ' + tags.join(' ') : '') + '</div>';
   if (e.soustitre) h += '<div class="pg-soustitre">' + rich(e.soustitre) + '</div>';
   const meta = metaQuand(e);
   if (meta) h += '<div class="pg-meta">' + meta + '</div>';
@@ -6379,6 +6404,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 10:45',
+    v: '0.30',
+    items: [
+      'Titre : dans la fiche, la touche Entrée marque l’endroit où le titre passe à la ligne s’il ne tient pas sur une ligne (liste, affiches A3 et A4). S’il tient, il reste sur une ligne. Dans les mails, c’est un simple espace. Dans le fichier, la coupure s’écrit « | ».'
+    ]
+  },
   {
     d: '2026-10-19 10:25',
     v: '0.29',
