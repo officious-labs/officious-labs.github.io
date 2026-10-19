@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019125034">
+<meta name="officious-page" content="20261019125823">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3904,8 +3904,9 @@ function libDate(ev) {
 /** '20:00' → '20 h' ; '18:30' → '18 h 30'. */
 function libH(hm) {
   const [h, m] = hm.split(':');
-  /* « 12h30 », sans espaces : plus lisible (François, 19/10/2026) */
-  return String(+h) + 'h' + (m && m !== '00' ? m : '');
+  /* « 12 h 30 » avec des espaces fines insécables : entre les espaces pleines, peu lisibles, et rien du tout
+     (François, 19/10/2026) */
+  return String(+h) + FINE + 'h' + (m && m !== '00' ? FINE + m : '');
 }
 /** '20:00' → '20 h' ; '10:30-12:30' → 'de 10 h 30 à 12 h 30' ; '11:00-12:30,15:00-17:30' → '11 h – 12 h 30 et 15 h – 17 h 30'. */
 function libHeures(s) {
@@ -3922,7 +3923,7 @@ function libHeures(s) {
 
 /**
  * Typographie française d'un texte saisi (Imprimerie nationale) : insécables avant « : » et dans les guillemets,
- * fines avant ; ! ?, heures « 20 h 30 » → « 20h30 », « n°1 » → « n° 1 », apostrophe typographique.
+ * fines avant ; ! ?, heures « 20h30 » ou « 20 h 30 » → « 20 h 30 » en espaces fines, « n°1 » → « n° 1 », apostrophe typographique.
  * Idempotente : l'appliquer deux fois ne change rien.
  */
 function typo(s) {
@@ -3930,8 +3931,8 @@ function typo(s) {
   return s
     .replace(/\s*\|\s*/g, ' ') /* coupure souhaitée du titre : un simple espace partout ailleurs */
     .replace(/'/g, '’')
-    .replace(/\b(\d{1,2})[ \u00a0]?h[ \u00a0]?(\d{2})\b/g, '$1h$2')
-    .replace(/\b(\d{1,2})[ \u00a0]h\b(?![ \u00a0\u202f]?\d)/g, '$1h')
+    .replace(/\b(\d{1,2})[ \u00a0\u202f]?h[ \u00a0\u202f]?(\d{2})\b/g, '$1' + FINE + 'h' + FINE + '$2')
+    .replace(/\b(\d{1,2})[ \u00a0\u202f]?h\b(?![ \u00a0\u202f]?\d)/g, '$1' + FINE + 'h')
     .replace(/\b[nN]° ?(\d)/g, (m, d) => m[0] + '°' + NBSP + d)
     .replace(/[   ]*([;!?])/g, (m, p, i, all) => (i === 0 ? p : FINE + p))
     .replace(/(\S)[   ]*:(?=\s|$)/g, '$1' + NBSP + ':')
@@ -6807,6 +6808,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 15:05',
+    v: '0.42',
+    items: ['Heures avec des espaces fines insécables, partout : « 18 h 30 », plus serré qu’avec des espaces normales, plus lisible que « 18h30 ».']
+  },
   {
     d: '2026-10-19 15:00',
     v: '0.41',
