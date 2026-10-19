@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019130030">
+<meta name="officious-page" content="20261019130603">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4126,9 +4126,25 @@ function parse(texte) {
 
 /* ---- réglages ---- */
 
-/** Périodes déclarées : [{nom, d1, d2}], dans l'ordre chronologique. */
+/* vacances scolaires, zone B (académie d'Orléans-Tours), du premier au dernier jour sans classe ; un réglage
+   « - vacances : Nom = AAAA-MM-JJ..AAAA-MM-JJ » les remplace (19/10/2026 : ce sont les vacances qui font les périodes) */
+const VACANCES_ZONE_B = [
+  ['Toussaint', '2026-10-17', '2026-11-01'],
+  ['Noël', '2026-12-19', '2027-01-03'],
+  ['hiver', '2027-02-20', '2027-03-07'],
+  ['printemps', '2027-04-17', '2027-05-02']
+];
+function vacances(doc) {
+  const r = doc.reglages
+    .filter(r => r.cle === 'vacances')
+    .map(r => r.val.match(/^(.*?) = (\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/))
+    .filter(Boolean)
+    .map(m => ({ nom: m[1], d1: m[2], d2: m[3] }));
+  return r.length ? r : VACANCES_ZONE_B.map(([nom, d1, d2]) => ({ nom, d1, d2 }));
+}
+/** Périodes déclarées : [{nom, d1, d2}], dans l'ordre chronologique (avec les vacances, pour periodeDe). */
 function periodes(doc) {
-  return doc.reglages
+  const pers = doc.reglages
     .filter(r => r.cle === 'période')
     .map(r => {
       const m = r.val.match(/^(.*?) = (\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/);
@@ -4136,6 +4152,8 @@ function periodes(doc) {
     })
     .filter(Boolean)
     .sort((a, b) => (a.d1 < b.d1 ? -1 : 1));
+  pers.vac = vacances(doc);
+  return pers;
 }
 const EQUIPEMENTS = [['Conciergerie', 'Conciergerie', 'ocre']];
 /** Référentiel des lieux : { clé: {cle, nom, couleur} }. Un lieu absent du référentiel est un texte libre. */
@@ -4151,7 +4169,10 @@ function lieux(doc) {
   return o;
 }
 function periodeDe(ev, pers) {
-  return pers.find(p => ev.d1 >= p.d1 && ev.d1 <= p.d2) || null;
+  /* pendant des vacances : la période qui s'achève (celle où les vacances commencent) */
+  const v = (pers.vac || []).find(v => ev.d1 >= v.d1 && ev.d1 <= v.d2);
+  const j = v ? v.d1 : ev.d1;
+  return pers.find(p => j >= p.d1 && j <= p.d2) || null;
 }
 
 /* ---- écriture ---- */
@@ -5834,6 +5855,9 @@ function pageA3() {
 }
 /** Nom des vacances qui suivent une période, d'après le mois où elle s'achève (19/10/2026). */
 function nomVacances(fin) {
+  /* les vacances qui commencent dans le mois qui précède la fin de la période, ou juste après */
+  const v = vacances(doc).find(v => v.d1 <= plusJours(fin, 10) && v.d2 >= plusJours(fin, -30));
+  if (v) return 'vacances ' + (/^[aeéèiouh]/i.test(v.nom) ? 'd’' : /^Toussaint$/i.test(v.nom) ? 'de la ' : 'de ') + v.nom;
   const m = +fin.slice(5, 7);
   return m >= 9 && m <= 11
     ? 'vacances de la Toussaint'
@@ -6826,6 +6850,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 15:30',
+    v: '0.44',
+    items: ['Une date pendant des vacances scolaires (zone B) va dans la période qui s’achève : dans la liste, les mails et les affiches, elle vient avant la coupure « vacances de… ».']
+  },
   {
     d: '2026-10-19 15:15',
     v: '0.43',
