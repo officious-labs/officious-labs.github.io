@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019140601">
+<meta name="officious-page" content="20261019141626">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -6949,6 +6949,16 @@ function aFixer(p) {
     .filter(e => !estDatee(e) && e.statut !== 'annulé' && (!p || !e.d1 || (e.d1 <= p.d2 && e.d2 >= p.d1)))
     .sort((a, b) => (!a.d1 !== !b.d1 ? (a.d1 ? -1 : 1) : ordre(a, b)));
 }
+/** iMuse refuse les caractères hors Windows-1252 (19/10/2026 : « caractères non reconnus » à l'envoi) : l'espace fine
+ *  insécable devient une insécable ordinaire, les autres caractères absents de ce jeu une entité numérique. */
+const CP1252 = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+function pourIMuse(h) {
+  return h
+    .replace(/[\u202f\u2007]/g, '\u00a0')
+    .replace(/[\u2009\u200a\u2002\u2003]/g, ' ')
+    .replace(/[\u2010\u2011]/g, '-')
+    .replace(/[^\u0000-\u00ff]/g, c => (CP1252.includes(c) ? c : '&#' + c.codePointAt(0) + ';'));
+}
 function htmlEquipe(p, avenir, complet) {
   const evts = evtsEquipe(p, avenir),
     af = aFixer(p);
@@ -7117,7 +7127,7 @@ function initMail() {
      (19/10/2026) */
   $('#mailCopierHtml').onclick = async () => {
     /* copie toujours, même s'il reste des dates à compléter (19/10/2026 : on veut pouvoir essayer sans tout finir) */
-    const h = contenuMail().html;
+    const h = pourIMuse(contenuMail().html);
     const reste = $('#mailCopier').classList.contains('a-completer') ? ' Attention : ' + $('#mailCopier').textContent.replace(/\s*→$/, '') + '.' : '';
     toast(
       (await copierRiche(esc(h), h))
@@ -7138,6 +7148,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 17:00',
+    v: '0.51',
+    items: ['« Copier le code HTML » (iMuse) : les espaces fines deviennent des espaces insécables ordinaires, qu’iMuse accepte (il refusait d’envoyer : « caractères non reconnus »).']
+  },
   {
     d: '2026-10-19 16:40',
     v: '0.50',
