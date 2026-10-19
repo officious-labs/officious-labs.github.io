@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019111854">
+<meta name="officious-page" content="20261019115302">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3889,7 +3889,8 @@ function libDate(ev) {
 /** '20:00' → '20 h' ; '18:30' → '18 h 30'. */
 function libH(hm) {
   const [h, m] = hm.split(':');
-  return String(+h) + NBSP + 'h' + (m && m !== '00' ? NBSP + m : '');
+  /* « 12h30 », sans espaces : plus lisible (François, 19/10/2026) */
+  return String(+h) + 'h' + (m && m !== '00' ? m : '');
 }
 /** '20:00' → '20 h' ; '10:30-12:30' → 'de 10 h 30 à 12 h 30' ; '11:00-12:30,15:00-17:30' → '11 h – 12 h 30 et 15 h – 17 h 30'. */
 function libHeures(s) {
@@ -3899,13 +3900,14 @@ function libHeures(s) {
     const [a, b] = plages[0];
     return b ? 'de ' + libH(a) + ' à ' + libH(b) : libH(a);
   }
-  const t = plages.map(([a, b]) => (b ? libH(a) + NBSP + '–' + NBSP + libH(b) : libH(a)));
+  /* plusieurs créneaux : « de 11h à 12h30 et de 15h à 17h30 » (19/10/2026 : les tirets se lisaient mal) */
+  const t = plages.map(([a, b]) => (b ? 'de ' + libH(a) + ' à ' + libH(b) : 'à ' + libH(a)));
   return t.slice(0, -1).join(', ') + ' et ' + t[t.length - 1];
 }
 
 /**
  * Typographie française d'un texte saisi (Imprimerie nationale) : insécables avant « : » et dans les guillemets,
- * fines avant ; ! ?, heures « 20h30 » → « 20 h 30 », « n°1 » → « n° 1 », apostrophe typographique.
+ * fines avant ; ! ?, heures « 20 h 30 » → « 20h30 », « n°1 » → « n° 1 », apostrophe typographique.
  * Idempotente : l'appliquer deux fois ne change rien.
  */
 function typo(s) {
@@ -3913,8 +3915,8 @@ function typo(s) {
   return s
     .replace(/\s*\|\s*/g, ' ') /* coupure souhaitée du titre : un simple espace partout ailleurs */
     .replace(/'/g, '’')
-    .replace(/\b(\d{1,2}) ?h ?(\d{2})\b/g, '$1' + NBSP + 'h' + NBSP + '$2')
-    .replace(/\b(\d{1,2}) ?h\b(?! \d)/g, '$1' + NBSP + 'h')
+    .replace(/\b(\d{1,2})[ \u00a0]?h[ \u00a0]?(\d{2})\b/g, '$1h$2')
+    .replace(/\b(\d{1,2})[ \u00a0]h\b(?![ \u00a0\u202f]?\d)/g, '$1h')
     .replace(/\b[nN]° ?(\d)/g, (m, d) => m[0] + '°' + NBSP + d)
     .replace(/[   ]*([;!?])/g, (m, p, i, all) => (i === 0 ? p : FINE + p))
     .replace(/(\S)[   ]*:(?=\s|$)/g, '$1' + NBSP + ':')
@@ -6790,6 +6792,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 14:00',
+    v: '0.40',
+    items: [
+      'Heures sans espaces, partout (liste, affiches, mails) : « 18h30 », « 20h ».',
+      'Plusieurs créneaux le même jour : « de 11h à 12h30 et de 15h à 17h30 » au lieu des tirets.'
+    ]
+  },
   {
     d: '2026-10-19 13:45',
     v: '0.39',
