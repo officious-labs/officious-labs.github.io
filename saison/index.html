@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019090656">
+<meta name="officious-page" content="20261019091049">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -765,6 +765,16 @@ body.avec-fiche #principal {
   font-size: 0.85rem;
   color: var(--ocre);
   margin-top: 0.2rem;
+  display: flex;
+  gap: 0.35em;
+  align-items: baseline;
+}
+.ico-eq {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  align-self: flex-start;
+  margin-top: 0.05em;
 }
 .flou {
   color: var(--gris);
@@ -1822,6 +1832,7 @@ dialog.completer {
   <symbol id="i-liste" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r="1.1" fill="currentColor"/><circle cx="4.8" cy="12" r="1.1" fill="currentColor"/><circle cx="4.8" cy="17.5" r="1.1" fill="currentColor"/></symbol>
   <symbol id="i-affiche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(3 -1.5)"><rect x="5" y="2.8" width="14" height="18.4" rx="1.6"/><path d="M8.2 7h7.6M8.2 10.5h7.6M8.2 14h5"/></g><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="none" stroke="var(--papier)" stroke-width="2.4" stroke-linejoin="round"/><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="var(--accent)" stroke="none"/></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(2.5 -2.5) scale(0.95)"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></g><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="none" stroke="var(--papier)" stroke-width="2.4" stroke-linejoin="round"/><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="var(--accent)" stroke="none"/></symbol>
+  <symbol id="i-equipe" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 19.5c0-3.9 2.9-6.4 6.5-6.4s6.5 2.5 6.5 6.4z"/><circle cx="16.6" cy="8.9" r="2.7" opacity=".6"/><path d="M15.4 13.3c.4-.1.8-.1 1.2-.1 2.9 0 4.9 2 4.9 5.2v1.1h-4.4c-.2-2.6-.8-4.6-1.7-6.2z" opacity=".6"/></symbol>
 </svg>
 <header id="tete">
   <h1 id="titre">Saison</h1>
@@ -4625,13 +4636,13 @@ function ligneHtml(e) {
   if (e.pratique) h += '<div class="pratique">' + rich(e.pratique).replace(/\n/g, '<br>') + '</div>';
   if (e.accomp || e.remarque) {
     h +=
-      /* ce qui ne sert qu'à l'équipe : même étiquette « équipe » que les manifestations internes (19/10/2026 :
-         le cadenas faisait croire à un commentaire verrouillé) */
-      '<div class="rem"><span class="tag t-interne">équipe</span> ' +
+      /* ce qui ne sert qu'à l'équipe : petite icône de personnes, couleur ocre (19/10/2026 : le cadenas faisait croire
+         à un commentaire verrouillé, une étiquette en toutes lettres alourdissait) */
+      '<div class="rem"><svg class="ico-eq" aria-label="Pour l’équipe" role="img"><use href="#i-equipe"/></svg><span>' +
       [e.accomp ? 'Accompagnement : ' + rich(e.accomp) : '', rich(e.remarque || '').replace(/\n/g, '<br>')]
         .filter(Boolean)
         .join(' · ') +
-      '</div>';
+      '</span></div>';
   }
   return h + '</div></li>';
 }
@@ -6451,7 +6462,7 @@ const NOUVEAUTES = [
     d: '2026-10-19 11:10',
     v: '0.33',
     items: [
-      'Les remarques et l’accompagnement, réservés à l’équipe, portent l’étiquette « équipe » (comme les manifestations internes) au lieu du cadenas. Dans la fiche, la rubrique s’appelle « Pour l’équipe seulement ».'
+      'Les remarques et l’accompagnement, réservés à l’équipe, sont signalés par une petite icône de personnes, en ocre, au lieu du cadenas. Dans la fiche, la rubrique s’appelle « Pour l’équipe seulement ».'
     ]
   },
   {
