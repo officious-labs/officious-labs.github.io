@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019074538">
+<meta name="officious-page" content="20261019080650">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1415,7 +1415,7 @@ button.lien {
   min-height: 0;
   column-count: 3;
   column-gap: 9mm;
-  column-fill: auto;
+  column-fill: balance; /* colonnes équilibrées */
   margin: 5mm 0 4mm;
 }
 .a3-vac {
@@ -1439,7 +1439,7 @@ button.lien {
   border-top: 0.5mm solid #2e5e8c;
   opacity: 0.55;
 }
-.a3-sm,
+.a3-bloc,
 .a3-ev {
   break-inside: avoid;
 }
@@ -1453,7 +1453,7 @@ button.lien {
   padding: calc(2.4mm * var(--s)) 0 calc(0.6mm * var(--s));
   border-bottom: 0.2mm solid #e3e6ea;
 }
-.a3-sm:first-child {
+.a3-mois > .a3-bloc:first-child > .a3-sm {
   padding-top: 0;
 }
 .a3-mois ol {
@@ -1465,7 +1465,7 @@ button.lien {
   display: grid;
   grid-template-columns: calc(11mm * var(--s)) 1fr;
   gap: 2mm;
-  padding: calc(1.2mm * var(--s)) 0;
+  padding: calc(1.2mm * var(--s) + var(--g)) 0;
   border-bottom: 0.2mm solid #e3e6ea;
   font-size: calc(8.6pt * var(--s));
   line-height: 1.22;
@@ -1507,9 +1507,6 @@ button.lien {
   color: #5b6470;
   font-size: 0.9em;
   margin-top: 0.3mm;
-}
-.a3-lieu {
-  font-weight: 600;
 }
 .a3-rien {
   color: #b7bec6;
@@ -3812,6 +3809,17 @@ const COULEURS = {
   orange: '#c2620a',
   violet: '#6a3d9a'
 };
+/* mêmes teintes, plus saturées, pour le texte fin imprimé (lieux de l'A3) : sur papier, les couleurs d'écran
+   paraissent ternes en petit corps (François, 19/10/2026) */
+const COULEURS_VIVES = {
+  bleu: '#1F5FA6',
+  rouge: '#B4234A',
+  vert: '#23843A',
+  ocre: '#B56A00',
+  gris: '#56616E',
+  orange: '#D35F00',
+  violet: '#6B2FA8'
+};
 /* ligne d'événement : la zone des heures accepte n'importe quoi jusqu'au « · » (18/10/2026 : une heure écrite
    « 14h-14h45et15h15-16h » rendait la ligne illisible, et l'événement disparaissait du fichier à l'écriture suivante) */
 const RX_EV = /^- (\d{4}-\d{2}-\d{2})(?:\.\.(\d{4}-\d{2}-\d{2}))?(?: ([^·]*?))? · (.*)$/;
@@ -5355,7 +5363,7 @@ function ligneA3(e) {
   /* lieu : nom court dans sa couleur (« Salle Schubert », « CCED »), la légende donne les bâtiments (19/10/2026) */
   const quand = [
     e.heures ? esc(typo(libHeures(e.heures))) : '',
-    L ? '<span class="a3-lieu" style="color:' + L.hex + '">' + rich(nomCourt(L)) + '</span>' : ''
+    L ? '<span class="a3-lieu" style="color:' + (COULEURS_VIVES[L.couleur] || COULEURS_VIVES.gris) + '">' + rich(nomCourt(L)) + '</span>' : ''
   ].filter(Boolean);
   return (
     '<li class="a3-ev' +
@@ -5400,24 +5408,26 @@ function pageA3() {
       const q = periodeDe(e, pers);
       return q && q.nom === p.nom;
     });
+    /* un bloc par mois, jamais coupé entre deux colonnes (19/10/2026) */
     let corps = '',
       mois = '';
     for (const e of L) {
       const m = e.d1.slice(0, 7);
       if (m !== mois) {
+        corps += (mois ? '</ol></div>' : '') + '<div class="a3-bloc"><div class="a3-sm">' + majuscule(MOIS[+m.slice(5) - 1]) + '</div><ol>';
         mois = m;
-        corps += '<li class="a3-sm">' + majuscule(MOIS[+m.slice(5) - 1]) + '</li>';
       }
       corps += ligneA3(e);
     }
+    if (mois) corps += '</ol></div>';
     /* toute l'année est sous les yeux : pas de nom de période, seulement une coupure qui dit les vacances entre
        deux périodes (19/10/2026) ; une période sans date n'apparaît pas */
     if (!L.length) continue;
     h +=
       (vu ? '<div class="a3-vac" aria-label="Vacances"><span>vacances</span></div>' : '') +
-      '<section class="a3-mois"><ol>' +
+      '<section class="a3-mois">' +
       corps +
-      '</ol></section>';
+      '</section>';
     vu = true;
   }
   if (!vu) h += '<p class="a3-rien">Programme à venir</p>';
@@ -5451,7 +5461,14 @@ function ajusterA3(pg) {
   const z = Math.min(1, (pages.clientWidth - 48) / 1587);
   /* trop long : une quatrième colonne apparaît à droite. On vérifie à l'échelle 1 (l'impression) et à celle de
      l'aperçu, où le zoom arrondit les hauteurs de ligne et peut faire déborder ce qui tient sur le papier. */
-  const deb1 = () => g.scrollWidth > g.clientWidth + 1;
+  const deb1 = () => {
+    /* en colonnes équilibrées, la colonne de trop n'apparaît pas dans scrollWidth : on regarde où tombe la
+       dernière date */
+    const r = g.getBoundingClientRect(),
+      evs = $$('.a3-ev', g),
+      x = evs.length ? evs[evs.length - 1].getBoundingClientRect() : null;
+    return g.scrollWidth > g.clientWidth + 1 || (!!x && (x.right > r.right + 1 || x.bottom > r.bottom + 1));
+  };
   const deborde = () => {
     if (deb1()) return true;
     pages.classList.remove('mesure');
@@ -5461,11 +5478,29 @@ function ajusterA3(pg) {
     pages.style.setProperty('--zoom', 1);
     return d;
   };
-  pg.style.setProperty('--s', s);
-  while (deborde() && s > 0.6) {
-    s = Math.round((s - 0.02) * 100) / 100;
-    pg.style.setProperty('--s', s);
+  const fixe = v => pg.style.setProperty('--s', (s = Math.round(v * 100) / 100));
+  pg.style.setProperty('--g', '0px');
+  fixe(s);
+  while (deborde() && s > 0.6) fixe(s - 0.02);
+  /* puis des titres sur une seule ligne plutôt qu'un corps plus gros (19/10/2026) : on réduit encore, sans
+     descendre sous 80 % ; on garde le plus grand corps qui atteint le moins de titres coupés */
+  const coupes = () =>
+    $$('.a3-c > b', pg).filter(b => b.getBoundingClientRect().height > parseFloat(getComputedStyle(b).lineHeight) * 1.5)
+      .length;
+  const plancher = Math.max(0.6, s * 0.8);
+  let meilleur = [coupes(), s];
+  while (meilleur[0] > 0 && s - 0.02 >= plancher) {
+    fixe(s - 0.02);
+    const n = coupes();
+    if (n < meilleur[0]) meilleur = [n, s];
   }
+  fixe(meilleur[1]);
+  /* la hauteur gagnée revient en air entre les lignes */
+  let air = 0;
+  while (air < 14 && !deborde()) pg.style.setProperty('--g', (air += 0.5) + 'px');
+  /* marge de sécurité : un mois ne se coupe pas, et le moindre écart à l'impression en renverrait un entier dans
+     une quatrième colonne, hors de la page */
+  pg.style.setProperty('--g', Math.max(0, (air - 0.5) * 0.6).toFixed(1) + 'px');
   pg.classList.toggle('deborde', deborde());
 }
 
@@ -6340,6 +6375,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 10:30',
+    v: '0.28',
+    items: [
+      'Affiche A3 : un mois ne se coupe plus entre deux colonnes, et les colonnes s’équilibrent. L’ajustement préfère des titres sur une ligne à un texte plus gros, et rend la place gagnée en air entre les lignes.',
+      'Affiche A3 : lieux sans gras, dans des couleurs plus franches pour l’impression.',
+      'Correction : sur certains plannings, la fin de l’A3 pouvait sortir de la page à droite sans être signalée.'
+    ]
+  },
   {
     d: '2026-10-19 09:55',
     v: '0.27',
