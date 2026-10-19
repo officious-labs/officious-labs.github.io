@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019105333">
+<meta name="officious-page" content="20261019105615">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -379,8 +379,8 @@ button.s-primaire {
   --ocre: #7a5c1e;
   /* ce qui ne regarde que l'équipe : remarques, étiquette, date des manifestations internes (19/10/2026) ;
      une teinte qu'aucun lieu n'utilise */
-  --equipe: #6b3fa0;
-  --equipe-fond: #efe8f7;
+  --equipe: #7c4a6a; /* prune sourde, choisie par François le 19/10/2026 */
+  --equipe-fond: #f3e9ef;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -394,8 +394,8 @@ button.s-primaire {
     --survol: #252a30;
     --accent: #7fb0e0;
     --ocre: #d8b56a;
-    --equipe: #c3a6ec;
-    --equipe-fond: #2e2540;
+    --equipe: #d8a9c6;
+    --equipe-fond: #3a2733;
     color-scheme: dark;
   }
 }
@@ -6748,6 +6748,11 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-19 13:15',
+    v: '0.36',
+    items: ['La couleur « équipe » (remarques, étiquette, date des manifestations internes) passe du violet à une prune sourde, qui s’accorde mieux aux couleurs des lieux.']
+  },
+  {
     d: '2026-10-19 13:10',
     v: '0.35',
     items: [
@@ -6769,7 +6774,7 @@ const NOUVEAUTES = [
     d: '2026-10-19 11:10',
     v: '0.33',
     items: [
-      'Ce qui ne regarde que l’équipe a sa couleur, un violet qu’aucun lieu n’utilise : remarques et accompagnement (avec une petite icône de personnes, au lieu du cadenas), étiquette « équipe », et date des manifestations réservées à l’équipe. Dans la fiche, la rubrique s’appelle « Pour l’équipe seulement ».'
+      'Ce qui ne regarde que l’équipe a sa couleur, qu’aucun lieu n’utilise : remarques et accompagnement (avec une petite icône de personnes, au lieu du cadenas), étiquette « équipe », et date des manifestations réservées à l’équipe. Dans la fiche, la rubrique s’appelle « Pour l’équipe seulement ».'
     ]
   },
   {
