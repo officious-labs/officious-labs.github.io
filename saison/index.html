@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019131223">
+<meta name="officious-page" content="20261019132909">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -484,6 +484,112 @@ sup {
 }
 body:has(#s-version:not([hidden])) #s-toast {
   bottom: 5rem; /* le message passe au-dessus du bandeau */
+}
+/* mini-mois à gauche de la liste (PC, écran large) */
+#miniCal {
+  display: none;
+}
+@media (min-width: 1480px) {
+  #miniCal:not([hidden]) {
+    display: block;
+    position: fixed;
+    top: 7.6rem;
+    left: calc((100vw - 860px) / 2 - 290px);
+    width: 262px;
+    padding: 0.6rem 0.7rem 0.7rem;
+    background: var(--papier);
+    border: 1px solid var(--filet);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.05);
+    z-index: 2;
+  }
+}
+@media (max-width: 1919px) {
+  body.avec-fiche #miniCal {
+    display: none !important; /* la fiche pousse la liste : plus de place à gauche */
+  }
+}
+@media (min-width: 1920px) {
+  body.avec-fiche #miniCal:not([hidden]) {
+    left: calc(100vw - max(400px, calc((100vw - 860px) / 2)) - 860px - 290px);
+  }
+}
+.mc-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+.mc-tete b {
+  font:
+    italic 500 1.05rem Lora,
+    Georgia,
+    serif;
+  color: var(--accent);
+}
+.mc-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.mc-js {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--pale);
+  text-transform: uppercase;
+}
+.mc-j {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  height: 2.35rem;
+  padding-top: 0.2rem;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.mc-j:hover {
+  background: var(--survol);
+}
+.mc-j.hors {
+  color: var(--pale);
+}
+.mc-j.passe {
+  opacity: 0.55;
+}
+.mc-j.vac {
+  background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--pale) 18%, transparent) 5px 7px);
+}
+.mc-j.auj .n {
+  background: var(--accent);
+  color: var(--papier);
+  border-radius: 99px;
+  padding: 0 0.35em;
+}
+.mc-j.vu {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.mc-j.survol {
+  background-color: color-mix(in srgb, var(--accent) 16%, var(--papier));
+}
+.mc-j .pts {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  height: 6px;
+}
+.mc-j .pts i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+.mc-j .pts em {
+  font: 600 0.6rem/1 Inter, sans-serif;
+  color: var(--gris);
+  font-style: normal;
 }
 /* bouton « recentrer », comme sur un GPS : revient à la prochaine date (ou au mois en cours) */
 .flottant {
@@ -1967,6 +2073,7 @@ dialog.completer {
     <div id="ajoutApercu" aria-live="polite"></div>
   </form>
   <details id="controles" hidden><summary></summary><ul></ul></details>
+  <nav id="miniCal" hidden aria-label="Mois"></nav>
   <div id="liste"></div>
   <div id="calendrier" hidden></div>
   <div id="vide" hidden>
@@ -5001,6 +5108,7 @@ function recentrer() {
 function toutAfficher() {
   afficherListe();
   afficherCalendrier();
+  afficherMiniCal();
   afficherControles();
   if (selId && !doc.evts.some(e => e.id === selId)) fermerFiche();
   else if (selId) remplirFiche();
@@ -5755,6 +5863,128 @@ function initCalendrier() {
       afficherCalendrier();
     }
   });
+}
+/* 06c-minical.js : le mini-mois à gauche de la liste, au PC sur écran large (19/10/2026).
+   Un point de couleur par manifestation ; clic sur un jour → la liste y défile ; la liste défile → le mini-mois
+   suit (jour « vu » surligné) ; survol d'une ligne → son jour s'allume. Les « à dater » n'y figurent pas. */
+
+let miniMois = ''; /* 'AAAA-MM' affiché */
+let miniVu = ''; /* jour de la première ligne visible en haut de la liste */
+
+function afficherMiniCal() {
+  const nav = $('#miniCal');
+  if (!nav) return;
+  const actif = socle.ouvert && vue !== 'calendrier';
+  nav.hidden = !actif;
+  if (!actif) return;
+  if (!miniMois) miniMois = (miniVu || auj()).slice(0, 7);
+  const [y, m] = miniMois.split('-').map(Number);
+  const premier = new Date(y, m - 1, 1, 12);
+  const d = new Date(premier);
+  d.setDate(1 - ((premier.getDay() + 6) % 7)); /* lundi de la première semaine */
+  const a = auj(),
+    VAC = vacances(doc);
+  let h =
+    '<div class="mc-tete"><button class="icone" data-mc="-1" aria-label="Mois précédent">‹</button><b>' +
+    majuscule(MOIS[m - 1]) +
+    ' ' +
+    y +
+    '</b><button class="icone" data-mc="1" aria-label="Mois suivant">›</button></div><div class="mc-grille">' +
+    ['l', 'm', 'm', 'j', 'v', 's', 'd'].map(j => '<span class="mc-js">' + j + '</span>').join('');
+  for (let k = 0; k < 42; k++) {
+    const iso = isoDe(d);
+    if (k >= 35 && d.getMonth() !== m - 1) break;
+    const evts = evtsDuJour(iso);
+    const pts = evts
+      .slice(0, 3)
+      .map(e => {
+        const c = e.statut === 'annulé' ? 'var(--pale)' : e.interne ? 'var(--equipe)' : (lieuDe(e) || {}).hex || 'var(--encre)';
+        return '<i style="background:' + c + '"></i>';
+      })
+      .join('');
+    h +=
+      '<button type="button" class="mc-j' +
+      (d.getMonth() !== m - 1 ? ' hors' : '') +
+      (iso === a ? ' auj' : '') +
+      (iso < a ? ' passe' : '') +
+      (iso === miniVu ? ' vu' : '') +
+      (VAC.some(v => iso >= v.d1 && iso <= v.d2) ? ' vac' : '') +
+      (evts.length ? ' plein' : '') +
+      '" data-jour="' +
+      iso +
+      '"' +
+      (evts.length ? ' title="' + esc(evts.map(e => typo(e.titre).replace(/\*/g, '')).join(' · ')) + '"' : '') +
+      '><span class="n">' +
+      d.getDate() +
+      '</span><span class="pts">' +
+      pts +
+      (evts.length > 3 ? '<em>+</em>' : '') +
+      '</span></button>';
+    d.setDate(d.getDate() + 1);
+  }
+  nav.innerHTML = h + '</div>';
+}
+
+/** Clic sur un jour : la première manifestation datée de ce jour ou après vient sous la barre d'ajout. */
+function allerAuJour(iso) {
+  const e = doc.evts.filter(e => visible(e) && estDatee(e) && e.d2 >= iso).sort(ordre)[0];
+  const li = e && $('#liste .ev[data-id="' + e.id + '"]');
+  if (!li) return;
+  window.scrollBy({ top: li.getBoundingClientRect().top - hautUtile(), behavior: 'smooth' });
+  li.classList.remove('nouveau');
+  void li.offsetWidth; /* relance l'animation */
+  li.classList.add('nouveau');
+}
+
+/** La liste a défilé : le mini-mois montre le mois de la première ligne visible. */
+function suivreListe() {
+  const nav = $('#miniCal');
+  if (!nav || nav.hidden || getComputedStyle(nav).display === 'none') return; /* fixe : pas d'offsetParent */
+  const haut = hautUtile();
+  const li = $$('#liste .ev').find(x => x.getBoundingClientRect().bottom > haut + 4);
+  const e = li && doc.evts.find(x => x.id === li.dataset.id);
+  const j = e && estDatee(e) ? e.d1 : '';
+  if (j === miniVu) return;
+  miniVu = j;
+  if (j && j.slice(0, 7) !== miniMois) miniMois = j.slice(0, 7);
+  afficherMiniCal();
+}
+
+function initMiniCal() {
+  const nav = $('#miniCal');
+  nav.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-mc]');
+    if (b) {
+      const [y, m] = miniMois.split('-').map(Number);
+      miniMois = isoDe(new Date(y, m - 1 + +b.dataset.mc, 1, 12)).slice(0, 7);
+      return afficherMiniCal();
+    }
+    const j = ev.target.closest('.mc-j');
+    if (j) allerAuJour(j.dataset.jour);
+  });
+  /* survol d'une ligne : ses jours s'allument */
+  const allumer = id => {
+    $$('#miniCal .mc-j.survol').forEach(x => x.classList.remove('survol'));
+    const e = id && doc.evts.find(x => x.id === id);
+    if (!e || !estDatee(e)) return;
+    for (let j = e.d1; j <= e.d2; j = plusJours(j, 1)) {
+      const c = $('#miniCal .mc-j[data-jour="' + j + '"]');
+      if (c) c.classList.add('survol');
+    }
+  };
+  $('#liste').addEventListener('mouseover', ev => {
+    const li = ev.target.closest('.ev');
+    allumer(li && li.dataset.id);
+  });
+  $('#liste').addEventListener('mouseleave', () => allumer(''));
+  let rq = 0;
+  addEventListener(
+    'scroll',
+    () => {
+      if (!rq) rq = requestAnimationFrame(() => ((rq = 0), suivreListe()));
+    },
+    { passive: true }
+  );
 }
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
@@ -6892,6 +7122,14 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-19 16:10',
+    v: '0.48',
+    items: [
+      'Au PC, sur un écran large, un petit calendrier du mois accompagne la liste, à gauche : un point de couleur par manifestation, vacances hachurées.',
+      'Clic sur un jour : la liste y défile. En faisant défiler la liste, le petit calendrier suit (le premier jour visible est encadré). Au survol d’une ligne, ses jours s’allument.'
+    ]
+  },
+  {
     d: '2026-10-19 15:50',
     v: '0.46',
     items: [
@@ -7355,6 +7593,7 @@ function retour() {
 initBoutons();
 initListe();
 initCalendrier();
+initMiniCal();
 initAffiche();
 initMail();
 document.addEventListener('keydown', raccourcis);
