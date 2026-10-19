@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019195640">
+<meta name="officious-page" content="20261019213356">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1570,6 +1570,12 @@ button.lien {
   color: #3e4652;
   margin-top: calc(0.3mm * var(--s));
 }
+.pg-pratique {
+  font-size: calc(10pt * var(--s));
+  font-style: italic;
+  color: #5b6470;
+  margin-top: calc(0.3mm * var(--s));
+}
 .pg-lieu {
   /* colonne des lieux : filet de couleur, nom court */
   font-weight: 600;
@@ -1734,6 +1740,13 @@ button.lien {
   color: #5b6470;
   font-size: 0.9em;
   margin-top: 0.3mm;
+}
+.a3-p {
+  /* infos pratiques */
+  display: block;
+  color: #5b6470;
+  font-size: 0.85em;
+  font-style: italic;
 }
 .a3-rien {
   color: #b7bec6;
@@ -2222,10 +2235,10 @@ dialog.completer {
     <thead><tr><th></th><th>Liste</th><th>Affiches A3 et A4</th><th>Mail d’équipe</th><th>Demandez le programme</th></tr></thead>
     <tbody>
       <tr><th>Titre</th><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-      <tr><th>Sous-titre</th><td>✓</td><td>✓</td><td>✓</td><td>✓ (et « En bref »)</td></tr>
+      <tr><th>Sous-titre</th><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
       <tr><th>Descriptif</th><td>✓</td><td class="non">—</td><td class="non">—</td><td>✓</td></tr>
       <tr><th>Élèves concernés</th><td>✓</td><td class="non">—</td><td class="non">—</td><td>✓</td></tr>
-      <tr><th>Infos pratiques</th><td>✓</td><td class="non">—</td><td class="non">—</td><td>✓</td></tr>
+      <tr><th>Infos pratiques</th><td>✓</td><td>✓</td><td class="non">—</td><td>✓</td></tr>
       <tr><th>Remarque</th><td>✓</td><td class="non">—</td><td>✓</td><td class="non">—</td></tr>
     </tbody>
   </table>
@@ -6095,6 +6108,15 @@ function nomCourt(L) {
   const v = L.nom.indexOf(',');
   return v > 0 ? majuscule(L.nom.slice(v + 1).trim()) : L.cle || L.nom;
 }
+/** Infos pratiques sur les affiches (François, 19/10/2026) : les lignes du champ, à la suite, séparées par « · ». */
+function pratiqueAffiche(e) {
+  return (e.pratique || '')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean)
+    .map(l => rich(l))
+    .join(' · ');
+}
 function ligneA3(e) {
   const L = lieuDe(e),
     a = jour(e.d1),
@@ -6125,6 +6147,7 @@ function ligneA3(e) {
     (e.statut === 'à confirmer' ? ' <i>(sous réserve)</i>' : '') +
     (e.soustitre ? '<span class="a3-s">' + rich(e.soustitre) + '</span>' : '') +
     (quand.length ? '<span class="a3-m">' + quand.join(' · ') + '</span>' : '') +
+    (e.pratique && e.statut !== 'annulé' ? '<span class="a3-p">' + pratiqueAffiche(e) + '</span>' : '') +
     '</span></li>'
   );
 }
@@ -6288,6 +6311,7 @@ function ligneAffiche(e, interne) {
   if (e.soustitre) h += '<div class="pg-soustitre">' + rich(e.soustitre) + '</div>';
   const meta = metaQuand(e);
   if (meta) h += '<div class="pg-meta">' + meta + '</div>';
+  if (e.pratique && e.statut !== 'annulé') h += '<div class="pg-pratique">' + pratiqueAffiche(e) + '</div>';
   /* descriptif et élèves concernés : « Demandez le programme » seulement (François, 18/10/2026) */
   if (interne && (e.accomp || e.remarque))
     h +=
@@ -7116,6 +7140,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 23:45',
+    v: '0.54',
+    items: ['Les infos pratiques (tarif, réservation) figurent aussi sur les affiches A3 et A4, en italique sous l’heure et le lieu.']
+  },
   {
     d: '2026-10-19 22:00',
     v: '0.53',
