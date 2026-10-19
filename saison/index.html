@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019082253">
+<meta name="officious-page" content="20261019084245">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -902,6 +902,9 @@ body.avec-fiche #principal {
 .coche.bas {
   align-self: end;
   padding-bottom: 0.45rem;
+}
+#affPeriodes[hidden] {
+  display: none; /* A3 : toute la saison, pas de choix de période */
 }
 .puces {
   display: flex;
@@ -5602,19 +5605,26 @@ function pageAffiche(p, interne) {
 function periodesChoisies() {
   const pers = periodes(doc);
   if (affChoix) return pers.filter(p => affChoix.includes(p.nom));
+  /* par défaut : la première période qui a encore des dates publiques à venir (19/10/2026) */
   const a = auj();
-  const cur = pers.filter(p => p.d2 >= a);
+  const cur = pers.filter(p => doc.evts.some(e => estPublic(e) && e.d2 >= a && (periodeDe(e, pers) || {}).nom === p.nom));
   return cur.length ? cur.slice(0, 1) : pers.slice(-1);
 }
 
 function afficherAffiche() {
   const pers = periodes(doc);
   const choix = periodesChoisies().map(p => p.nom);
-  $('#affPeriodes').innerHTML = pers
+  const tout = pers.length > 1 && choix.length === pers.length;
+  /* « Toutes » : un seul document, une page A4 par période */
+  $('#affPeriodes').innerHTML =
+    (pers.length > 1
+      ? '<button type="button" class="puce' + (tout ? ' choisi' : '') + '" data-tout="1" aria-pressed="' + tout + '">Toutes</button>'
+      : '') +
+    pers
     .map(
       p =>
         '<button type="button" class="puce' +
-        (choix.includes(p.nom) ? ' choisi' : '') +
+        (!tout && choix.includes(p.nom) ? ' choisi' : '') +
         '" data-nom="' +
         esc(p.nom) +
         '" aria-pressed="' +
@@ -5692,7 +5702,7 @@ function fermerAffiche() {
 function initAffiche() {
   $('#affFermer').onclick = fermerAffiche;
   /* au téléphone, l'impression passe par Android (socle) : imprimante ou PDF, déjà réglée au bon format */
-  $('#affImprimer').onclick = () => socle.imprimer(affFormat === 'a3' ? doc.titre || 'Saison' : 'Affiche', affFormat);
+  $('#affImprimer').onclick = () => socle.imprimer(affFormat === 'a3' ? doc.titre || 'Saison' : periodesChoisies().length > 1 ? 'Affiches ' + (doc.titre || '') : 'Affiche ' + periodesChoisies()[0].nom, affFormat);
   $('#affFormat').addEventListener('click', ev => {
     const b = ev.target.closest('[data-f]');
     if (!b) return;
@@ -5703,6 +5713,10 @@ function initAffiche() {
     const b = ev.target.closest('button');
     if (!b) return;
     const cur = periodesChoisies().map(p => p.nom);
+    if (b.dataset.tout) {
+      affChoix = periodes(doc).map(p => p.nom);
+      return afficherAffiche();
+    }
     const n = b.dataset.nom;
     /* clic simple : cette période seule ; Ctrl ou Maj : ajoutée ou retirée */
     affChoix =
@@ -6404,6 +6418,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 11:00',
+    v: '0.31',
+    items: [
+      'Affiche A3 : plus de choix de période (c’est toute la saison).',
+      'Affiche A4 : s’ouvre sur la première période qui a encore des dates à venir ; la puce « Toutes » met toutes les périodes dans un seul document, une page par période.'
+    ]
+  },
   {
     d: '2026-10-19 10:45',
     v: '0.30',
