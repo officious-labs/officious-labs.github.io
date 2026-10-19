@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019181841">
+<meta name="officious-page" content="20261019195640">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1384,6 +1384,13 @@ button.lien {
   font-size: 0.85rem;
   padding: 0.2rem 0.75rem;
 }
+.tarifs {
+  margin: 0.3rem 0 0.35rem;
+}
+.tarifs .puce {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.6rem;
+}
 .puce.choisi {
   background: var(--encre);
   color: var(--papier);
@@ -2132,7 +2139,7 @@ dialog.completer {
     <legend>Pour « Demandez le programme »</legend>
     <label class="champ">Descriptif<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
     <label class="champ">Élèves concernés<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
-    <label class="champ">Infos pratiques<textarea id="fPratique" rows="2" placeholder="Gratuit sur réservation auprès du conservatoire"></textarea></label>
+    <div class="champ">Infos pratiques<div id="fTarifs" class="puces tarifs" role="group" aria-label="Infos pratiques toutes faites"></div><textarea id="fPratique" rows="2" aria-label="Infos pratiques" placeholder="Ou écris-les toi-même (Entrée pour aller à la ligne)"></textarea></div>
   </fieldset>
   <fieldset class="interne">
     <legend>Pour l’équipe seulement</legend>
@@ -4067,6 +4074,7 @@ function typo(s) {
     .replace(/'/g, '’')
     .replace(/\b(\d{1,2})[ \u00a0\u202f]?h[ \u00a0\u202f]?(\d{2})\b/g, '$1' + FINE + 'h' + FINE + '$2')
     .replace(/\b(\d{1,2})[ \u00a0\u202f]?h\b(?![ \u00a0\u202f]?\d)/g, '$1' + FINE + 'h')
+    .replace(/(\d)[ \u00a0\u202f]?€/g, '$1' + NBSP + '€')
     .replace(/\b[nN]° ?(\d)/g, (m, d) => m[0] + '°' + NBSP + d)
     .replace(/[   ]*([;!?])/g, (m, p, i, all) => (i === 0 ? p : FINE + p))
     .replace(/(\S)[   ]*:(?=\s|$)/g, '$1' + NBSP + ':')
@@ -5420,6 +5428,7 @@ function remplirFiche() {
   set('#fDetail', e.detail);
   set('#fEleves', e.eleves);
   set('#fPratique', e.pratique);
+  $('#fTarifs').innerHTML = pucesTarifs(e.pratique);
   $$('#fStatut button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === e.statut)));
   $('#fInterne').checked = e.interne;
   $('#fPublic').hidden = e.interne; /* réservé à l'équipe : les champs du public ne servent à rien (19/10/2026) */
@@ -5432,6 +5441,44 @@ function remplirFiche() {
 }
 /* une seule étape d'annulation par champ modifié (comme Tâches) */
 let editSnap = null;
+/* Infos pratiques toutes faites (François, 19/10/2026) : peu de cas possibles ; un clic remplit le champ, qui reste
+   libre (plusieurs lignes possibles). [étiquette courte, texte] */
+const TARIFS = [
+  ['Gratuit', 'Gratuit'],
+  ['Gratuit sur réservation', 'Gratuit sur réservation auprès du conservatoire'],
+  ['10 €', 'Tarif : 10 €, gratuit pour les élèves du conservatoire et les –\u00a0de 12 ans'],
+  ['Sur invitation', 'Entrée sur invitation uniquement']
+];
+const memeTarif = (a, b) => (a || '').replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim();
+/** Les puces des infos pratiques, la puce du texte actuel marquée. */
+function pucesTarifs(val) {
+  return TARIFS.map(
+    ([lib, t]) =>
+      '<button type="button" class="puce' +
+      (memeTarif(val, t) ? ' choisi' : '') +
+      '" data-tarif="' +
+      esc(t) +
+      '" title="' +
+      esc(t) +
+      '" aria-pressed="' +
+      memeTarif(val, t) +
+      '">' +
+      esc(typo(lib)) +
+      '</button>'
+  ).join('');
+}
+/** Clic sur une puce : le champ prend le texte ; dans la fiche, un texte écrit à la main remplacé se récupère par Annuler. */
+function choisirTarif(b, champ, evenement) {
+  const avant = champ.value.trim(),
+    puces = b.parentElement; /* la fiche redessine ses puces à l'événement : garder le conteneur */
+  if (memeTarif(avant, b.dataset.tarif)) return;
+  champ.value = b.dataset.tarif;
+  champ.dispatchEvent(new Event(evenement, { bubbles: true }));
+  puces.innerHTML = pucesTarifs(champ.value);
+  if (avant && !TARIFS.some(([, t]) => memeTarif(avant, t)))
+    evenement === 'input' ? toast('Infos pratiques remplacées', 'Annuler', annuler) : toast('Infos pratiques remplacées');
+}
+
 function modifier(champ, val, rendre = true) {
   const e = evSel();
   if (!e || e[champ] === val) return;
@@ -5524,6 +5571,11 @@ function initListe() {
     );
     $(sel).addEventListener('blur', () => (editSnap = null));
   }
+  $('#fTarifs').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-tarif]');
+    if (b) choisirTarif(b, $('#fPratique'), 'input');
+  });
+  $('#fPratique').addEventListener('input', () => ($('#fTarifs').innerHTML = pucesTarifs($('#fPratique').value)));
   /* « Carte blanche de rodage pour les élèves de la classe de violon » : en quittant le titre, la fin passe en
      sous-titre (si celui-ci est encore vide) */
   $('#fTitre').addEventListener('change', () => {
@@ -6676,12 +6728,13 @@ function champCompleter(id, nom) {
     lieu: 'CCED, Bach, Conciergerie… ou en toutes lettres',
     descriptif: 'Pour les familles, une ou deux phrases',
     'élèves concernés': 'classe de piano, ateliers théâtre…',
-    'infos pratiques': 'Gratuit sur réservation auprès du conservatoire'
+    'infos pratiques': 'Ou écris-les toi-même (Entrée pour aller à la ligne)'
   }[nom];
   const long = nom === 'descriptif' || nom === 'infos pratiques';
   return (
     '<label class="champ c-champ">' +
     majuscule(nom) +
+    (nom === 'infos pratiques' ? '<span class="puces tarifs">' + pucesTarifs('') + '</span>' : '') +
     (long
       ? '<textarea rows="2" data-id="' +
         esc(id) +
@@ -6748,6 +6801,11 @@ function initCompleter() {
     );
   };
   $('#cListe').addEventListener('click', ev => {
+    const t = ev.target.closest('[data-tarif]');
+    if (t) {
+      ev.preventDefault(); /* dans un label : pas de clic relayé au champ */
+      return choisirTarif(t, t.closest('.c-champ').querySelector('textarea'), 'change');
+    }
     const b = ev.target.closest('[data-fiche]');
     if (!b) return;
     $('#completer').close();
@@ -7058,6 +7116,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 22:00',
+    v: '0.53',
+    items: [
+      'Infos pratiques toutes faites : « Gratuit », « Gratuit sur réservation », « 10 € » (gratuit pour les élèves et les – de 12 ans), « Sur invitation ». Un clic remplit le champ, qui reste libre, sur plusieurs lignes si besoin (Entrée pour aller à la ligne).'
+    ]
+  },
   {
     d: '2026-10-19 21:00',
     v: '0.52',
