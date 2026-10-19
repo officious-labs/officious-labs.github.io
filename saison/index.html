@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019085813">
+<meta name="officious-page" content="20261019090656">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1891,7 +1891,7 @@ dialog.completer {
   </div>
   <label class="coche"><input id="fInterne" type="checkbox"> Réservé à l’équipe (absent de la version publique)</label>
   <fieldset class="interne">
-    <legend>🔒 Interne</legend>
+    <legend>Pour l’équipe seulement</legend>
     <label class="champ">Accompagnement<input id="fAccomp" list="accomps"></label>
     <label class="champ">Remarque (organisation)<textarea id="fRemarque" rows="2"></textarea></label>
   </fieldset>
@@ -4625,7 +4625,9 @@ function ligneHtml(e) {
   if (e.pratique) h += '<div class="pratique">' + rich(e.pratique).replace(/\n/g, '<br>') + '</div>';
   if (e.accomp || e.remarque) {
     h +=
-      '<div class="rem">🔒 ' +
+      /* ce qui ne sert qu'à l'équipe : même étiquette « équipe » que les manifestations internes (19/10/2026 :
+         le cadenas faisait croire à un commentaire verrouillé) */
+      '<div class="rem"><span class="tag t-interne">équipe</span> ' +
       [e.accomp ? 'Accompagnement : ' + rich(e.accomp) : '', rich(e.remarque || '').replace(/\n/g, '<br>')]
         .filter(Boolean)
         .join(' · ') +
@@ -6445,6 +6447,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-19 11:10',
+    v: '0.33',
+    items: [
+      'Les remarques et l’accompagnement, réservés à l’équipe, portent l’étiquette « équipe » (comme les manifestations internes) au lieu du cadenas. Dans la fiche, la rubrique s’appelle « Pour l’équipe seulement ».'
+    ]
+  },
   {
     d: '2026-10-19 11:20',
     v: '0.32',
