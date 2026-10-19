@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019091049">
+<meta name="officious-page" content="20261019091716">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -377,6 +377,10 @@ button.s-primaire {
   --rouge: #c8102e;
   --vert: #3d7a45;
   --ocre: #7a5c1e;
+  /* ce qui ne regarde que l'équipe : remarques, étiquette, date des manifestations internes (19/10/2026) ;
+     une teinte qu'aucun lieu n'utilise */
+  --equipe: #6b3fa0;
+  --equipe-fond: #efe8f7;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -390,6 +394,8 @@ button.s-primaire {
     --survol: #252a30;
     --accent: #7fb0e0;
     --ocre: #d8b56a;
+    --equipe: #c3a6ec;
+    --equipe-fond: #2e2540;
     color-scheme: dark;
   }
 }
@@ -763,7 +769,7 @@ body.avec-fiche #principal {
 }
 .rem {
   font-size: 0.85rem;
-  color: var(--ocre);
+  color: var(--equipe);
   margin-top: 0.2rem;
   display: flex;
   gap: 0.35em;
@@ -822,8 +828,8 @@ body.avec-fiche #principal {
   color: #4a5360;
 }
 .t-interne {
-  background: #e6eef7;
-  color: #2e5e8c;
+  background: var(--equipe-fond);
+  color: var(--equipe);
 }
 #vide {
   text-align: center;
@@ -4565,7 +4571,14 @@ function blocDate(e, sansMois, papier) {
     bas = mo(a);
   }
   const L = lieuDe(e);
-  const coul = L && L.hex ? ' style="--c:' + (papier ? vif(L) : L.hex) + '"' : '';
+  /* à l'écran, une manifestation réservée à l'équipe prend la couleur « équipe » (celle de l'étiquette et des
+     remarques) plutôt que celle de son lieu */
+  const coul =
+    e.interne && !papier
+      ? ' style="--c:var(--equipe)"'
+      : L && L.hex
+        ? ' style="--c:' + (papier ? vif(L) : L.hex) + '"'
+        : '';
   return (
     '<div class="bdate"' +
     coul +
@@ -6462,7 +6475,7 @@ const NOUVEAUTES = [
     d: '2026-10-19 11:10',
     v: '0.33',
     items: [
-      'Les remarques et l’accompagnement, réservés à l’équipe, sont signalés par une petite icône de personnes, en ocre, au lieu du cadenas. Dans la fiche, la rubrique s’appelle « Pour l’équipe seulement ».'
+      'Ce qui ne regarde que l’équipe a sa couleur, un violet qu’aucun lieu n’utilise : remarques et accompagnement (avec une petite icône de personnes, au lieu du cadenas), étiquette « équipe », et date des manifestations réservées à l’équipe. Dans la fiche, la rubrique s’appelle « Pour l’équipe seulement ».'
     ]
   },
   {
