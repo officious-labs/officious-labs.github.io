@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourci « Nouvelle note » : le pense-bête du bouton d'enregistrement, aux couleurs de l'icône (cartes vert sapin, lignes blanches) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="25.2" android:translateY="25.2" android:scaleX="2.4" android:scaleY="2.4">
+        <path android:fillColor="#2F6F5E" android:pathData="M5.2,4h13.6a1.2,1.2 0 0 1 1.2,1.2v9.3L14.5,20H5.2a1.2,1.2 0 0 1 -1.2,-1.2V5.2a1.2,1.2 0 0 1 1.2,-1.2z" />
+        <path android:fillColor="#FFFFFF" android:fillAlpha="0.4" android:pathData="M20,14.5h-4.3a1.2,1.2 0 0 0 -1.2,1.2V20z" />
+        <path android:fillColor="#FFFFFF" android:fillAlpha="0.8" android:pathData="M7.5,7.9h9a0.65,0.65 0 0 1 0,1.3h-9a0.65,0.65 0 0 1 0,-1.3z" />
+        <path android:fillColor="#FFFFFF" android:fillAlpha="0.6" android:pathData="M7.5,11.4h6a0.65,0.65 0 0 1 0,1.3h-6a0.65,0.65 0 0 1 0,-1.3z" />
+    </group>
+</vector>

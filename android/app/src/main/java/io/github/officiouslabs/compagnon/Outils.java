@@ -16,9 +16,9 @@ import org.json.JSONObject;
 final class Outils {
     private Outils() { }
 
-    static final String[] NOMS = { "saison" };
-    static final String[] TITRES = { "Saison" };
-    static final Class<?>[] ACTIVITES = { SaisonActivity.class };
+    static final String[] NOMS = { "saison", "taches" };
+    static final String[] TITRES = { "Saison", "Tâches" };
+    static final Class<?>[] ACTIVITES = { SaisonActivity.class, TachesActivity.class };
 
     static Class<?> activiteDe(String appli) {
         for (int i = 0; i < NOMS.length; i++) if (NOMS[i].equals(appli)) return ACTIVITES[i];
