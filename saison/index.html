@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261019215442">
+<meta name="officious-page" content="20261024074626">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -158,6 +158,21 @@
   padding: 0.5rem 1rem;
   background: #e3eefa;
   color: #173f68;
+}
+/* bandeau « nouvelle version dans le dossier » (PC) : flottant en bas, visible où qu'on soit dans la page
+   (repris de Saison 0.41, socle 1.4) */
+#s-version {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 70;
+  max-width: calc(100vw - 2rem);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
+}
+body:has(#s-version:not([hidden])) #s-toast {
+  bottom: 5rem; /* le message passe au-dessus du bandeau */
 }
 .s-bandeau[hidden] {
   display: none;
@@ -470,21 +485,6 @@ sup {
   vertical-align: 0.42em;
 }
 
-/* bandeau « nouvelle version dans le dossier » (PC) : flottant en bas, visible où qu'on soit dans la liste
-   (19/10/2026 ; à reporter dans le socle) */
-#s-version {
-  position: fixed;
-  left: 50%;
-  bottom: 1rem;
-  transform: translateX(-50%);
-  z-index: 70;
-  max-width: calc(100vw - 6rem);
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
-}
-body:has(#s-version:not([hidden])) #s-toast {
-  bottom: 5rem; /* le message passe au-dessus du bandeau */
-}
 /* mini-mois à gauche de la liste (PC, écran large) */
 #miniCal {
   display: none;
@@ -2285,7 +2285,9 @@ const C = {
   saving: false,
   saveAgain: false,
   savedAt: 0,
-  saveErr: null
+  saveErr: null,
+  forcer: false /* « Écrire quand même » : passe outre une fois les gardes contre la perte (16-synchro.js) */,
+  nouveau: false /* fichier qu'on vient de créer : sa lecture vide est normale */
 };
 const hasFS = typeof window.showOpenFilePicker === 'function';
 const $s = (s, r = document) => r.querySelector(s);
@@ -2526,6 +2528,12 @@ function journalTexte() {
 const ICONE_OK =
   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
+const AIDE_EN_LIGNE = () =>
+  'Elle permet au Compagnon du téléphone de lire et d’écrire le fichier directement sur OneDrive, et d’y déposer ' +
+  A.page +
+  ' pour ce PC. Ouvre le dossier de ' +
+  A.fichier +
+  ' sur OneDrive dans le navigateur, et colle ici l’adresse de la barre d’adresse (celle du dossier suffit).';
 function creerInterface() {
   const corps = document.body;
   const ajoute = (html, ou = corps) => {
@@ -2547,7 +2555,7 @@ function creerInterface() {
   ajoute(
     `<dialog id="s-enligne" class="s-dialogue" aria-label="Adresse en ligne">
       <h2>Adresse en ligne de ${A.fichier}</h2>
-      <p class="s-aide">Elle permet au Compagnon du téléphone de lire et d’écrire le fichier directement sur OneDrive, et d’y déposer ${A.page} pour ce PC. Ouvre le dossier de ${A.fichier} sur OneDrive dans le navigateur, et colle ici l’adresse de la barre d’adresse (celle du dossier suffit).</p>
+      <p id="s-elAide" class="s-aide">${AIDE_EN_LIGNE()}</p>
       <input id="s-elAdresse" placeholder="https://…sharepoint.com/personal/…/Documents/…" spellcheck="false" autocomplete="off">
       <p id="s-elApercu" class="s-aide"></p>
       <form method="dialog" class="s-pied"><button value="annuler">Annuler</button> <button id="s-elOk" class="s-primaire" value="ok">Enregistrer</button></form>
@@ -2768,7 +2776,8 @@ function etat() {
 function initEnLigne() {
   const champ = $s('#s-elAdresse'),
     apercu = $s('#s-elApercu');
-  const lire = () => adresseFichier(champ.value, (fichierPc.handle && fichierPc.handle.name) || A.fichier);
+  const lire = () =>
+    adresseFichier(champ.value, (fichierPc.handle && fichierPc.handle.name) || (AND && tel.nom) || A.fichier);
   champ.oninput = () => {
     const u = lire();
     apercu.textContent = !champ.value.trim()
@@ -2791,8 +2800,14 @@ function initEnLigne() {
     toast(u ? 'Adresse enregistrée : le téléphone lira le fichier en ligne' : 'Adresse retirée');
   };
 }
-function reglerEnLigne() {
-  if (!C.ouvert) return toast('Ouvre d’abord le fichier');
+/** Fenêtre de l'adresse en ligne ; « tel » : juste après le choix d'un fichier OneDrive au téléphone. */
+function reglerEnLigne(tel) {
+  if (!C.ouvert && !tel) return toast('Ouvre d’abord le fichier');
+  $s('#s-elAide').textContent = tel
+    ? 'Pour que le téléphone lise toujours la dernière version de ' +
+      A.fichier +
+      ' (l’appli OneDrive rend parfois un fichier vide ou ancien), colle l’adresse en ligne de son dossier : ouvre le dossier sur OneDrive dans le navigateur, au PC ou au téléphone, et copie la barre d’adresse. Elle est déjà dans le fichier si elle a été réglée au PC : dans ce cas, annule.'
+    : AIDE_EN_LIGNE();
   $s('#s-elAdresse').value = reglage('en ligne');
   $s('#s-elApercu').textContent = '';
   $s('#s-enligne').showModal();
@@ -3092,7 +3107,14 @@ function voisin(nom) {
    - écritures rapprochées : une seule à la fois (saving), une autre relancée ensuite (saveAgain), dirty effacé
      seulement si rien n'a changé pendant l'écriture (rev) ;
    - conflit d'ETag en accès direct : relire, fusionner, réécrire, trois fois au plus ;
-   - rien à écrire : si seule l'empreinte changerait, on n'écrit pas (Tâches 2.19.4). */
+   - rien à écrire : si seule l'empreinte changerait, on n'écrit pas (Tâches 2.19.4) ;
+   - rien ne disparaît sans suppression (socle 1.4, 24/10/2026, après la perte du 2 octobre dans Saison et les
+     lectures vides ou périmées de l'appli OneDrive du 19/10) :
+     · une lecture vide n'est jamais écrasée quand le fichier avait du contenu (ou qu'on n'en sait rien) ;
+     · sans base connue, on fusionne avec le fichier au lieu de l'écraser ;
+     · avant d'écrire, chaque élément du fichier lu (A.elements) doit se retrouver dans ce qu'on écrit, sauf s'il a
+       été supprimé ici depuis la dernière lecture ; sinon on n'écrit pas et on le dit.
+     Dans les deux cas de refus, « Écrire quand même » passe outre une fois (C.forcer). */
 
 /* ---- copie de secours (navigateur) ---- */
 function backup() {
@@ -3169,6 +3191,39 @@ function fusionner(B, M, T) {
   return r;
 }
 
+/** Refus d'écrire : l'erreur porte le message montré, avec « Écrire quand même ». */
+function refus(msg) {
+  const e = new Error('refus:' + msg);
+  e.refus = msg;
+  return e;
+}
+function forcerEcriture() {
+  journal('écrire quand même');
+  C.forcer = true;
+  C.dirty = true;
+  syncSave();
+}
+/** Éléments du fichier (A.elements : clé → libellé) ; vide si l'outil ne les donne pas. */
+function elementsDe(t) {
+  try {
+    return A.elements ? A.elements(t || '') : new Map();
+  } catch (e) {
+    return new Map();
+  }
+}
+/**
+ * Éléments du fichier lu qui manqueraient dans ce qu'on écrit, hors suppressions faites ici : ceux que la base
+ * (lue et comprise par l'outil, donc relue par A.parse) avait et que l'état d'avant la fusion n'a plus.
+ */
+function elementsPerdus(cur, out, base, mien) {
+  if (!A.elements || !cur || !cur.trim()) return [];
+  const lu = elementsDe(cur),
+    ecrit = elementsDe(out),
+    b = base ? elementsDe(A.serialize(A.parse(base))) : new Map(),
+    m = elementsDe(mien);
+  return [...lu].filter(([k]) => !ecrit.has(k) && !(b.has(k) && !m.has(k))).map(([, lib]) => lib);
+}
+
 /** Enregistre : relit le fichier, fusionne s'il a changé ailleurs, puis écrit. */
 async function syncSave() {
   if (!C.backend || horsHeures()) return etat();
@@ -3187,10 +3242,19 @@ async function syncSave() {
       écho: echo ? 'oui' : 'non'
     });
     if (echo) cur = C.baseText;
-    if (C.baseText != null && cur !== C.baseText && cur.trim()) {
-      const anc = lostAncestor(cur);
-      journal('fusion', { depuis: anc ? 'ancêtre ' + hash8(anc) : 'base' });
-      const r = fusionner(A.parse(anc || C.baseText), A.etat(), A.parse(cur));
+    const vide = !cur || !cur.trim();
+    /* lecture vide : le fichier est-il vraiment vide ? Seulement si on le savait (base vide) ou qu'on le crée */
+    if (vide && !C.forcer && !C.nouveau && (C.baseText == null || C.baseText.trim()))
+      throw refus(
+        'le fichier lu est vide : rien n’a été écrit, pour ne rien effacer (OneDrive rend parfois un fichier vide). Réessaie dans un moment.'
+      );
+    const mien = A.serialize(A.etat()),
+      anc = !vide && C.baseText != null && cur !== C.baseText ? lostAncestor(cur) : null,
+      base = anc || C.baseText;
+    if (!vide && cur !== C.baseText) {
+      /* sans base (premier chargement, fichier changé…), on garde tout ce que le fichier contient : fusion à partir de rien */
+      journal('fusion', { depuis: anc ? 'ancêtre ' + hash8(anc) : C.baseText != null ? 'base' : 'rien' });
+      const r = fusionner(A.parse(base != null ? base : ''), A.etat(), A.parse(cur));
       A.appliquer(r);
       toast(
         r.conflits
@@ -3209,6 +3273,22 @@ async function syncSave() {
       if (cur && cur.trim()) fixeReglage('issu de', hash8(cur)); /* ce qu'on écrit part de la version lue */
       out = A.serialize(A.etat());
     }
+    const perdus = C.forcer ? [] : elementsPerdus(cur, out, base, mien);
+    if (perdus.length) {
+      journal('écriture refusée', { disparaîtraient: perdus.length });
+      throw refus(
+        (perdus.length > 1 ? perdus.length + ' éléments du fichier disparaîtraient' : 'Un élément du fichier disparaîtrait') +
+          ' sans avoir été supprimé' +
+          (perdus.length > 1 ? 's' : '') +
+          ' (' +
+          perdus
+            .slice(0, 3)
+            .map(l => '« ' + l + ' »')
+            .join(', ') +
+          (perdus.length > 3 ? '…' : '') +
+          ') : rien n’a été écrit.'
+      );
+    }
     journal(out !== cur ? 'écriture' : 'rien à écrire', { écrit: hash8(out) });
     if (out !== cur) {
       try {
@@ -3222,16 +3302,25 @@ async function syncSave() {
     backup();
     C.savedAt = Date.now();
     C.saveErr = null;
+    C.forcer = C.nouveau = false;
     syncSave.essai = 0;
   } catch (err) {
     if (/^conflit:/.test(err && err.message) && (syncSave.essai = (syncSave.essai || 0) + 1) <= 3) {
       C.saving = false;
       occFin(true);
-      return syncSave();
+      return syncSave(); /* « écrire quand même » vaut aussi pour le nouvel essai */
     }
+    C.forcer = false;
     C.saveErr =
-      err && err.name === 'NotFoundError' ? 'fichier introuvable (déplacé ou renommé ?), rouvre-le' : sansCode(err);
-    if (!/^horsplage:/.test(err && err.message)) {
+      err && err.name === 'NotFoundError'
+        ? 'fichier introuvable (déplacé ou renommé ?), rouvre-le'
+        : err && err.refus
+          ? 'rien n’a été écrit (voir le message)'
+          : sansCode(err);
+    if (err && err.refus) {
+      journal('refus', { motif: err.refus.slice(0, 60) });
+      toast(err.refus.charAt(0).toUpperCase() + err.refus.slice(1), 'Écrire quand même', forcerEcriture, 15000);
+    } else if (!/^horsplage:/.test(err && err.message)) {
       journal('échec', { erreur: C.saveErr });
       toast('Échec de l’enregistrement : ' + C.saveErr);
     } else C.saveErr = null;
@@ -3368,6 +3457,7 @@ async function nouveauFichier(modeleNeuf) {
     await idbSet('poignee', h);
     fichierPc.perm = true;
     C.baseText = null;
+    C.nouveau = true;
     C.ouvert = true;
     if (modeleNeuf) A.appliquer(modeleNeuf);
     modifie();
@@ -3521,6 +3611,9 @@ async function choisirTel() {
     C.dirty = C.dirty && C.ouvert;
     await chargerTel();
     toast('Ouvert : ' + tel.nom + (tel.local ? ' (sur le téléphone)' : ''));
+    /* un fichier OneDrive sans adresse en ligne : l'appli OneDrive ne suffit pas pour se synchroniser (lectures vides
+       ou périmées constatées le 19/10) ; on demande l'adresse tout de suite */
+    if (!tel.local && !adresseEnLigne()) reglerEnLigne(true);
   } catch (e) {
     if (!/annulé/.test(e.message)) toast(sansCode(e));
   }
@@ -3538,6 +3631,7 @@ async function nouveauTel(modeleNeuf) {
   await majLocal();
   tel.directRate = false;
   C.baseText = null;
+  C.nouveau = true;
   C.ouvert = true;
   if (modeleNeuf) A.appliquer(modeleNeuf);
   C.backend = backendTel();
@@ -3676,8 +3770,9 @@ async function ramasserDoublons(force) {
      actualiser, il compare au tampon publié et recharge si besoin (verifierPage).
    - Il dépose ensuite la page dans le dossier OneDrive, à côté du fichier, si celle du dossier est plus ancienne,
      et écrit son tampon dans le réglage « version » du fichier (deposerPage). Jamais de retour en arrière.
-   - Au PC, qui n'ouvre que la page du dossier et ne parle jamais à GitHub, un bandeau annonce la nouvelle version
-     (verifierVersionPc). Le Compagnon lui-même se met à jour par la version « android » du dépôt public.
+   - Au PC, qui n'ouvre que la page du dossier et ne parle jamais à GitHub, un bandeau flottant, en bas, annonce la
+     nouvelle version (verifierVersionPc) ; une page sans tampon le montre dès que le réglage « version » existe.
+     Le Compagnon lui-même se met à jour par la version « android » du dépôt public.
    - Notes de version : A.nouveautes, montrées une fois après une mise à jour. */
 
 function tamponDe(html) {
@@ -3757,7 +3852,8 @@ function verifierVersionPc() {
   if (!b || AND) return;
   const moi = monTampon(),
     la = reglage('version');
-  const plusRecente = !!(moi && la && la > moi);
+  /* une page sans tampon (copie de travail, 19/10) compte comme la plus ancienne */
+  const plusRecente = !!(la && (!moi || la > moi));
   b.hidden = !plusRecente;
   if (plusRecente && !b.firstChild) {
     b.innerHTML = '<span>Une nouvelle version de ' + A.titre + ' est dans le dossier.</span>';
@@ -3847,7 +3943,9 @@ function annoncerNouveautes() {
  *   reglage(m, clé) ; fixeReglage(m, clé, valeur | null)    réglages communs : « issu de », « version », « en ligne »
  *   entete, etatEl, liste            sélecteurs : en-tête (indicateur), ligne d'état, ce qui glisse en tirant
  * Facultatifs : avantModif() (instantané d'annulation), enSaisie(), ecranOccupe(), retour() (bouton retour Android),
- *   tirerBloque(), resume(m) (pour le journal), apresChargement(), surEtat(), surAppli(n), nouveautes [{d, v, items}].
+ *   tirerBloque(), resume(m) (pour le journal), apresChargement(), surEtat(), surAppli(n), nouveautes [{d, v, items}],
+ *   elements(texte) → Map(clé → libellé) : les éléments d'un fichier, lus sur le texte brut, y compris les lignes que
+ *   parse ne comprendrait pas ; le socle refuse d'écrire si l'un d'eux disparaîtrait sans suppression (1.4).
  */
 async function demarrer(adaptateur) {
   A = adaptateur;
@@ -3914,7 +4012,7 @@ window.compagnonBack = () => {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.3.0',
+  version: '1.4.0',
   demarrer,
   /* fichier */
   modifie,
@@ -4287,6 +4385,24 @@ function parse(texte) {
   }
   return doc;
 }
+
+/**
+ * Éléments du fichier, pour la garde du socle contre les disparitions (socle 1.4) : chaque manifestation par son
+ * identifiant (celui que parse lui donne), et toute ligne « - … » de la liste que parse ne comprend pas : elle
+ * disparaîtrait à l'écriture, comme le 2 octobre. → Map(clé → libellé)
+ */
+function elements(texte) {
+  const E = new Map();
+  for (const e of parse(texte).evts) E.set(e.id, (e.d1 ? libCourt(e.d1) + ' ' : '') + e.titre.replace(/\s*\|\s*/g, ' '));
+  let zone = 'evts';
+  for (const brute of texte.replace(/\r\n?/g, '\n').split('\n')) {
+    const l = brute.replace(/\s+$/, '');
+    if (/^# ⚙/.test(l)) zone = 'reglages';
+    if (zone === 'evts' && /^[-*•] /.test(l) && !RX_EV.test(l)) E.set('ligne:' + l, l.slice(2));
+  }
+  return E;
+}
+const libCourt = iso => +iso.slice(8) + '/' + +iso.slice(5, 7);
 
 /* ---- réglages ---- */
 
@@ -7150,6 +7266,15 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-24 12:00',
+    v: '0.56',
+    items: [
+      'Plus rien ne se perd en silence : si le fichier lu est vide, ou si une manifestation du fichier disparaîtrait sans que tu l’aies supprimée (une ligne tapée à la main que Saison ne comprend pas, par exemple), rien n’est écrit et un message le dit, avec « Écrire quand même ».',
+      'Au téléphone, choisir planning.md dans OneDrive demande aussitôt son adresse en ligne (sans elle, l’appli OneDrive rend parfois un fichier vide ou ancien).',
+      'Au PC, le bandeau « nouvelle version » apparaît aussi dans une copie de la page qui n’est pas la version publiée.'
+    ]
+  },
+  {
     d: '2026-10-20 00:00',
     v: '0.55',
     items: ['Sous-titres plus lisibles : à l’encre comme le titre (sans gras), partout ; l’heure, le lieu et le tarif restent en gris.']
@@ -7675,6 +7800,7 @@ socle.demarrer({
   parse,
   serialize,
   merge3,
+  elements,
   etat: () => doc,
   appliquer: m => {
     doc = { titre: m.titre, evts: m.evts, reglages: m.reglages };
