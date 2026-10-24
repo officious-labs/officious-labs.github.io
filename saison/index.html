@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261024074626">
+<meta name="officious-page" content="20261024082015">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2368,7 +2368,18 @@ const TACTILE = !!AND || matchMedia('(pointer: coarse)').matches;
 /* méthodes qui touchent à OneDrive : refusées hors des heures de travail (voir 12-heures.js). read et write ne le
    sont pas quand le fichier choisi est sur le téléphone (tel.local) ; choisir ou créer un fichier reste toujours
    possible (socle 1.2.0). */
-const ONEDRIVE_M = new Set(['read', 'write', 'spLogin', 'spRead', 'spWrite', 'spCreate', 'spList', 'spRecycle']);
+const ONEDRIVE_M = new Set([
+  'read',
+  'write',
+  'spLogin',
+  'spRead',
+  'spWrite',
+  'spCreate',
+  'spList',
+  'spRecycle',
+  'spUpload',
+  'sendToOneDrive'
+]);
 let pontSeq = 0;
 const pontAppels = {};
 
@@ -2397,6 +2408,21 @@ window.compagnonReply = (id, ok, val) => {
   if (ok) c.res(val);
   else c.rej(new Error(val || 'erreur'));
 };
+/* raccourci « Nouvelle note », texte ou fichier partagés vers l'outil (Compagnon 1.1) : donnés à l'outil
+   (A.surTexte, A.surFichier) ; ce qui arrive avant le démarrage attend */
+const recus = [];
+function recevoir(k, v) {
+  if (A && A[k]) A[k](v);
+  else recus.push([k, v]);
+}
+window.compagnonTexte = t => recevoir('surTexte', t);
+window.compagnonFichier = f => recevoir('surFichier', f);
+function livrerRecus() {
+  while (recus.length) {
+    const [k, v] = recus.shift();
+    if (A[k]) A[k](v);
+  }
+}
 /** Message lisible d'une erreur du pont (sans son code). */
 function sansCode(e) {
   return String((e && e.message) || e).replace(/^\w+:/, '');
@@ -3093,10 +3119,32 @@ function adresseFichier(saisie, nom) {
 function racineOneDrive(u) {
   return (u || '').replace(/^(https:\/\/[^/]+\/(personal|sites)\/[^/]+).*$/, '$1');
 }
-/** Adresse d'un autre fichier du même dossier. */
+/** Adresse d'un autre fichier du même dossier, ou d'un sous-dossier (« Archives/taches-2025.md »). */
 function voisin(nom) {
   const u = adresseEnLigne();
-  return u ? u.replace(/[^/]+$/, encodeURIComponent(nom)) : '';
+  return u ? u.replace(/[^/]+$/, String(nom).split('/').map(encodeURIComponent).join('/')) : '';
+}
+/* ---- fichiers voisins, au téléphone en accès direct (archives, pièces jointes…) ---- */
+function voisinPossible() {
+  return !!(AND && C.backend === spBackend && !horsHeures());
+}
+/** Lit un fichier voisin : {texte, etag}, ou null s'il n'existe pas. */
+async function lireVoisin(nom) {
+  if (!voisinPossible()) throw new Error('indisponible:accès direct au téléphone seulement, aux heures de travail');
+  try {
+    const r = JSON.parse(await spCall('spRead', voisin(nom)));
+    return { texte: r.text, etag: r.etag || '' };
+  } catch (e) {
+    if (/^introuvable:/.test(e.message)) return null;
+    throw e;
+  }
+}
+/** Écrit un fichier voisin ; etag : celui de la lecture (conflit si changé entre-temps), null pour le créer. */
+async function ecrireVoisin(nom, texte, etag) {
+  if (!voisinPossible()) throw new Error('indisponible:accès direct au téléphone seulement, aux heures de travail');
+  const url = voisin(nom);
+  if (etag == null) await spCall('spCreate', JSON.stringify({ url, text: texte }));
+  else await spCall('spWrite', JSON.stringify({ url, text: texte, etag }));
 }
 /* socle/js/16-synchro.js : copie de secours, enregistrement fusionné, relecture.
    Repris de Tâches (07-commun.js, 15/10/2026), où chaque garde répond à un incident réel :
@@ -3474,7 +3522,18 @@ function adopter(modele) {
   A.appliquer(modele);
   modifie();
 }
-function exporter() {
+async function exporter() {
+  if (AND) {
+    /* la WebView ignore les téléchargements : fenêtre « Enregistrer sous » d'Android (Compagnon 1.1) */
+    try {
+      const nom = await andCallRaw('saveAs', JSON.stringify({ nom: A.fichier, texte: A.serialize(A.etat()) }));
+      toast('Copie enregistrée : ' + nom);
+    } catch (e) {
+      if (/inconnue/.test(e.message)) toast('Mets d’abord l’appli à jour (menu ⋯)');
+      else if (!/annulé/.test(e.message)) toast(sansCode(e));
+    }
+    return;
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([A.serialize(A.etat())], { type: 'text/markdown' }));
   a.download = A.fichier;
@@ -3584,6 +3643,11 @@ function apresLecture() {
   ramasserDoublons()
     .catch(() => {})
     .then(() => deposerPage())
+    .then(
+      r => A.surDepot && A.surDepot(r),
+      () => A.surDepot && A.surDepot(false)
+    )
+    .then(() => A.apresLecture && A.apresLecture())
     .catch(() => {});
 }
 /** Le fichier choisi est-il sur le téléphone ? (un Compagnon trop ancien ne sait pas le dire : OneDrive) */
@@ -3836,7 +3900,7 @@ async function deposerPage() {
         : spCall('spWrite', JSON.stringify({ url, text: html, etag }))
     );
     journal('page déposée', { tampon: moi });
-    toast('Nouvelle version de ' + A.titre + ' déposée pour le PC');
+    if (!A.surDepot) toast('Nouvelle version de ' + A.titre + ' déposée pour le PC'); /* sinon l'outil le dit */
   }
   mem.set('page-deposee', moi);
   if (reglage('version') < moi) {
@@ -3945,7 +4009,12 @@ function annoncerNouveautes() {
  * Facultatifs : avantModif() (instantané d'annulation), enSaisie(), ecranOccupe(), retour() (bouton retour Android),
  *   tirerBloque(), resume(m) (pour le journal), apresChargement(), surEtat(), surAppli(n), nouveautes [{d, v, items}],
  *   elements(texte) → Map(clé → libellé) : les éléments d'un fichier, lus sur le texte brut, y compris les lignes que
- *   parse ne comprendrait pas ; le socle refuse d'écrire si l'un d'eux disparaîtrait sans suppression (1.4).
+ *   parse ne comprendrait pas ; le socle refuse d'écrire si l'un d'eux disparaîtrait sans suppression (1.4),
+ *   apresLecture() après chaque lecture en accès direct (doublons ramassés, page déposée),
+ *   apresMiseAJour(tamponPrecedent) au lieu du message « X est à jour » ; surDepot(r) après le dépôt de la page
+ *   pour le PC ('deposee', true ou false) ; fermeParRetour(dialog) avant qu'une fenêtre se ferme par le bouton retour,
+ *   surTexte(t), surFichier({name, size, type}) : raccourci « Nouvelle note » ('' ), texte ou fichier partagés vers
+ *   l'outil depuis Android (1.5 ; l'activité de l'outil doit les déclarer dans le Compagnon).
  */
 async function demarrer(adaptateur) {
   A = adaptateur;
@@ -3962,14 +4031,17 @@ async function demarrer(adaptateur) {
     if (tel.nom) await majLocal();
     await chargerTel();
     if (mem.get('page-maj')) {
+      const avant = mem.get('page-maj');
       mem.set('page-maj', null);
-      toast(A.titre + ' est à jour');
+      if (A.apresMiseAJour) A.apresMiseAJour(avant);
+      else toast(A.titre + ' est à jour');
     }
     verifierPage();
     verifierAppli();
   } else await demarragePc();
   etat();
   annoncerNouveautes();
+  livrerRecus();
   /* relecture : au retour sur la page et toutes les 30 s ; ce qui attend part */
   addEventListener('focus', () => !AND && checkExternal());
   document.addEventListener('visibilitychange', () => {
@@ -4004,6 +4076,7 @@ window.compagnonPause = () => {
 window.compagnonBack = () => {
   const d = $s('dialog[open]');
   if (d) {
+    if (A.fermeParRetour) A.fermeParRetour(d);
     d.close();
     return true;
   }
@@ -4012,7 +4085,7 @@ window.compagnonBack = () => {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.4.0',
+  version: '1.5.0',
   demarrer,
   /* fichier */
   modifie,
@@ -4039,7 +4112,32 @@ return {
   hasFS,
   horsHeures,
   texteHorsHeures,
+  texteReprise,
   demanderEnvoi,
+  get enDirect() {
+    return AND && C.backend === spBackend;
+  },
+  get enCours() {
+    return C.saving;
+  },
+  get enregistreA() {
+    return C.savedAt;
+  },
+  get nomFichier() {
+    return AND ? tel.nom : fichierPc.handle ? fichierPc.handle.name : '';
+  },
+  adresseEnLigne,
+  /* Compagnon : méthodes propres à un outil (pièces jointes…) ; celles qui touchent à OneDrive attendent les heures */
+  appel: (m, arg) => (AND ? andCall(m, arg) : Promise.reject(new Error('pas de Compagnon'))),
+  /* idem, en accès direct à OneDrive : connexion demandée si la session a expiré */
+  appelEnLigne: (m, arg) => (AND ? spCall(m, arg) : Promise.reject(new Error('pas de Compagnon'))),
+  /* fichiers voisins (téléphone, accès direct) */
+  voisin,
+  lireVoisin,
+  ecrireVoisin,
+  voisinPossible,
+  journal,
+  texteEtat,
   /* interface */
   toast,
   occupe,
@@ -4065,6 +4163,7 @@ return {
     deposerPage,
     ramasserDoublons,
     verifierPage,
+    verifierAppli,
     fichierPc,
     tel,
     mem
@@ -7265,6 +7364,13 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-24 17:00',
+    v: '0.57',
+    items: [
+      'Au téléphone, « Télécharger une copie » ouvre la fenêtre « Enregistrer sous » d’Android (avec le Compagnon Officious à jour).'
+    ]
+  },
   {
     d: '2026-10-24 12:00',
     v: '0.56',
