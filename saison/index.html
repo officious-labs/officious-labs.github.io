@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261024082015">
+<meta name="officious-page" content="20261024101812">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2067,6 +2067,53 @@ dialog.completer {
   opacity: 0.6;
   cursor: not-allowed;
 }
+/* rétroplanning dans Tâches (fiche, bloc équipe) et manifestations proposées par Tâches (24/10/2026) */
+.retro {
+  font-size: 0.85rem;
+}
+.retro:empty {
+  display: none;
+}
+.retro-tete {
+  margin: 0.3rem 0 0.2rem;
+}
+.retro-fait {
+  color: var(--equipe);
+  font-size: 0.8rem;
+}
+.retro ul {
+  list-style: none;
+  margin: 0 0 0.4rem;
+  padding: 0;
+}
+.retro li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.12rem 0;
+  border-bottom: 1px dotted var(--filet);
+}
+.retro-d {
+  color: var(--gris);
+  white-space: nowrap;
+}
+#propositions {
+  margin: 0 0 0.6rem;
+}
+#propositions .prop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--equipe);
+  border-radius: 10px;
+  background: var(--equipe-fond);
+  font-size: 0.9rem;
+}
+#propositions .prop span {
+  flex: 1;
+}
 </style>
 </head>
 <body>
@@ -2110,6 +2157,7 @@ dialog.completer {
   </form>
   <details id="controles" hidden><summary></summary><ul></ul></details>
   <nav id="miniCal" hidden aria-label="Mois"></nav>
+  <div id="propositions" hidden></div>
   <div id="liste"></div>
   <div id="calendrier" hidden></div>
   <div id="vide" hidden>
@@ -2167,6 +2215,7 @@ dialog.completer {
     <legend>Pour l’équipe seulement</legend>
     <label class="champ">Accompagnement<input id="fAccomp" list="accomps"></label>
     <label class="champ">Remarque<textarea id="fRemarque" rows="2" placeholder="Organisation, matériel, qui fait quoi…"></textarea></label>
+    <div id="fRetro" class="retro"></div>
   </fieldset>
   <details class="plus">
     <summary>Libellé de date imposé</summary>
@@ -4013,6 +4062,8 @@ function annoncerNouveautes() {
  *   apresLecture() après chaque lecture en accès direct (doublons ramassés, page déposée),
  *   apresMiseAJour(tamponPrecedent) au lieu du message « X est à jour » ; surDepot(r) après le dépôt de la page
  *   pour le PC ('deposee', true ou false) ; fermeParRetour(dialog) avant qu'une fenêtre se ferme par le bouton retour,
+ *   recevoir(message) : un message d'un autre outil de la suite ({id, de, type, donnees, le}) ; renvoyer false s'il
+ *   ne peut pas encore être appliqué (il reste dans la boîte) ; voir 21-boite.js (1.6),
  *   surTexte(t), surFichier({name, size, type}) : raccourci « Nouvelle note » ('' ), texte ou fichier partagés vers
  *   l'outil depuis Android (1.5 ; l'activité de l'outil doit les déclarer dans le Compagnon).
  */
@@ -4042,6 +4093,8 @@ async function demarrer(adaptateur) {
   etat();
   annoncerNouveautes();
   livrerRecus();
+  initBoite();
+  relever();
   /* relecture : au retour sur la page et toutes les 30 s ; ce qui attend part */
   addEventListener('focus', () => !AND && checkExternal());
   document.addEventListener('visibilitychange', () => {
@@ -4061,6 +4114,7 @@ async function demarrer(adaptateur) {
 
 /* ---- cycle de vie du Compagnon ---- */
 window.compagnonResume = () => {
+  relever();
   verifierPage();
   verifierAppli();
   if (!C.backend || C.saving) return chargerTel();
@@ -4082,10 +4136,97 @@ window.compagnonBack = () => {
   }
   return !!(A.retour && A.retour());
 };
+/* socle/js/21-boite.js : boîte d'échange entre les outils de la suite (socle 1.6, 24/10/2026).
+
+   Un outil dépose un message pour un autre : socle.envoyer('taches', 'retroplanning', {…}). Le message attend dans la
+   mémoire du navigateur, que les pages Officious partagent sur un même appareil (même origine : officious-labs.github.io
+   dans le Compagnon ; file:// au PC, où les pages sont ouvertes depuis le dossier OneDrive). L'outil destinataire le
+   relève à son démarrage, au retour sur la page et dès qu'il est déposé si sa page est ouverte (événement « storage »),
+   l'applique (A.recevoir), puis l'enregistre dans son propre fichier comme toute modification. Le PC et le téléphone se
+   retrouvent donc par les fichiers, sans fichier de plus dans OneDrive.
+
+   Sans double effet : chaque message a un identifiant ; le destinataire garde ceux qu'il a déjà appliqués (200 derniers)
+   et retire de la boîte ce qu'il a traité. Un message que l'outil ne sait pas encore appliquer (A.recevoir renvoie
+   false, par exemple fichier pas encore ouvert) reste dans la boîte. */
+
+const BOITE = appli => 'officious-boite-' + appli;
+function lireBoite(appli) {
+  try {
+    return JSON.parse(localStorage.getItem(BOITE(appli)) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+function ecrireBoite(appli, L) {
+  try {
+    if (L.length) localStorage.setItem(BOITE(appli), JSON.stringify(L));
+    else localStorage.removeItem(BOITE(appli));
+  } catch (e) {}
+}
+/** Dépose un message pour un autre outil ; renvoie son identifiant. */
+function envoyer(appli, type, donnees) {
+  const m = {
+    id: C.appli + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+    de: C.appli,
+    type,
+    donnees: donnees || {},
+    le: maintenant().toISOString()
+  };
+  const L = lireBoite(appli);
+  L.push(m);
+  ecrireBoite(appli, L);
+  journal('message envoyé', { à: appli, type });
+  return m.id;
+}
+/** Messages qui attendent encore leur destinataire (sur cet appareil). */
+function enAttenteDans(appli) {
+  return lireBoite(appli);
+}
+let releveEnCours = false;
+/** Relève la boîte de cet outil : applique les messages nouveaux, retire ceux qui sont traités. */
+function relever() {
+  if (!A || !A.recevoir || releveEnCours) return 0;
+  const L = lireBoite(C.appli);
+  if (!L.length) return 0;
+  releveEnCours = true;
+  const vus = mem.get('boite-vus', []);
+  const restent = [];
+  let n = 0;
+  try {
+    for (const m of L) {
+      if (vus.includes(m.id)) continue; /* déjà appliqué (relevé deux fois) : on le retire */
+      let ok = false;
+      try {
+        ok = A.recevoir(m) !== false;
+      } catch (e) {
+        journal('message refusé', { de: m.de, type: m.type, erreur: e.message });
+      }
+      if (ok) {
+        vus.push(m.id);
+        n++;
+        journal('message reçu', { de: m.de, type: m.type });
+      } else restent.push(m);
+    }
+  } finally {
+    mem.set('boite-vus', vus.slice(-200));
+    /* la boîte a pu recevoir d'autres messages pendant ce temps : on ne retire que ce qu'on a vu */
+    const ids = new Set(L.map(m => m.id));
+    ecrireBoite(C.appli, [...restent, ...lireBoite(C.appli).filter(m => !ids.has(m.id))]);
+    releveEnCours = false;
+  }
+  return n;
+}
+function initBoite() {
+  addEventListener('storage', e => {
+    if (e.key === BOITE(C.appli) && e.newValue) relever();
+  });
+  addEventListener('focus', () => relever());
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && relever());
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.5.0',
+  version: '1.6.0',
   demarrer,
   /* fichier */
   modifie,
@@ -4138,6 +4279,10 @@ return {
   voisinPossible,
   journal,
   texteEtat,
+  /* boîte d'échange entre outils (1.6) */
+  envoyer,
+  enAttenteDans,
+  relever,
   /* interface */
   toast,
   occupe,
@@ -4399,6 +4544,7 @@ function evVide() {
     semaine: false,
     libelle: '',
     aDater: false /* date approximative : d1..d2 est une fenêtre (mois, période), pas la date */,
+    taches: '' /* rétroplanning envoyé à Tâches : date de la manifestation à ce moment-là (jeton {tâches AAAA-MM-JJ}) */,
     autres: []
   };
 }
@@ -4471,6 +4617,7 @@ function parse(texte) {
       else if (t === 'heure ?') ev.heureInconnue = true;
       else if (t === 'interne') ev.interne = true;
       else if (t === 'à dater') ev.aDater = true;
+      else if ((k = t.match(/^tâches (\d{4}-\d{2}-\d{2})$/))) ev.taches = k[1];
       else if (STATUTS.includes(t)) ev.statut = t;
       else ev.autres.push(t);
     }
@@ -4576,6 +4723,7 @@ function ligneEv(e) {
   if (e.accomp) j.push('accompagnement ' + e.accomp);
   if (e.statut) j.push(e.statut);
   if (e.interne) j.push('interne');
+  if (e.taches) j.push('tâches ' + e.taches);
   j.push(...e.autres);
   j.push('id ' + e.id);
   const out = ['- ' + q + ' · ' + e.titre + ' ' + j.map(t => '{' + t + '}').join(' ')];
@@ -4633,6 +4781,7 @@ const CHAMPS = [
   'semaine',
   'libelle',
   'aDater',
+  'taches',
   'autres'
 ];
 const egal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -4770,6 +4919,7 @@ function retablir() {
 
 /** Après toute modification : le socle garde la copie de secours et enregistre dans le fichier un peu après. */
 function changed() {
+  if (typeof suivreDates === 'function') suivreDates(); /* rétroplanning : Tâches suit la nouvelle date */
   socle.modifie();
 }
 const toast = (...a) => socle.toast(...a);
@@ -5673,6 +5823,7 @@ function remplirFiche() {
   set('#fRemarque', e.remarque);
   set('#fLibelle', e.libelle);
   if (e.libelle) $('#fiche details.plus').open = true;
+  afficherRetro(e);
   const acc = [...new Set(doc.evts.map(x => x.accomp).filter(Boolean))].sort();
   $('#accomps').innerHTML = acc.map(a => '<option value="' + esc(a) + '">').join('');
 }
@@ -6283,6 +6434,174 @@ function initMiniCal() {
     },
     { passive: true }
   );
+}
+/* 06d-passerelles.js : passerelles avec Tâches (24/10/2026), par la boîte d'échange du socle (1.6).
+   Choix de François :
+   - les étapes viennent de modèles par type, dans les réglages de planning.md :
+       « - étapes Concert : Réserver la salle J-60 ; Affiche J-21 ; Demandez le programme J-14 »
+     (le modèle s'applique aux manifestations dont le titre contient le mot ; « - étapes : … » pour toutes les autres) ;
+   - la tâche va dans la rubrique « Calendrier » de Tâches, les étapes en sous-tâches datées ;
+   - si la date change, les échéances suivent toutes seules (message « date », envoyé une fois, par l'appareil où l'on a
+     changé la date ; le jeton {tâches AAAA-MM-JJ} retient la date déjà connue de Tâches).
+   Dans l'autre sens, Tâches propose une manifestation (« Ajouter au planning des manifestations ») : bandeau en haut de
+   la liste, « Ajouter » prépare la saisie rapide, à vérifier. */
+
+const RX_ETAPE = /^(.*?)\s+J\s*([-+−–]\s*\d+)\s*$/i;
+
+/** Modèles d'étapes des réglages : [{mot, etapes: [{texte, j}]}] (j : décalage en jours, négatif avant la date). */
+function modelesEtapes() {
+  return doc.reglages
+    .filter(r => /^étapes\b/i.test(r.cle))
+    .map(r => ({
+      mot: r.cle.replace(/^étapes\s*/i, '').trim(),
+      etapes: r.val
+        .split(';')
+        .map(x => x.trim())
+        .filter(Boolean)
+        .map(x => {
+          const m = x.match(RX_ETAPE);
+          return m ? { texte: m[1].trim(), j: parseInt(m[2].replace(/[−–]/g, '-').replace(/\s+/g, ''), 10) } : { texte: x, j: null };
+        })
+    }));
+}
+/** Étapes d'une manifestation, avec leur échéance : le modèle dont le mot figure dans le titre (le plus long), sinon
+ *  le modèle sans mot. [] s'il n'y en a pas. */
+function etapesDe(e) {
+  const M = modelesEtapes(),
+    t = sansAccents(e.titre);
+  const m =
+    M.filter(x => x.mot && t.includes(sansAccents(x.mot))).sort((a, b) => b.mot.length - a.mot.length)[0] ||
+    M.find(x => !x.mot);
+  if (!m) return [];
+  return m.etapes.map(x => ({ texte: x.texte, j: x.j, echeance: x.j == null || !e.d1 ? '' : plusJours(e.d1, x.j) }));
+}
+const titreSimple = e => (e.titre || '').replace(/\s*\|\s*/g, ' ').replace(/\*/g, '');
+
+/** Fiche : aperçu des étapes et bouton d'envoi (bloc « Pour l'équipe »). */
+function afficherRetro(e) {
+  const box = $('#fRetro');
+  if (!box) return;
+  if (!e || !estDatee(e) || e.statut === 'annulé') {
+    box.innerHTML = '';
+    return;
+  }
+  const E = etapesDe(e);
+  if (!E.length) {
+    box.innerHTML =
+      '<p class="aide">Rétroplanning dans Tâches : aucun modèle d’étapes. Ajoute dans les réglages de planning.md une ligne comme « - étapes Concert : Affiche J-21 ; Demandez le programme J-14 ».</p>';
+    return;
+  }
+  const date = iso => (iso ? typo(libJour(iso)) : 'sans date');
+  box.innerHTML =
+    '<div class="retro-tete"><b>Rétroplanning dans Tâches</b>' +
+    (e.taches ? ' <span class="retro-fait">envoyé</span>' : '') +
+    '</div><ul>' +
+    E.map(x => '<li><span>' + esc(x.texte) + '</span><span class="retro-d">' + esc(date(x.echeance)) + '</span></li>').join('') +
+    '</ul><button type="button" id="fRetroOk">' +
+    (e.taches ? 'Renvoyer à Tâches' : 'Envoyer à Tâches') +
+    '</button>';
+  $('#fRetroOk').onclick = () => envoyerRetro(e.id);
+}
+function libJour(iso) {
+  const d = new Date(iso + 'T12:00');
+  return JOURS[d.getDay()].slice(0, 3) + '. ' + quantieme(d) + ' ' + MOIS_COURT[d.getMonth()];
+}
+
+function envoyerRetro(id) {
+  const e = doc.evts.find(x => x.id === id);
+  if (!e || !estDatee(e)) return;
+  const E = etapesDe(e),
+    L = lieuDe(e);
+  socle.envoyer('taches', 'retroplanning', {
+    evt: e.id,
+    titre: titreSimple(e),
+    date: e.d1,
+    lieu: L ? L.nom : '',
+    etapes: E.map(x => ({ texte: x.texte, echeance: x.echeance }))
+  });
+  snapshot();
+  e.taches = e.d1;
+  changed();
+  afficherListe();
+  remplirFiche();
+  setTimeout(() => {
+    const reste = socle.enAttenteDans('taches').length;
+    toast(
+      reste
+        ? 'Envoyé : ' + E.length + ' étape' + (E.length > 1 ? 's' : '') + ' · elles entreront dans Tâches à sa prochaine ouverture sur cet appareil'
+        : 'Ajouté dans Tâches (rubrique Calendrier)',
+      null,
+      null,
+      6000
+    );
+  }, 600);
+}
+
+/** Après une modification : une manifestation déjà dans Tâches a changé de date → Tâches décale ses échéances. */
+function suivreDates() {
+  for (const e of doc.evts)
+    if (e.taches && estDatee(e) && e.d1 !== e.taches) {
+      socle.envoyer('taches', 'date', { evt: e.id, date: e.d1, avant: e.taches, titre: titreSimple(e) });
+      e.taches = e.d1;
+    }
+}
+
+/* ---- dans l'autre sens : manifestations proposées par Tâches (gardées sur cet appareil jusqu'à la réponse) ---- */
+const CLE_PROP = 'saison-propositions';
+function propositions() {
+  try {
+    return JSON.parse(localStorage.getItem(CLE_PROP) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+function fixePropositions(L) {
+  try {
+    if (L.length) localStorage.setItem(CLE_PROP, JSON.stringify(L));
+    else localStorage.removeItem(CLE_PROP);
+  } catch (e) {}
+  afficherPropositions();
+}
+/** Message d'un autre outil (socle.recevoir). */
+function recevoirMessage(m) {
+  if (m.type === 'planning') {
+    const d = m.donnees || {};
+    fixePropositions([...propositions().filter(p => p.tache !== d.tache), { id: m.id, tache: d.tache, titre: d.titre || '', date: d.date || '' }]);
+    toast('Tâches propose une manifestation : « ' + (d.titre || '') + ' »', null, null, 6000);
+  }
+  return true;
+}
+function afficherPropositions() {
+  const box = $('#propositions');
+  if (!box) return;
+  const L = propositions();
+  box.hidden = !L.length;
+  box.innerHTML = L.map(
+    p =>
+      '<div class="prop" data-id="' +
+      esc(p.id) +
+      '"><span>Proposé par Tâches : <b>' +
+      esc(p.titre) +
+      '</b>' +
+      (p.date ? ' (' + esc(typo(libJour(p.date))) + ')' : '') +
+      '</span><button type="button" data-prop="ajouter" class="primaire">Ajouter…</button><button type="button" data-prop="ignorer">Ignorer</button></div>'
+  ).join('');
+}
+function initPropositions() {
+  $('#propositions').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-prop]');
+    if (!b) return;
+    const id = b.closest('.prop').dataset.id,
+      p = propositions().find(x => x.id === id);
+    fixePropositions(propositions().filter(x => x.id !== id));
+    if (!p || b.dataset.prop !== 'ajouter') return;
+    const champ = $('#ajoutTxt');
+    champ.value = (p.date ? +p.date.slice(8) + '/' + +p.date.slice(5, 7) + ' ' : '') + p.titre;
+    champ.dispatchEvent(new Event('input', { bubbles: true }));
+    champ.focus();
+    toast('Vérifie la saisie (heure, lieu…), puis Entrée');
+  });
+  afficherPropositions();
 }
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
@@ -7893,6 +8212,7 @@ initBoutons();
 initListe();
 initCalendrier();
 initMiniCal();
+initPropositions();
 initAffiche();
 initMail();
 document.addEventListener('keydown', raccourcis);
@@ -7907,6 +8227,7 @@ socle.demarrer({
   serialize,
   merge3,
   elements,
+  recevoir: recevoirMessage,
   etat: () => doc,
   appliquer: m => {
     doc = { titre: m.titre, evts: m.evts, reglages: m.reglages };
