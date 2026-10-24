@@ -12,6 +12,8 @@ Une seule appli Android pour toute la suite (« Officious » dans les réglages 
   - sinon la dernière copie ;
   - sinon celle embarquée à la fabrication.
 - **Pont `Compagnon`** : voir l’en-tête de `MainActivity.java`. Le fichier choisi dans l’appli OneDrive est mémorisé par outil (`uri:<outil>`).
-- **Fabrication** : GitHub Actions (`.github/workflows/android.yml`) à chaque changement de `android/**`, ou à la main (Actions → Compagnon Android → Run workflow). Publication dans la version « android » de ce dépôt (`officious.apk`, `version.txt`).
+- **Partage et raccourci** (1.1, pour Tâches) : l'activité qui déclare dans le manifeste le menu Partager (`SEND`) et l'action `io.github.officiouslabs.compagnon.NOTE` reçoit le texte ou le fichier ; la page les reçoit par `compagnonTexte(t)` et `compagnonFichier({name, size, type})`. Le fichier reste dans le cache jusqu'à ce que la page le range (pièces jointes : `keepFile`, `spUpload`, `sendToOneDrive`…, fournisseur `Partage`).
+- **Fichiers dans les pages** (1.1) : un `<input type="file">` ouvre le sélecteur d'Android (`onShowFileChooser`) ; « Télécharger une copie » passe par `saveAs` (fenêtre « Enregistrer sous »), la WebView ignorant les téléchargements.
+- **Fabrication** : GitHub Actions (`.github/workflows/android.yml`) à chaque changement de `android/**`, ou à la main (Actions → Compagnon Android → Run workflow). Publication dans la version « android » de ce dépôt (`officious.apk`, `version.txt`), **depuis `main` seulement** : une autre branche ne fait que compiler (utile pour vérifier une modification avant de la publier).
 - **Secrets** : `KEYSTORE_B64` et `KEYSTORE_PASS` (clé `compagnon`). Sans eux, la fabrication échoue volontairement.
 - **Signature Chrome** : tout ce qui va à OneDrive se présente comme un Chrome ordinaire (`OneDriveWeb.agent`, `ConnexionActivity`).
