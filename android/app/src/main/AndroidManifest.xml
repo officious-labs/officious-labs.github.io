@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- pour confier un fichier à l'appli OneDrive (Android 11 et plus) -->
+    <queries><package android:name="com.microsoft.skydrive" /></queries>
     <!-- Une seule appli (« Officious » dans les réglages), une icône par outil : chaque outil a son activité et sa propre
          tâche (taskAffinity), pour apparaître à part dans les applis récentes. -->
     <application
@@ -25,6 +27,35 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".TachesActivity"
+            android:label="Tâches"
+            android:icon="@mipmap/ic_taches"
+            android:taskAffinity="io.github.officiouslabs.compagnon.taches"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- appui long sur l'icône : « Nouvelle note » -->
+            <intent-filter>
+                <action android:name="io.github.officiouslabs.compagnon.NOTE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <!-- menu Partager d'Android : un texte devient une note, un fichier une pièce jointe -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/raccourcis_taches" />
+        </activity>
+        <!-- prête à l'appli OneDrive le fichier partagé qu'on lui confie (pièces jointes de Tâches) -->
+        <provider android:name=".Partage" android:authorities="io.github.officiouslabs.compagnon.partage"
+            android:exported="false" android:grantUriPermissions="true" />
         <receiver android:name=".MajRecue" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />

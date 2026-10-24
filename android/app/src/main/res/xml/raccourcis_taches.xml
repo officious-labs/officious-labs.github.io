@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="note"
+        android:enabled="true"
+        android:icon="@mipmap/ic_note"
+        android:shortcutShortLabel="@string/note_court"
+        android:shortcutLongLabel="@string/note_long">
+        <intent
+            android:action="io.github.officiouslabs.compagnon.NOTE"
+            android:targetPackage="io.github.officiouslabs.compagnon"
+            android:targetClass="io.github.officiouslabs.compagnon.TachesActivity" />
+    </shortcut>
+</shortcuts>

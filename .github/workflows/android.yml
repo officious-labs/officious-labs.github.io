@@ -54,6 +54,8 @@ jobs:
           grep -q "BUILD SUCCESSFUL" "$RUNNER_TEMP/gradle.log" \
             || { echo "::error::$(grep -A6 'What went wrong' "$RUNNER_TEMP/gradle.log" | tr '\n' ' ' | cut -c1-900)"; exit 1; }
       - name: Publication
+        # une branche d'essai ne fait que compiler ; seule « main » publie l'appli
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
