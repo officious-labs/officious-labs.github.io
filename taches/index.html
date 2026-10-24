@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261024081758">
+<meta name="officious-page" content="20261024102120">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5614,6 +5614,7 @@ body:has(#s-toast.on) #toast {
       <div class="arow" id="aNewRow"><input id="aNewSub" placeholder="+ Sous-tâche" enterkeyhint="done"></div>
       <div id="aLinks"></div>
       <button type="button" class="mitem" id="aArch" hidden>Archiver</button>
+      <button type="button" class="mitem" id="aSaison" hidden>Ajouter au planning des manifestations</button>
       <div class="nbar anew"><button type="button" id="aCancel">Annuler</button><span class="sp"></span><button type="button" class="primary" id="aAdd">Ajouter</button></div>
       <div class="nbar aedit"><button type="button" id="aDel" class="ico adel" title="Supprimer la tâche" aria-label="Supprimer la tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg></button><button type="button" id="aToNote" class="ico" title="En faire une note" aria-label="En faire une note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v10.5L14.5 20H4z"/><path d="M20 14.5h-5.5V20"/><path d="M7.5 8.5h9M7.5 12h6"/></svg></button><span class="sp"></span><button type="submit" class="ico ok" id="aOk" title="Fermer" aria-label="Fermer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
     </form>
@@ -7436,6 +7437,8 @@ function annoncerNouveautes() {
  *   apresLecture() après chaque lecture en accès direct (doublons ramassés, page déposée),
  *   apresMiseAJour(tamponPrecedent) au lieu du message « X est à jour » ; surDepot(r) après le dépôt de la page
  *   pour le PC ('deposee', true ou false) ; fermeParRetour(dialog) avant qu'une fenêtre se ferme par le bouton retour,
+ *   recevoir(message) : un message d'un autre outil de la suite ({id, de, type, donnees, le}) ; renvoyer false s'il
+ *   ne peut pas encore être appliqué (il reste dans la boîte) ; voir 21-boite.js (1.6),
  *   surTexte(t), surFichier({name, size, type}) : raccourci « Nouvelle note » ('' ), texte ou fichier partagés vers
  *   l'outil depuis Android (1.5 ; l'activité de l'outil doit les déclarer dans le Compagnon).
  */
@@ -7465,6 +7468,8 @@ async function demarrer(adaptateur) {
   etat();
   annoncerNouveautes();
   livrerRecus();
+  initBoite();
+  relever();
   /* relecture : au retour sur la page et toutes les 30 s ; ce qui attend part */
   addEventListener('focus', () => !AND && checkExternal());
   document.addEventListener('visibilitychange', () => {
@@ -7484,6 +7489,7 @@ async function demarrer(adaptateur) {
 
 /* ---- cycle de vie du Compagnon ---- */
 window.compagnonResume = () => {
+  relever();
   verifierPage();
   verifierAppli();
   if (!C.backend || C.saving) return chargerTel();
@@ -7505,10 +7511,97 @@ window.compagnonBack = () => {
   }
   return !!(A.retour && A.retour());
 };
+/* socle/js/21-boite.js : boîte d'échange entre les outils de la suite (socle 1.6, 24/10/2026).
+
+   Un outil dépose un message pour un autre : socle.envoyer('taches', 'retroplanning', {…}). Le message attend dans la
+   mémoire du navigateur, que les pages Officious partagent sur un même appareil (même origine : officious-labs.github.io
+   dans le Compagnon ; file:// au PC, où les pages sont ouvertes depuis le dossier OneDrive). L'outil destinataire le
+   relève à son démarrage, au retour sur la page et dès qu'il est déposé si sa page est ouverte (événement « storage »),
+   l'applique (A.recevoir), puis l'enregistre dans son propre fichier comme toute modification. Le PC et le téléphone se
+   retrouvent donc par les fichiers, sans fichier de plus dans OneDrive.
+
+   Sans double effet : chaque message a un identifiant ; le destinataire garde ceux qu'il a déjà appliqués (200 derniers)
+   et retire de la boîte ce qu'il a traité. Un message que l'outil ne sait pas encore appliquer (A.recevoir renvoie
+   false, par exemple fichier pas encore ouvert) reste dans la boîte. */
+
+const BOITE = appli => 'officious-boite-' + appli;
+function lireBoite(appli) {
+  try {
+    return JSON.parse(localStorage.getItem(BOITE(appli)) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+function ecrireBoite(appli, L) {
+  try {
+    if (L.length) localStorage.setItem(BOITE(appli), JSON.stringify(L));
+    else localStorage.removeItem(BOITE(appli));
+  } catch (e) {}
+}
+/** Dépose un message pour un autre outil ; renvoie son identifiant. */
+function envoyer(appli, type, donnees) {
+  const m = {
+    id: C.appli + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+    de: C.appli,
+    type,
+    donnees: donnees || {},
+    le: maintenant().toISOString()
+  };
+  const L = lireBoite(appli);
+  L.push(m);
+  ecrireBoite(appli, L);
+  journal('message envoyé', { à: appli, type });
+  return m.id;
+}
+/** Messages qui attendent encore leur destinataire (sur cet appareil). */
+function enAttenteDans(appli) {
+  return lireBoite(appli);
+}
+let releveEnCours = false;
+/** Relève la boîte de cet outil : applique les messages nouveaux, retire ceux qui sont traités. */
+function relever() {
+  if (!A || !A.recevoir || releveEnCours) return 0;
+  const L = lireBoite(C.appli);
+  if (!L.length) return 0;
+  releveEnCours = true;
+  const vus = mem.get('boite-vus', []);
+  const restent = [];
+  let n = 0;
+  try {
+    for (const m of L) {
+      if (vus.includes(m.id)) continue; /* déjà appliqué (relevé deux fois) : on le retire */
+      let ok = false;
+      try {
+        ok = A.recevoir(m) !== false;
+      } catch (e) {
+        journal('message refusé', { de: m.de, type: m.type, erreur: e.message });
+      }
+      if (ok) {
+        vus.push(m.id);
+        n++;
+        journal('message reçu', { de: m.de, type: m.type });
+      } else restent.push(m);
+    }
+  } finally {
+    mem.set('boite-vus', vus.slice(-200));
+    /* la boîte a pu recevoir d'autres messages pendant ce temps : on ne retire que ce qu'on a vu */
+    const ids = new Set(L.map(m => m.id));
+    ecrireBoite(C.appli, [...restent, ...lireBoite(C.appli).filter(m => !ids.has(m.id))]);
+    releveEnCours = false;
+  }
+  return n;
+}
+function initBoite() {
+  addEventListener('storage', e => {
+    if (e.key === BOITE(C.appli) && e.newValue) relever();
+  });
+  addEventListener('focus', () => relever());
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && relever());
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.5.0',
+  version: '1.6.0',
   demarrer,
   /* fichier */
   modifie,
@@ -7561,6 +7654,10 @@ return {
   voisinPossible,
   journal,
   texteEtat,
+  /* boîte d'échange entre outils (1.6) */
+  envoyer,
+  enAttenteDans,
+  relever,
   /* interface */
   toast,
   occupe,
@@ -8531,6 +8628,7 @@ function parse(md) {
       color,
       waitFor,
       tid,
+      saison,
       important = false;
     for (;;) {
       const tm = /^(.*?)\s*\{([^{}]+)\}\s*$/.exec(body);
@@ -8541,6 +8639,7 @@ function parse(md) {
         important = true; /* {urgent} : ancienne marque, relue comme importante */
       else if ((m = /^id\s+([a-z0-9]+)$/i.exec(inner))) tid = m[1];
       else if ((m = /^attend\s+(.+)$/i.exec(inner))) waitFor = m[1].trim();
+      else if ((m = /^saison\s+([a-z0-9]+)$/i.exec(inner))) saison = m[1]; /* manifestation de Saison (rétroplanning) */
       else if ((m = /^couleur\s+([a-z]+)$/i.exec(inner)) && COLORS[m[1].toLowerCase()]) color = m[1].toLowerCase();
       else if ((m = /^[ée]ch[ée]ance\s+(\d{4}-\d{2}-\d{2})$/i.exec(inner))) due = m[1];
       else if ((m = /^cr[ée]{2}e?\s+(\d{4}-\d{2}-\d{2})$/i.exec(inner))) created = m[1];
@@ -8600,6 +8699,7 @@ function parse(md) {
       if (due) o.due = due;
       if (color && level === 0) o.color = color;
       if (waitFor && level === 0) o.waitFor = waitFor;
+      if (saison && level === 0) o.saison = saison;
       its.push(o);
     }
   }
@@ -8652,6 +8752,7 @@ function tokens(x) {
       : '') +
     (x.level === 0 && x.waitFor ? ' {attend ' + x.waitFor + '}' : '') +
     (x.level === 0 && x.color ? ' {couleur ' + x.color + '}' : '') +
+    (x.level === 0 && x.saison ? ' {saison ' + x.saison + '}' : '') +
     (x.due ? ' {échéance ' + x.due + '}' : '') +
     (x.created ? ' {créé ' + x.created + '}' : '') +
     (x.id && x.kind !== 'hist' ? ' {id ' + x.id + '}' : '')
@@ -8776,6 +8877,7 @@ const MFIELDS = [
   'due',
   'color',
   'waitFor',
+  'saison',
   'note',
   'links'
 ];
@@ -11626,6 +11728,9 @@ function cardEntries(id, x, y) {
       { l: 'Importante', chk: !!it.important, k: 'Alt+I', on: () => toggleUrgent(id, false) },
       { l: it.due ? 'Échéance (' + shortDate(it.due) + ')…' : 'Échéance…', on: () => dueTo(id, x, y) },
       '-',
+      ...(normName(it.text) === normName(PLANNING_SUB)
+        ? [{ l: 'Proposer la tâche à Saison', on: () => proposerSaison(tacheDe(i)) }, '-']
+        : []),
       { l: 'En faire une tâche à part', on: () => promoteSub(id) },
       { l: 'En faire une note', on: () => pcTaskToNote(id) },
       '-',
@@ -11665,6 +11770,7 @@ function cardEntries(id, x, y) {
     { l: 'Ajouter une sous-tâche', on: () => addSubOf(id) },
     { l: it.note ? 'Modifier le commentaire' : 'Ajouter un commentaire', k: 'Maj+Entrée', on: () => openNote(idx(id)) },
     { l: 'Ajouter un lien…', on: () => askLink(id) },
+    { l: 'Ajouter au planning des manifestations', on: () => proposerSaison(id) },
     '-',
     { l: 'Dupliquer', on: () => duplicateBlock(id) },
     { l: 'Copier le texte', on: () => copyBlock(id) },
@@ -15414,6 +15520,17 @@ function mFlashCard(id) {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-10-24 18:00',
+    type: 'web',
+    v: '3.1',
+    t: 'Passerelles avec Saison',
+    items: [
+      'Rétroplanning depuis Saison : la manifestation arrive dans la rubrique Calendrier, avec ses étapes en sous-tâches datées (« Affiche », « Demandez le programme »…). La sous-tâche « Ajouter au planning des manifestations » arrive cochée.',
+      'Si la date change dans Saison, l’échéance de la tâche et celles des étapes pas encore faites suivent toutes seules.',
+      '« Ajouter au planning des manifestations » (clic droit au PC, fiche au téléphone) propose la tâche à Saison, qui la présente à valider.'
+    ]
+  },
+  {
     d: '2026-10-24 16:00',
     type: 'web',
     v: '3.0',
@@ -17643,6 +17760,7 @@ function mFillAct() {
   $('#aNewRow').hidden = ro;
   $('#aTool').hidden = ro;
   $('#aArch').hidden = ro || items[i].state !== 'fait';
+  $('#aSaison').hidden = ro || !!items[i].saison || items[i].state === 'fait';
   setv($('#aText'), it.text);
   [...$('#aState').children].forEach(b => b.classList.toggle('on', b.dataset.k === it.state));
   $('#aWait').hidden = it.state !== 'attente';
@@ -18056,6 +18174,9 @@ function mInitAct() {
     $(b).onpointerdown = e => e.preventDefault(); /* garder le clavier : pas de saut de la fiche avant le toucher */
     $(b).onclick = () => mNewMore(k);
   }
+  $('#aSaison').onclick = () => {
+    if (mActId) proposerSaison(mActId);
+  };
   $('#aToNote').onclick = () => {
     const id = mActId;
     $('#mAct').close();
@@ -19308,6 +19429,119 @@ $('#mSecForm').onsubmit = ev => {
 document.addEventListener('click', e => {
   if (!$('#mFabMenu').hidden && !e.target.closest('#mFabMenu,#mAdd')) mFabToggle(false);
 });
+/* ---------- passerelles avec Saison (24/10/2026), par la boîte d'échange du socle (1.6) ----------
+   - « retroplanning » (depuis une fiche de Saison) : une tâche « Titre (11 déc.) » dans la rubrique « Calendrier »
+     (créée si besoin), échéance = date de la manifestation, les étapes en sous-tâches datées, marquée {saison id}.
+     Renvoyée, elle est mise à jour (étapes manquantes ajoutées, échéances des étapes pas faites recalées).
+     Si la rubrique a une règle qui ajoute « Ajouter au planning des manifestations », cette sous-tâche arrive cochée.
+   - « date » : la manifestation a changé de date dans Saison → échéance et étapes pas encore faites décalées d'autant.
+   - Dans l'autre sens, « Ajouter au planning des manifestations » (clic droit au PC, fiche au téléphone) propose la
+     tâche à Saison, qui la présente à valider.
+   Un message n'est appliqué que quand taches.md est ouvert (sinon il attend dans la boîte). */
+
+const RUB_CAL = 'Calendrier';
+const PLANNING_SUB = 'Ajouter au planning des manifestations';
+
+/** Tâche (niveau 0) qui porte la ligne i. */
+function tacheDe(i) {
+  while (i > 0 && !(items[i].kind === 't' && items[i].level === 0)) i--;
+  return items[i] ? items[i].id : null;
+}
+function tacheSaison(evt) {
+  return items.find(x => x.kind === 't' && x.level === 0 && x.saison === evt);
+}
+function joursEntre(a, b) {
+  return Math.round((new Date(b + 'T12:00') - new Date(a + 'T12:00')) / 864e5);
+}
+function titreSaison(d) {
+  return d.titre + (d.date ? ' (' + shortDate(d.date) + ')' : '');
+}
+function rafraichir() {
+  if (MOBILE) mRender();
+  else render();
+}
+
+function recevoirSaison(m) {
+  if (!socle.ouvert || seedShown) return false; /* fichier pas encore ouvert : le message attend */
+  const d = m.donnees || {};
+  if (m.type === 'retroplanning') {
+    snapshot();
+    let t = tacheSaison(d.evt);
+    const nouvelle = !t;
+    if (nouvelle) {
+      let h = items.find(x => x.kind === 'h' && normName(x.text) === normName(RUB_CAL));
+      if (!h) {
+        h = { id: uid(), kind: 'h', text: RUB_CAL, level: 0 };
+        items.push(h);
+      }
+      t = { id: uid(), kind: 't', level: 0, state: 'afaire', text: titreSaison(d), created: todayISO(), saison: d.evt };
+      items.splice(laneEndOf(h.id), 0, t);
+    } else t.text = titreSaison(d);
+    if (d.date) t.due = d.date;
+    /* étapes : ajoutées si absentes, échéance recalée si pas encore faites */
+    let i = idx(t.id),
+      fin = blockEnd(i);
+    const subs = items.slice(i + 1, fin);
+    const nouvelles = [];
+    for (const e of d.etapes || []) {
+      const s = subs.find(x => normName(x.text) === normName(e.texte));
+      if (s) {
+        if (!s.checked && e.echeance) s.due = e.echeance;
+      } else nouvelles.push({ id: uid(), kind: 't', level: 1, text: e.texte, created: todayISO(), ...(e.echeance ? { due: e.echeance } : {}) });
+    }
+    /* la manifestation est déjà au planning : la sous-tâche de la règle arrive cochée */
+    const h = headingOf(i);
+    if (
+      nouvelle &&
+      h &&
+      parseRules().some(r => r.sec === normName(h.text) && r.add.some(a => normName(a) === normName(PLANNING_SUB))) &&
+      !subs.some(x => normName(x.text) === normName(PLANNING_SUB))
+    )
+      nouvelles.push({ id: uid(), kind: 't', level: 1, text: PLANNING_SUB, created: todayISO(), checked: true });
+    items.splice(fin, 0, ...nouvelles);
+    normalize();
+    changed();
+    rafraichir();
+    toast((nouvelle ? 'Rétroplanning ajouté dans ' + RUB_CAL : 'Rétroplanning mis à jour') + ' : ' + t.text, 5000);
+    return true;
+  }
+  if (m.type === 'date') {
+    const t = tacheSaison(d.evt);
+    if (!t || !d.date) return true;
+    const avant = t.due || d.avant;
+    const n = avant ? joursEntre(avant, d.date) : 0;
+    snapshot();
+    t.due = d.date;
+    if (d.titre) t.text = titreSaison(d);
+    const i = idx(t.id);
+    if (n)
+      for (const s of items.slice(i + 1, blockEnd(i))) if (!s.checked && s.due) s.due = addDays(s.due, n);
+    normalize();
+    changed();
+    rafraichir();
+    toast(
+      '« ' + t.text + ' » : nouvelle date dans Saison' + (n ? ', étapes décalées de ' + Math.abs(n) + ' jour' + (Math.abs(n) > 1 ? 's' : '') : ''),
+      5000
+    );
+    return true;
+  }
+  return true; /* message inconnu : ignoré */
+}
+
+/** « Ajouter au planning des manifestations » : la tâche est proposée à Saison, qui la présente à valider. */
+function proposerSaison(id) {
+  const it = items[idx(id)];
+  if (!it) return;
+  socle.envoyer('saison', 'planning', { tache: it.id, titre: it.text.replace(/\s*\(\d+ \S+\)$/, ''), date: it.due || '' });
+  setTimeout(() => {
+    toast(
+      socle.enAttenteDans('saison').length
+        ? 'Proposé à Saison : à valider à sa prochaine ouverture sur cet appareil'
+        : 'Proposé à Saison : à valider en haut de sa liste',
+      5000
+    );
+  }, 600);
+}
 /* ---------- Tâches sur le socle Officious (3.0, 24/10/2026) ----------
    Le socle (dossier socle/, version figée) lit, fusionne et écrit taches.md, au PC comme dans le Compagnon Officious.
    Tâches lui décrit son métier par cet adaptateur : ses données (items, done, settings, notes, trash), leur format
@@ -19488,6 +19722,7 @@ async function demarrerTaches() {
     apresMiseAJour: avant => setTimeout(() => vcOpen(''), 600),
     surDepot: r => vcCopy(r),
     surAppli: () => mCheckUpdate(),
+    recevoir: recevoirSaison,
     surTexte: t => mNouvelleNote(t),
     surFichier: f => mFichierRecu(f),
     entete: MOBILE ? '#m .mh' : 'header',
