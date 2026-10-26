@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261024101831">
+<meta name="officious-page" content="20261026104005">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1674,6 +1674,9 @@ button.lien {
   color: #8a929c;
   break-inside: avoid;
 }
+.a3-vac.en-tete {
+  margin-top: 0; /* en tête de colonne : pas d'air au-dessus */
+}
 .a3-vac::before,
 .a3-vac::after {
   content: '';
@@ -2114,6 +2117,22 @@ dialog.completer {
 #propositions .prop span {
   flex: 1;
 }
+/* modèles de rétroplanning (26/10/2026) */
+.etapes {
+  width: min(40rem, calc(100vw - 2rem));
+}
+.etapes .etape {
+  border: 1px solid var(--filet);
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem 0.4rem;
+  margin: 0 0 0.6rem;
+  display: grid;
+  gap: 0.35rem;
+}
+.etapes .eSuppr {
+  justify-self: end;
+  font-size: 0.8rem;
+}
 </style>
 </head>
 <body>
@@ -2139,6 +2158,7 @@ dialog.completer {
     <button data-act="actualiser" role="menuitem" hidden>Actualiser</button>
     <button data-act="exporter" role="menuitem">Télécharger une copie</button>
     <button data-act="retrouver" role="menuitem">Retrouver une manifestation disparue…</button>
+    <button data-act="etapes" role="menuitem">Modèles de rétroplanning…</button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
     <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
     <button id="mMaj" role="menuitem" hidden>Mettre à jour l’appli</button>
@@ -2238,6 +2258,7 @@ dialog.completer {
     </div>
     <div id="affPeriodes" class="puces"></div>
     <span class="espace"></span>
+    <button id="affLogo" hidden>Logo…</button>
     <button id="affImprimer" class="primaire" title="Ouvre la boîte d’impression : une imprimante, ou « Enregistrer au format PDF »">Imprimer…</button>
     <button id="affFermer" class="icone" title="Fermer (Échap)">×</button>
   </div>
@@ -2277,6 +2298,14 @@ dialog.completer {
   <div id="cListe"></div>
   <datalist id="cLieux"></datalist>
   <div class="mail-pied"><span id="cReste" class="aide"></span><button id="cMail" class="primaire">Revenir au mail</button></div>
+</dialog>
+
+<dialog id="etapes" class="s-dialogue etapes" aria-label="Modèles de rétroplanning">
+  <h2>Modèles de rétroplanning</h2>
+  <p class="aide">Un modèle s’applique aux manifestations dont le titre contient son mot (« Concert », « Audition »…) ; celui sans mot, à toutes les autres. Une étape par ligne, avec son écart à la date : « Affiche J-21 », « Bilan J+2 ».</p>
+  <div id="etapesListe"></div>
+  <p><button type="button" id="etapesAjout" class="lien">+ Ajouter un modèle</button></p>
+  <form method="dialog" class="s-pied"><button value="non">Annuler</button> <button id="etapesOk" class="primaire" value="oui">Enregistrer</button></form>
 </dialog>
 
 <dialog id="retrouver" class="s-dialogue" aria-label="Manifestations disparues">
@@ -3643,6 +3672,90 @@ async function demarragePc() {
     addEventListener('keydown', premier, true);
   }
 }
+
+/* ---- dossier du fichier, au PC (1.7, 26/10/2026) : fichiers voisins (logo de l'affiche, pièces jointes) ----
+   Le navigateur ne donne accès qu'au fichier choisi : pour lire ou écrire à côté, il faut choisir son dossier, une fois
+   (gardé dans IndexedDB). Edge peut redemander l'autorisation à la session suivante : accesDossier(true) la redemande,
+   et doit donc être appelé depuis un clic (ou un dépôt de fichiers). */
+const dossierPc = { handle: null };
+async function accesDossier(demander) {
+  if (AND || typeof window.showDirectoryPicker !== 'function') return null;
+  if (!dossierPc.handle) dossierPc.handle = (await idbGet('dossier').catch(() => null)) || null;
+  const h = dossierPc.handle;
+  if (h) {
+    let p = 'prompt';
+    try {
+      p = await h.queryPermission({ mode: 'readwrite' });
+      if (p !== 'granted' && demander) p = await h.requestPermission({ mode: 'readwrite' });
+    } catch (e) {}
+    if (p === 'granted') return h;
+    if (!demander) return null;
+  }
+  if (!demander) return null;
+  const nom = fichierPc.handle ? fichierPc.handle.name : A.fichier;
+  let d;
+  try {
+    d = await showDirectoryPicker({ id: 'dossier-' + C.appli, mode: 'readwrite', startIn: fichierPc.handle || 'documents' });
+  } catch (e) {
+    return null; /* annulé */
+  }
+  try {
+    await d.getFileHandle(nom);
+  } catch (e) {
+    toast('Ce dossier ne contient pas ' + nom + ' : choisis celui où il se trouve', null, null, 6000);
+    return null;
+  }
+  dossierPc.handle = d;
+  await idbSet('dossier', d).catch(() => {});
+  journal('dossier autorisé', { nom: d.name });
+  return d;
+}
+/** Le dossier est-il déjà accessible (sans rien demander) ? */
+async function dossierAutorise() {
+  return !!(await accesDossier(false));
+}
+async function sousDossierPc(chemin, creer) {
+  const d = await accesDossier(false);
+  if (!d) throw new Error('dossier:accès au dossier à autoriser');
+  const parts = String(chemin).split('/');
+  let r = d;
+  for (const p of parts.slice(0, -1)) r = await r.getDirectoryHandle(p, { create: creer });
+  return [r, parts[parts.length - 1]];
+}
+/** PC : un fichier voisin (« logo.png », « Pièces jointes/devis.pdf ») → File, ou null s'il n'existe pas. */
+async function lireFichierVoisin(chemin) {
+  try {
+    const [r, nom] = await sousDossierPc(chemin, false);
+    return await (await r.getFileHandle(nom)).getFile();
+  } catch (e) {
+    if (e.name === 'NotFoundError' || e.name === 'TypeError') return null;
+    throw e;
+  }
+}
+/** PC : dépose un fichier dans un sous-dossier voisin, sans rien écraser (« nom (2).ext ») ; renvoie le nom retenu. */
+async function deposerFichierVoisin(dossier, nom, donnees) {
+  const [r] = await sousDossierPc(dossier + '/x', true);
+  const propre = String(nom).replace(/[\\/:*?"<>|]/g, '-').trim() || 'fichier';
+  const pt = propre.lastIndexOf('.'),
+    base = pt > 0 ? propre.slice(0, pt) : propre,
+    ext = pt > 0 ? propre.slice(pt) : '';
+  let n = propre;
+  for (let k = 2; ; k++) {
+    try {
+      await r.getFileHandle(n);
+      n = base + ' (' + k + ')' + ext;
+    } catch (e) {
+      break;
+    }
+  }
+  const f = await r.getFileHandle(n, { create: true }),
+    w = await f.createWritable();
+  await w.write(donnees);
+  await w.close();
+  journal('fichier déposé', { dossier, nom: n });
+  return n;
+}
+
 /* socle/js/18-onedrive.js : le fichier depuis le Compagnon.
    Au premier lancement, on choisit le fichier dans l'appli OneDrive ; dès que son réglage « en ligne » est connu,
    le Compagnon passe à l'accès direct. Ensuite : actualiser, ramasser les copies en double, envoyer quand même. */
@@ -4226,7 +4339,7 @@ function initBoite() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.6.0',
+  version: '1.7.0',
   demarrer,
   /* fichier */
   modifie,
@@ -4279,6 +4392,11 @@ return {
   voisinPossible,
   journal,
   texteEtat,
+  /* dossier du fichier au PC (1.7) */
+  accesDossier,
+  dossierAutorise,
+  lireFichierVoisin,
+  deposerFichierVoisin,
   /* boîte d'échange entre outils (1.6) */
   envoyer,
   enAttenteDans,
@@ -4310,6 +4428,7 @@ return {
     verifierPage,
     verifierAppli,
     fichierPc,
+    dossierPc,
     tel,
     mem
   }
@@ -6488,7 +6607,8 @@ function afficherRetro(e) {
   const E = etapesDe(e);
   if (!E.length) {
     box.innerHTML =
-      '<p class="aide">Rétroplanning dans Tâches : aucun modèle d’étapes. Ajoute dans les réglages de planning.md une ligne comme « - étapes Concert : Affiche J-21 ; Demandez le programme J-14 ».</p>';
+      '<p class="aide">Rétroplanning dans Tâches : aucun modèle d’étapes pour cette manifestation. <button type="button" class="lien" id="fRetroModeles">Créer un modèle…</button></p>';
+    $('#fRetroModeles').onclick = () => ouvrirEtapes(motPropose(e));
     return;
   }
   const date = iso => (iso ? typo(libJour(iso)) : 'sans date');
@@ -6499,8 +6619,9 @@ function afficherRetro(e) {
     E.map(x => '<li><span>' + esc(x.texte) + '</span><span class="retro-d">' + esc(date(x.echeance)) + '</span></li>').join('') +
     '</ul><button type="button" id="fRetroOk">' +
     (e.taches ? 'Renvoyer à Tâches' : 'Envoyer à Tâches') +
-    '</button>';
+    '</button> <button type="button" class="lien" id="fRetroModeles">Modifier les modèles…</button>';
   $('#fRetroOk').onclick = () => envoyerRetro(e.id);
+  $('#fRetroModeles').onclick = () => ouvrirEtapes();
 }
 function libJour(iso) {
   const d = new Date(iso + 'T12:00');
@@ -6603,6 +6724,81 @@ function initPropositions() {
   });
   afficherPropositions();
 }
+
+/* ---- modèles de rétroplanning modifiables dans l'appli (26/10/2026, demande de François) : ils restent des
+   réglages « - étapes Mot : … » de planning.md, réécrits à l'enregistrement ---- */
+/** Premier mot significatif du titre, proposé pour un nouveau modèle (« Concert de Noël » → « Concert »). */
+function motPropose(e) {
+  const m = titreSimple(e).match(/[A-ZÀ-Ýa-zà-ÿ][a-zà-ÿ'’-]{3,}/);
+  return m ? m[0] : '';
+}
+function ligneModele(mot, etapes) {
+  return (
+    '<fieldset class="etape"><label class="champ">Mot du titre<input class="eMot" value="' +
+    esc(mot) +
+    '" placeholder="toutes les autres manifestations"></label><label class="champ">Étapes, une par ligne<textarea class="eEtapes" rows="4" placeholder="Réserver la salle J-60&#10;Affiche J-21&#10;Demandez le programme J-14">' +
+    esc(etapes) +
+    '</textarea></label><button type="button" class="lien eSuppr">Supprimer ce modèle</button></fieldset>'
+  );
+}
+function ouvrirEtapes(nouveauMot) {
+  if (!socle.ouvert) return toast('Ouvre d’abord planning.md');
+  const M = doc.reglages.filter(r => /^étapes\b/i.test(r.cle));
+  let h = M.map(r =>
+    ligneModele(
+      r.cle.replace(/^étapes\s*/i, '').trim(),
+      r.val
+        .split(';')
+        .map(x => x.trim())
+        .filter(Boolean)
+        .join('\n')
+    )
+  ).join('');
+  if (nouveauMot != null && !M.some(r => sansAccents(r.cle.replace(/^étapes\s*/i, '').trim()) === sansAccents(nouveauMot)))
+    h += ligneModele(nouveauMot, '');
+  $('#etapesListe').innerHTML = h || ligneModele('', '');
+  $('#etapes').showModal();
+  const vide = [...$$('#etapesListe .eEtapes')].find(t => !t.value);
+  if (vide) vide.focus();
+}
+function initEtapes() {
+  $('#etapesAjout').onclick = () => {
+    $('#etapesListe').insertAdjacentHTML('beforeend', ligneModele('', ''));
+    $$('#etapesListe .eMot').pop().focus();
+  };
+  $('#etapesListe').addEventListener('click', ev => {
+    const b = ev.target.closest('.eSuppr');
+    if (b) b.closest('.etape').remove();
+  });
+  $('#etapesOk').onclick = ev => {
+    const M = [];
+    for (const f of $$('#etapesListe .etape')) {
+      const mot = $('.eMot', f).value.replace(/[:;]/g, ' ').replace(/\s+/g, ' ').trim(),
+        et = $('.eEtapes', f)
+          .value.split('\n')
+          .map(x => x.replace(/;/g, ',').trim())
+          .filter(Boolean);
+      if (!et.length) continue;
+      const mal = et.find(x => /\bJ\s*$/i.test(x));
+      if (mal) {
+        ev.preventDefault();
+        return toast('« ' + mal + ' » : écris l’écart, par exemple « J-21 »');
+      }
+      if (M.some(m => sansAccents(m.mot) === sansAccents(mot))) {
+        ev.preventDefault();
+        return toast(mot ? 'Deux modèles pour « ' + mot + ' »' : 'Un seul modèle sans mot');
+      }
+      M.push({ mot, et });
+    }
+    snapshot();
+    const autres = doc.reglages.filter(r => !/^étapes\b/i.test(r.cle));
+    doc.reglages = [...autres, ...M.map(m => ({ cle: m.mot ? 'étapes ' + m.mot : 'étapes', val: m.et.join(' ; ') }))];
+    changed();
+    toutAfficher();
+    toast(M.length ? 'Modèles enregistrés dans planning.md' : 'Modèles retirés');
+  };
+}
+
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
 
@@ -6623,11 +6819,45 @@ function blocOrga() {
   );
 }
 
-/* ---- logo de la Ville : à venir, lu dans un fichier logo.png posé à côté de planning.md (choix de François,
-   18/10/2026 : ni dans planning.md, ni dans la page publiée) ; il faut d'abord au socle l'accès aux fichiers voisins.
-   La place est prête dans l'en-tête de l'A3 (.pg-logo). ---- */
+/* ---- logo de la Ville : lu dans un fichier logo.png posé à côté de planning.md (choix de François, 18/10/2026 :
+   ni dans planning.md, ni dans la page publiée). Au PC, par l'accès au dossier (socle 1.7), autorisé une fois par le
+   bouton « Logo… » de l'écran de l'affiche ; en haut à droite de l'A3, en niveaux de gris. Au téléphone, pas de logo
+   (l'A3 s'imprime au PC). ---- */
+const NOMS_LOGO = ['logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'logo.svg'];
+let logoUrl = '',
+  logoEtat = ''; /* '', 'charge', 'absent', 'dossier' (accès à autoriser) */
 function logoAffiche() {
-  return '';
+  return logoUrl ? '<img class="pg-logo" src="' + logoUrl + '" alt="">' : '';
+}
+async function chargerLogo(demander) {
+  if (socle.AND || logoUrl) return;
+  if (demander) await socle.accesDossier(true);
+  if (!(await socle.dossierAutorise())) {
+    logoEtat = 'dossier';
+    return majBoutonLogo();
+  }
+  for (const n of NOMS_LOGO) {
+    const f = await socle.lireFichierVoisin(n).catch(() => null);
+    if (f && f.size) {
+      logoUrl = URL.createObjectURL(n.endsWith('.svg') ? new Blob([f], { type: 'image/svg+xml' }) : f);
+      logoEtat = 'charge';
+      majBoutonLogo();
+      if (!$('#affiche').hidden) afficherAffiche();
+      return;
+    }
+  }
+  logoEtat = 'absent';
+  majBoutonLogo();
+  if (demander) toast('Pas de logo.png dans le dossier de planning.md', null, null, 5000);
+}
+function majBoutonLogo() {
+  const b = $('#affLogo');
+  if (!b) return;
+  b.hidden = socle.AND || affFormat !== 'a3' || logoEtat === 'charge';
+  b.title =
+    logoEtat === 'absent'
+      ? 'Aucun fichier logo.png à côté de planning.md : dépose-le dans ce dossier, puis clique ici'
+      : 'Autoriser l’accès au dossier de planning.md, pour y lire logo.png (une seule fois)';
 }
 
 /* ---- A3 : la saison entière, une colonne par période (François, 18/10/2026) ---- */
@@ -6798,7 +7028,12 @@ function ajusterA3(pg) {
     const r = g.getBoundingClientRect(),
       evs = $$('.a3-ev', g),
       x = evs.length ? evs[evs.length - 1].getBoundingClientRect() : null;
-    return g.scrollWidth > g.clientWidth + 1 || (!!x && (x.right > r.right + 1 || x.bottom > r.bottom + 1));
+    return (
+      g.scrollWidth > g.clientWidth + 1 ||
+      (!!x && (x.right > r.right + 1 || x.bottom > r.bottom + 1)) ||
+      /* un mois entier qui ne tient plus dans sa colonne dépasse en bas (26/10/2026) */
+      $$('.a3-bloc', g).some(b => b.getBoundingClientRect().bottom > r.bottom + 1)
+    );
   };
   const deborde = () => {
     if (deb1()) return true;
@@ -6826,6 +7061,7 @@ function ajusterA3(pg) {
     if (n < meilleur[0]) meilleur = [n, s];
   }
   fixe(meilleur[1]);
+  placerVacances(pg, deborde);
   /* la hauteur gagnée revient en air entre les lignes */
   let air = 0;
   while (air < 14 && !deborde()) pg.style.setProperty('--g', (air += 0.5) + 'px');
@@ -6833,6 +7069,51 @@ function ajusterA3(pg) {
      une quatrième colonne, hors de la page */
   pg.style.setProperty('--g', Math.max(0, (air - 0.5) * 0.6).toFixed(1) + 'px');
   pg.classList.toggle('deborde', deborde());
+}
+
+/**
+ * Coupure « vacances » au changement de colonne (François, 26/10/2026) : le plus équilibré possible. Elle est d'abord
+ * collée au dernier mois de la période qui s'achève (bas de colonne). Si elle tombe juste au changement de colonne et
+ * que cette colonne, sans elle, est plus haute que la suivante, elle passe en tête de la suivante (collée au premier
+ * mois de la période qui commence) ; à égalité, elle reste sur la première. Si le déplacement fait déborder la page,
+ * elle revient.
+ */
+function placerVacances(pg, deborde) {
+  const g = $('.a3-grille', pg);
+  if (!g) return;
+  const colonnes = () => {
+    const C = new Map();
+    for (const b of $$('.a3-bloc', g)) {
+      const r = b.getBoundingClientRect(),
+        k = Math.round(r.left / 10);
+      const c = C.get(k) || { haut: r.top, bas: r.bottom, blocs: [] };
+      c.haut = Math.min(c.haut, r.top);
+      c.bas = Math.max(c.bas, r.bottom);
+      c.blocs.push(b);
+      C.set(k, c);
+    }
+    return [...C.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]);
+  };
+  for (const v of $$('.a3-vac', g)) {
+    const bloc = v.closest('.a3-bloc'),
+      suite = v.closest('.a3-mois').nextElementSibling,
+      premier = suite && $('.a3-bloc', suite);
+    if (!bloc || !premier) continue;
+    const C = colonnes(),
+      i = C.findIndex(c => c.blocs.includes(bloc));
+    /* au changement de colonne seulement : le mois suivant commence la colonne d'après */
+    if (i < 0 || !C[i + 1] || C[i + 1].blocs[0] !== premier || C[i].blocs[C[i].blocs.length - 1] !== bloc) continue;
+    const hv = v.getBoundingClientRect().height,
+      hA = C[i].bas - C[i].haut - hv,
+      hB = C[i + 1].bas - C[i + 1].haut;
+    if (hA <= hB + 2) continue; /* plus basse ou égale : reste en bas de la première */
+    premier.prepend(v);
+    v.classList.add('en-tete');
+    if (deborde()) {
+      bloc.append(v);
+      v.classList.remove('en-tete');
+    }
+  }
 }
 
 function ligneAffiche(e, interne) {
@@ -6936,6 +7217,7 @@ function afficherAffiche() {
     .join('');
   $$('#affFormat button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === affFormat)));
   $('#affPeriodes').hidden = affFormat === 'a3';
+  majBoutonLogo();
   /* format d'impression : @page suit le format choisi */
   let fmt = $('#affPage');
   if (!fmt) document.head.append((fmt = Object.assign(document.createElement('style'), { id: 'affPage' })));
@@ -6994,6 +7276,7 @@ function ouvrirAffiche() {
   $('#affiche').hidden = false;
   document.body.classList.add('avec-affiche');
   afficherAffiche();
+  chargerLogo(false);
 }
 function fermerAffiche() {
   $('#affiche').hidden = true;
@@ -7001,6 +7284,7 @@ function fermerAffiche() {
 }
 function initAffiche() {
   $('#affFermer').onclick = fermerAffiche;
+  $('#affLogo').onclick = () => chargerLogo(true);
   /* au téléphone, l'impression passe par Android (socle) : imprimante ou PDF, déjà réglée au bon format */
   $('#affImprimer').onclick = () => socle.imprimer(affFormat === 'a3' ? doc.titre || 'Saison' : periodesChoisies().length > 1 ? 'Affiches ' + (doc.titre || '') : 'Affiche ' + periodesChoisies()[0].nom, affFormat);
   $('#affFormat').addEventListener('click', ev => {
@@ -7684,6 +7968,16 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-26 13:00',
+    v: '0.59',
+    items: [
+      'Logo de la Ville sur l’affiche A3 : il est lu dans logo.png, à côté de planning.md. Au PC, la première fois, bouton « Logo… » dans l’écran de l’affiche pour autoriser l’accès au dossier.',
+      'Modèles de rétroplanning modifiables dans l’appli : menu ⋯ « Modèles de rétroplanning… », ou depuis la fiche (« Créer un modèle… », « Modifier les modèles… »). Une étape par ligne, avec son écart : « Affiche J-21 ».',
+      'A3 : la coupure « vacances » qui tombe au changement de colonne se place au plus équilibré (en tête de la colonne suivante si la première est plus haute).',
+      'A3 : un mois trop long pour sa colonne est mieux repéré, le corps est réduit d’autant.'
+    ]
+  },
+  {
     d: '2026-10-24 18:00',
     v: '0.58',
     items: [
@@ -8148,6 +8442,7 @@ function initBoutons() {
       nouveau: () => socle.nouveauFichier(),
       exporter: () => socle.exporter(),
       retrouver: ouvrirRetrouver,
+      etapes: () => ouvrirEtapes(),
       enligne: () => socle.reglerEnLigne(),
       outils: () => socle.reglerOutils(),
       actualiser: () => socle.actualiser(),
@@ -8223,6 +8518,7 @@ initListe();
 initCalendrier();
 initMiniCal();
 initPropositions();
+initEtapes();
 initAffiche();
 initMail();
 document.addEventListener('keydown', raccourcis);
