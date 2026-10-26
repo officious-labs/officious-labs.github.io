@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026105949">
+<meta name="officious-page" content="20261026110335">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1492,9 +1492,19 @@ button.lien {
   border-left: 0.3mm solid #e3e6ea;
   object-position: right bottom;
 }
+.page.a3 .pg-pied-ligne {
+  display: flex;
+  align-items: baseline;
+  gap: 5mm;
+}
+.page.a3 .pg-pied-ligne .pg-legende {
+  flex: 1;
+  min-width: 0;
+}
 .page.a3 .pg-mention {
-  top: 6mm;
-  right: 15mm;
+  position: static;
+  margin-left: auto;
+  white-space: nowrap;
 }
 .pg-tete {
   border-bottom: 0.3mm solid #e3e6ea;
@@ -1658,7 +1668,7 @@ button.lien {
 .page.a3 {
   width: 420mm;
   height: 297mm;
-  padding: 13mm 15mm 10mm;
+  padding: 10mm 15mm 10mm; /* 13 mm en haut tant que la mise à jour y était (0.62 : en bas à droite) */
 }
 .page.a3 .pg-titre {
   font-size: 34pt;
@@ -6944,7 +6954,6 @@ function pageA3() {
   const an = (doc.titre.match(/\d{4}\s*[-–]\s*\d{4}/) || [''])[0].replace(/\s*[-–]\s*/, '-');
   let h = '<article class="page a3">';
   h += '<header class="pg-tete">' + orga;
-  h += '<div class="pg-mention">Mis à jour le ' + dateLongue(auj()) + '</div>';
   h +=
     '<h1 class="pg-titre">Saison ' +
     esc(an) +
@@ -6990,7 +6999,8 @@ function pageA3() {
     .join('');
   if (!sections.length) h += '<p class="a3-rien">Programme à venir</p>';
   h += '</div><footer class="pg-pied">';
-  h += legende(evts);
+  /* mise à jour en bas à droite, sur la ligne de la légende (François, 26/10/2026 : de la place gagnée en haut) */
+  h += '<div class="pg-pied-ligne">' + legende(evts) + '<div class="pg-mention">Mis à jour le ' + dateLongue(auj()) + '</div></div>';
   if (adr) h += '<div class="pg-adresse">' + rich(adr) + '</div>';
   return h + '</footer></article>';
 }
@@ -7980,6 +7990,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 12:10',
+    v: '0.62',
+    items: ['A3 : « Mis à jour le… » passe en bas à droite, sur la ligne de la légende. L’en-tête remonte de 3 mm, autant de place pour le programme.']
+  },
   {
     d: '2026-10-26 12:00',
     v: '0.61',
