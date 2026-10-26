@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026110335">
+<meta name="officious-page" content="20261026111442">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1068,6 +1068,9 @@ body.avec-fiche #principal {
   resize: vertical;
   field-sizing: content;
   min-height: 2.6rem;
+}
+#fSousTitre {
+  min-height: 0;
 }
 #fTitre {
   font-weight: 600;
@@ -2215,7 +2218,7 @@ dialog.completer {
     <button id="ficheFermer" class="icone" title="Fermer (Échap)">×</button>
   </div>
   <label class="champ">Titre<textarea id="fTitre" rows="1" title="Entrée : choisir où le titre passe à la ligne s’il ne tient pas sur une ligne"></textarea></label>
-  <label class="champ">Sous-titre<input id="fSousTitre" placeholder="avec Félix Bacik · élèves de la classe de violon"></label>
+  <label class="champ">Sous-titre<textarea id="fSousTitre" rows="1" placeholder="avec Félix Bacik · élèves de la classe de violon (Entrée pour aller à la ligne)"></textarea></label>
   <div class="champ">Date
     <div id="fPrec" class="bascule large" role="group">
       <button data-v="precise">Précise</button><button data-v="mois">Mois</button><button data-v="periode">Période</button><button data-v="aucune">Inconnue</button>
@@ -5077,6 +5080,15 @@ function rich(s) {
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     .replace(/\b(\d+)(res?|ers?|es?)\b/g, '$1<sup>$2</sup>');
 }
+/** Texte sur plusieurs lignes (sous-titre, 0.63) : chaque retour à la ligne est gardé. */
+function richLignes(s) {
+  return (s || '')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean)
+    .map(rich)
+    .join('<br>');
+}
 /** Titre en HTML, avec sa coupure souhaitée (« | » dans le fichier, retour à la ligne dans la fiche) : chaque
  *  morceau reste d'un bloc, et si le titre ne tient pas sur une ligne, il passe à la ligne là (19/10/2026). */
 function titreHtml(t) {
@@ -5520,7 +5532,7 @@ function ligneHtml(e) {
     titreHtml(e.titre) +
     (tags.length ? ' ' + tags.join(' ') : '') +
     '</div>';
-  if (e.soustitre) h += '<div class="soustitre">' + rich(e.soustitre) + '</div>';
+  if (e.soustitre) h += '<div class="soustitre">' + richLignes(e.soustitre) + '</div>';
   if (meta) h += '<div class="meta">' + meta + '</div>';
   if (e.detail) h += '<div class="detail">' + rich(e.detail).replace(/\n/g, '<br>') + '</div>';
   if (e.eleves) h += '<div class="eleves">Élèves concernés\u00a0: ' + rich(e.eleves) + '</div>';
@@ -5775,7 +5787,7 @@ function apercuSaisie() {
     ' · <b>' +
     rich(r.titre) +
     '</b>' +
-    (r.soustitre ? ' — ' + rich(r.soustitre) : '') +
+    (r.soustitre ? ' — ' + rich(r.soustitre.replace(/\s*\n\s*/g, ' · ')) : '') +
     (L ? ' · ' + pastille(L) : '') +
     (r.lieu && !lieux(doc)[r.lieu] ? ' <span class="flou">(lieu hors liste)</span>' : '') +
     (vacancesDe(r) ? ' <span class="alerte-vac">pendant les ' + esc(libVacances(vacancesDe(r))) + '</span>' : '') +
@@ -6941,7 +6953,7 @@ function ligneA3(e) {
     titreHtml(e.titre) +
     '</b>' +
     (e.statut === 'à confirmer' ? ' <i>(sous réserve)</i>' : '') +
-    (e.soustitre ? '<span class="a3-s">' + rich(e.soustitre) + '</span>' : '') +
+    (e.soustitre ? '<span class="a3-s">' + richLignes(e.soustitre) + '</span>' : '') +
     (quand.length ? '<span class="a3-m">' + quand.join(' · ') + '</span>' : '') +
     (e.pratique && e.statut !== 'annulé' ? '<span class="a3-p">' + pratiqueAffiche(e) + '</span>' : '') +
     '</span></li>'
@@ -7155,7 +7167,7 @@ function ligneAffiche(e, interne) {
   else if (e.statut === 'à confirmer') tags.push('<span class="tag t-confirmer">sous réserve</span>');
   if (interne && e.interne) tags.push('<span class="tag t-interne">équipe</span>');
   h += '<div class="pg-t">' + titreHtml(e.titre) + (tags.length ? ' ' + tags.join(' ') : '') + '</div>';
-  if (e.soustitre) h += '<div class="pg-soustitre">' + rich(e.soustitre) + '</div>';
+  if (e.soustitre) h += '<div class="pg-soustitre">' + richLignes(e.soustitre) + '</div>';
   const meta = metaQuand(e);
   if (meta) h += '<div class="pg-meta">' + meta + '</div>';
   if (e.pratique && e.statut !== 'annulé') h += '<div class="pg-pratique">' + pratiqueAffiche(e) + '</div>';
@@ -7471,7 +7483,7 @@ function htmlMail(p, avenir) {
       ENCRE,
       'font-weight:bold;padding-top:2px;'
     );
-    if (g.soustitre) h += ligne(rich(g.soustitre), 15, ENCRE);
+    if (g.soustitre) h += ligne(richLignes(g.soustitre), 15, ENCRE);
     if (un) h += heure(g.evts[0]) + lieu(g.evts[0]);
     else for (const e of g.evts) h += '<div style="padding-top:4px">' + jourL(e) + heure(e) + lieu(e) + '</div>';
     if (g.detail) h += '<div style="padding-top:6px">' + paragraphesMail(g.detail, t(15, '#3e4652')) + '</div>';
@@ -7507,7 +7519,7 @@ function texteMail(p, avenir) {
     const un = g.evts.length === 1;
     if (un) out.push(majuscule(net(libDate(g.evts[0]))));
     out.push(net(g.titre) + (g.reserve ? ' (sous réserve)' : ''));
-    if (g.soustitre) out.push(net(g.soustitre));
+    for (const l of (g.soustitre || '').split('\n')) if (l.trim()) out.push(net(l.trim()));
     if (un) out.push(...quand(g.evts[0]).slice(1));
     else for (const e of g.evts) out.push(...quand(e));
     for (const l of (g.detail || '').split('\n')) if (l.trim()) out.push(net(l.replace(/^\s*[-•]\s+/, '• ')));
@@ -7760,7 +7772,7 @@ function blocEquipe(e, complet) {
   /* « interne » : rien à signaler à l'équipe, pour qui tout est interne ; utile seulement dans « Complet » */
   if (e.interne && complet) titre += ' (interne)';
   const lignes = [titre];
-  if (e.soustitre) lignes.push(e.soustitre);
+  for (const l of (e.soustitre || '').split('\n')) if (l.trim()) lignes.push(l.trim());
   if (L) lignes.push('Lieu : ' + L.nom);
   /* descriptif, élèves concernés et infos pratiques : mail public et « Complet » seulement (François, 18/10/2026) */
   if (complet) {
@@ -7990,6 +8002,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 12:30',
+    v: '0.63',
+    items: ['Le sous-titre peut tenir sur plusieurs lignes (Entrée dans la fiche pour aller à la ligne). Il paraît partout, ligne à ligne : liste, affiches A3 et A4, mails. C’est la place des précisions pour tous, par exemple les créneaux d’une manifestation.']
+  },
   {
     d: '2026-10-26 12:10',
     v: '0.62',
