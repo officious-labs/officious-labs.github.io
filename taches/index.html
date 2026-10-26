@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026124056">
+<meta name="officious-page" content="20261026130137">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5531,7 +5531,7 @@ body:has(#s-toast.on) #toast {
 /* accès en un clic à une rubrique (3.2) : PC, barre sous l'en-tête ; téléphone, puces en haut de la liste */
 #rubBar {
   position: sticky;
-  top: var(--hh, 2.6rem);
+  top: calc(var(--hh, 2.6rem) + var(--rh, 0px));
   z-index: 4;
   display: flex;
   flex-wrap: wrap;
@@ -5671,6 +5671,124 @@ body.mobile #rubBar {
     transform: translateY(-4px);
   }
 }
+
+/* ---- échéances (3.4) : radar, repères de la vue par échéance ---- */
+#radar,
+#mRadar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.4rem;
+  padding: 0.3rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+#radar {
+  position: sticky;
+  top: var(--hh, 2.6rem);
+  z-index: 4;
+}
+#mRadar {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+}
+#radar[hidden],
+#mRadar[hidden],
+body.mobile #radar {
+  display: none;
+}
+#radar .rtit,
+#mRadar .rtit {
+  font-size: 0.95rem;
+}
+.rj {
+  --j: #8a8f98;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--j) 45%, transparent);
+  border-left: 4px solid var(--j);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--j) 8%, var(--bg));
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rj b {
+  color: var(--j);
+}
+.rj .jd,
+.rj .jc {
+  color: var(--muted);
+}
+.rj .jc {
+  font-style: italic;
+}
+.rj.proche,
+.jsep.proche {
+  --j: #c48a2a;
+}
+.rj.imminent,
+.jsep.imminent,
+.rj.passe,
+.jsep.passe {
+  --j: #c4524a;
+}
+.rj.imminent {
+  background: color-mix(in srgb, var(--j) 16%, var(--bg));
+}
+.rplus,
+.rajout {
+  font: inherit;
+  padding: 0.15rem 0.5rem;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.rajout {
+  margin-left: auto;
+}
+.rvide {
+  color: var(--muted);
+  font-style: italic;
+}
+.jsep {
+  --j: #8a8f98;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.35rem 0;
+  font-size: 0.8rem;
+  color: var(--j);
+  cursor: pointer;
+}
+.jsep::before,
+.jsep::after {
+  content: '';
+  flex: 1;
+  border-top: 1.5px dashed var(--j);
+}
+.jsep span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 85%;
+}
+.dcd.jal {
+  box-shadow: inset 0 0 0 2px #c4524a;
+  border-radius: 50%;
+}
+.jflash {
+  animation: rubflash 1.4s ease-out;
+}
+#list .cell.dcell > .jsep {
+  grid-column: 1 / -1;
+}
 </style>
 </head>
 <body>
@@ -5712,10 +5830,12 @@ body.mobile #rubBar {
     <li>Glisser un e-mail, une pièce jointe d’e-mail, un lien ou du texte : sur une tâche, il s’y ajoute ; ailleurs, il crée une tâche (dans la case visée, sinon « À faire » de la rubrique, sinon « Hors rubrique »)</li>
     <li>Coller la réponse JSON de l’Afficheur Graph (tâches To Do) dans une tâche, par exemple après Alt+T : importe les tâches non terminées</li>
     <li><kbd>Retour arrière</kbd> en début de ligne : décaler, fusionner ou supprimer</li>
+    <li><strong>Échéances</strong> (rubrique « Échéances », ou « + Échéance » dans le radar en haut) : une date à ne pas manquer, écrite à la fin de l’intitulé (« Conseil d’établissement 12/3 ») ; ses étapes en sous-tâches avec « J-30 » prennent leur date et suivent si l’échéance bouge. Le radar montre celles des 60 prochains jours ; dans la vue par échéance, ce sont des lignes de repère</li>
     <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> annuler / rétablir</li>
     <li>Coller plusieurs lignes : import (titres <kbd>#</kbd>, puces <kbd>-</kbd>, lignes <kbd>&gt;</kbd> = commentaire de la tâche au-dessus)</li>
   </ul>
 </div>
+<nav id="radar" aria-label="Échéances" hidden></nav>
 <nav id="rubBar" aria-label="Aller à une rubrique" hidden></nav>
 <div class="banner" id="banner" hidden></div>
 <main id="main"><div id="inbox" hidden></div><div id="list"></div></main>
@@ -5728,6 +5848,7 @@ body.mobile #rubBar {
     <button class="mmenu" id="mMenuBtn" title="Options">⋮</button>
   </div>
   <div id="mFilters"></div>
+  <nav id="mRadar" aria-label="Échéances" hidden></nav>
   <nav class="mtabs" id="mTabs"></nav>
   <div id="mList"></div>
   <button class="fab" id="mAdd" title="Nouveau" aria-label="Nouveau"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -9760,7 +9881,7 @@ function renderRubBar() {
 function allerRubrique(id) {
   const s = $('#list .section[data-sec="' + id + '"]');
   if (!s) return;
-  const haut = $('header').offsetHeight + ($('#rubBar').hidden ? 0 : $('#rubBar').offsetHeight) + 8;
+  const haut = $('header').offsetHeight + ($('#radar').hidden ? 0 : $('#radar').offsetHeight) + ($('#rubBar').hidden ? 0 : $('#rubBar').offsetHeight) + 8;
   scrollTo({ top: s.getBoundingClientRect().top + scrollY - haut, behavior: 'smooth' });
   s.classList.remove('rubflash');
   void s.offsetWidth;
@@ -9771,13 +9892,14 @@ $('#rubBar').addEventListener('click', e => {
   if (b) allerRubrique(b.dataset.sec);
 });
 function renderEnd(list) {
+  renderRadar();
   renderRubBar();
   poserEncarts();
   list
     .querySelectorAll('.card>.insec')
     .forEach(b => b.parentNode.append(b)); /* nom de la rubrique en bas de la tâche */
   list.querySelectorAll('.section').forEach(sec => {
-    if ((filter || sec.classList.contains('urglane') || sec.classList.contains('dband')) && !sec.querySelector('.card'))
+    if ((filter || sec.classList.contains('urglane') || sec.classList.contains('dband')) && !sec.querySelector('.card, .jsep'))
       sec.style.display = 'none';
   });
   document.body.classList.toggle('filtering', !!filter);
@@ -9801,7 +9923,7 @@ function renderDates(list, cols) {
     const n = document.createElement('span');
     n.className = 'dn';
     n.textContent =
-      by[k].length +
+      by[k].filter(i => !estJalon(items[i])).length +
       (k === 'semaine'
         ? ' · jusqu’au ' + shortDate(addDays(todayISO(), 6 - ((new Date(todayISO() + 'T12:00').getDay() + 6) % 7)))
         : k === 'sans'
@@ -9814,6 +9936,10 @@ function renderDates(list, cols) {
     cell.dataset.band = k;
     sec.append(cell);
     for (const i of by[k]) {
+      if (estJalon(items[i]) && items[i].due) {
+        cell.append(repereJalon(items[i])); /* échéance : ligne de repère (3.4) */
+        continue;
+      }
       const it = items[i],
         h = headingOf(i),
         al = ageLevel(it);
@@ -9849,10 +9975,12 @@ function dcalEl() {
   al.className = 'dcal';
   al.style.gridRow = '1 / span ' + BANDS.length;
   const per = {},
+    perJ = {} /* échéances : jour cerclé (3.4) */,
     today = todayISO();
   items.forEach((it, i) => {
     if (it.kind === 't' && it.level === 0 && it.state !== 'fait' && bandDue(it) && matchFilter(i))
-      (per[bandDue(it)] = per[bandDue(it)] || []).push(it);
+      if (estJalon(it)) (perJ[it.due] = perJ[it.due] || []).push(it);
+      else (per[bandDue(it)] = per[bandDue(it)] || []).push(it);
   });
   const t0 = new Date(today + 'T12:00');
   for (let m = 0; m < 2; m++) {
@@ -9876,7 +10004,7 @@ function dcalEl() {
       c.tabIndex = -1;
       c.dataset.d = iso;
       c.className =
-        'dcd' + (iso === today ? ' today' : '') + (iso < today ? ' past' : '') + (off ? ' off' : '') + (off && off !== 'week-end' ? ' vac' : '') + (ts.length ? ' has' : '');
+        'dcd' + (iso === today ? ' today' : '') + (iso < today ? ' past' : '') + (off ? ' off' : '') + (off && off !== 'week-end' ? ' vac' : '') + (ts.length ? ' has' : '') + (perJ[iso] ? ' jal' : '');
       c.innerHTML = '<span>' + d.getDate() + '</span>';
       if (ts.length) {
         const dots = document.createElement('i');
@@ -9891,6 +10019,7 @@ function dcalEl() {
       c.title =
         fmtDate(iso) +
         (off && off !== 'week-end' ? ' · ' + off : '') +
+        (perJ[iso] ? '\n⏳ ' + perJ[iso].map(it => plainFmt(it.text)).join(' · ') : '') +
         (ts.length ? '\n' + ts.map(it => '• ' + plainFmt(it.text) + (bandDue(it) !== it.due ? ' (relance)' : '')).join('\n') : iso < today ? '' : '\nLâche une tâche ici pour lui donner cette échéance');
       g.append(c);
     }
@@ -14671,7 +14800,8 @@ function rulesTick() {
     any = true;
     normalize();
   }
-  return any;
+  const ech = typeof echeancesTick === 'function' && echeancesTick(); /* échéances (3.4) */
+  return any || ech;
 }
 /* une sous-tâche cochée ou décochée : toutes cochées → tâche faite ; décochée dans une tâche faite → à faire */
 function subSync(k) {
@@ -15742,6 +15872,7 @@ function mRender() {
   mRenderTail(list);
 }
 function mRenderTail(list) {
+  renderRadar();
   setTimeout(poserEncarts); /* après la fin du rendu */
   /* historique : replié par défaut, en bas */
   if (done.length && !filter) {
@@ -15957,6 +16088,20 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 15:00',
+    type: 'web',
+    v: '3.4',
+    t: 'Échéances et radar',
+    items: [
+      'Rubrique « Échéances » : les dates à ne pas manquer (fin des mandatements, conseil d’établissement, bulletins, dossiers de subvention…). « + Échéance » à droite du radar la crée au besoin.',
+      'Écris la date à la fin de l’intitulé : « Conseil d’établissement 12/3 » ou « … 7 décembre 2026 ».',
+      'Radar en haut (PC et téléphone) : les échéances des 60 prochains jours, avec le compte à rebours ; orange à moins d’un mois, rouge à moins d’une semaine. « + N plus tard » montre les autres ; un clic mène à l’échéance.',
+      'Rétroplanning : une sous-tâche « Derniers bons de commande J-21 » prend sa date 21 jours avant l’échéance, et suit si l’échéance change.',
+      'Vue par échéance : les échéances sont des lignes de repère entre les tâches, et leur jour est cerclé dans le calendrier.',
+      'Échéance passée : un encart propose de la reconduire l’an prochain (en attente, à confirmer à la prochaine note, avec les mêmes étapes) ou de la ranger.'
+    ]
+  },
   {
     d: '2026-10-26 14:00',
     type: 'web',
@@ -20002,7 +20147,30 @@ function proposerApres(id) {
   aProposer.add(id);
   rafraichir();
 }
+/** Un encart : message et boutons [libellé, principal, action] ; il se retire au clic. */
+function encart(msg, boutons) {
+  const e = document.createElement('div');
+  e.className = 'encart';
+  const s = document.createElement('span');
+  s.textContent = msg;
+  e.append(s);
+  for (const [l, p, f] of boutons) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = l;
+    if (p) b.className = 'primaire';
+    b.addEventListener('click', ev => {
+      ev.stopPropagation();
+      e.remove();
+      f();
+    });
+    e.append(b);
+  }
+  for (const t of ['pointerdown', 'mousedown', 'touchstart', 'dblclick', 'dragstart', 'click']) e.addEventListener(t, ev => ev.stopPropagation());
+  return e;
+}
 function poserEncarts() {
+  if (typeof encartsJalons === 'function') encartsJalons();
   for (const id of [...aProposer]) {
     const it = items[idx(id)];
     if (!it || it.saison) {
@@ -20011,20 +20179,11 @@ function poserEncarts() {
     }
     const c = document.querySelector('.card[data-id="' + id + '"], .mcard[data-id="' + id + '"]');
     if (!c || c.querySelector('.encart')) continue;
-    const e = document.createElement('div');
-    e.className = 'encart';
-    e.innerHTML =
-      '<span>L’ajouter au planning des manifestations ?</span><button type="button" class="primaire" data-enc="oui">Proposer à Saison</button><button type="button" data-enc="non">Non</button>';
-    for (const t of ['pointerdown', 'mousedown', 'touchstart', 'dblclick', 'dragstart']) e.addEventListener(t, ev => ev.stopPropagation());
-    e.draggable = false;
-    e.addEventListener('click', ev => {
-      ev.stopPropagation();
-      const b = ev.target.closest('[data-enc]');
-      if (!b) return;
-      aProposer.delete(id);
-      if (b.dataset.enc === 'oui') proposerSaison(id);
-      e.remove();
-    });
+    const e = encart('L’ajouter au planning des manifestations ?', [
+      ['Proposer à Saison', true, () => (aProposer.delete(id), proposerSaison(id))],
+      ['Non', false, () => aProposer.delete(id)]
+    ]);
+    e.querySelector('.primaire').dataset.enc = 'oui';
     c.append(e);
   }
 }
@@ -20041,6 +20200,273 @@ function proposerSaison(id) {
       5000
     );
   }, 600);
+}
+/* ---------- échéances (3.4, 26/10/2026, demande de François) ----------
+   Des dates imposées de l'extérieur (fin des mandatements, conseil d'établissement, bulletins, dossiers de
+   subvention…) : ni des tâches à cocher comme les autres, ni des manifestations. Ce sont les tâches de la rubrique
+   « Échéances » (rien de plus dans taches.md : la rubrique, des tâches datées, leurs sous-tâches).
+   - Le radar : une bande en haut (PC et téléphone), les échéances à moins de RADAR_JOURS jours, compte à rebours,
+     couleur qui se renforce à l'approche ; « + N plus tard » montre les autres.
+   - Vue par échéance : une échéance est une ligne de repère entre les tâches, pas une carte.
+   - Rétroplanning : une sous-tâche « Relancer les factures J-30 » prend son échéance 30 jours avant ; si la date de
+     l'échéance change, les sous-tâches pas encore faites suivent.
+   - Date dans l'intitulé : « Conseil d'établissement 12/3 » ou « … 7 décembre 2026 » donne la date.
+   - Passée : un encart propose de la reconduire l'an prochain (même jour, « En attente » = à confirmer, mêmes étapes
+     décochées), ou de la ranger. */
+
+const RUB_ECH = 'Échéances';
+const RADAR_JOURS = 60;
+let radarTout = false;
+
+function estRubEch(h) {
+  return !!h && h.kind === 'h' && normName(h.text) === normName(RUB_ECH);
+}
+function estJalon(it) {
+  if (!it || it.kind !== 't' || it.level !== 0) return false;
+  const i = idx(it.id);
+  return i >= 0 && estRubEch(headingOf(i));
+}
+/** Échéances en cours (pas « Fait »), triées par date ; les sans date à la fin. */
+function jalons() {
+  const L = [];
+  items.forEach((it, i) => {
+    if (it.kind === 't' && it.level === 0 && it.state !== 'fait' && it.text.trim() && estRubEch(headingOf(i))) L.push(it);
+  });
+  return L.sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : (a.due || '9999') > (b.due || '9999') ? 1 : 0);
+}
+
+/* ---- date en fin d'intitulé ---- */
+const MOIS_ECH = {
+  janv: 1, janvier: 1, fevr: 2, fevrier: 2, mars: 3, avr: 4, avril: 4, mai: 5, juin: 6, juil: 7, juillet: 7,
+  aout: 8, sept: 9, septembre: 9, oct: 10, octobre: 10, nov: 11, novembre: 11, dec: 12, decembre: 12
+};
+const RX_DATE_FIN =
+  /^(.*?\S)[\s,:·–—-]+(?:le\s+)?(\d{1,2})(?:(?:er)?\s*\/\s*(\d{1,2})|(?:er)?\s+([a-zéèûô]+)\.?)(?:\s*\/?\s*(\d{4}))?\s*$/i;
+function dateFin(texte) {
+  const m = (texte || '').match(RX_DATE_FIN);
+  if (!m) return null;
+  const j = +m[2],
+    mo = m[3] ? +m[3] : MOIS_ECH[normName(m[4]).replace(/\s/g, '')];
+  if (!mo || mo > 12 || j < 1 || j > 31) return null;
+  const iso = (y) => y + '-' + String(mo).padStart(2, '0') + '-' + String(j).padStart(2, '0');
+  let y = m[5] ? +m[5] : +todayISO().slice(0, 4);
+  if (!m[5] && iso(y) < addDays(todayISO(), -31)) y++; /* sans année : la prochaine (un mois de grâce) */
+  const d = new Date(iso(y) + 'T12:00');
+  if (d.getMonth() + 1 !== mo) return null; /* 31 juin… */
+  return { reste: m[1].trim(), iso: iso(y) };
+}
+const RX_J = /^(.*?\S)\s+J\s*([-+−–])\s*(\d{1,3})\s*$/;
+
+/** Appelée par rulesTick (à chaque modification) : date dans l'intitulé, étapes « J-30 », étapes qui suivent la date. */
+function echeancesTick() {
+  let did = false;
+  const ed = editingId();
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (it.kind !== 't' || it.level !== 0) continue;
+    if (!estRubEch(headingOf(i))) {
+      delete it._jd;
+      continue;
+    }
+    if (ed !== it.id) {
+      const m = dateFin(it.text);
+      if (m) {
+        it.text = m.reste;
+        it.due = m.iso;
+        did = true;
+      }
+    }
+    const fin = blockEnd(i);
+    /* la date a changé (ici) : les étapes pas encore faites suivent */
+    if (it._jd && it.due && it._jd !== it.due) {
+      const n = joursEntre(it._jd, it.due);
+      for (const s of items.slice(i + 1, fin)) if (s.kind === 't' && !s.checked && s.due) s.due = addDays(s.due, n);
+      did = true;
+    }
+    it._jd = it.due || '';
+    if (it.due)
+      for (const s of items.slice(i + 1, fin)) {
+        if (s.kind !== 't' || ed === s.id) continue;
+        const m = s.text.match(RX_J);
+        if (!m) continue;
+        s.text = m[1];
+        s.due = addDays(it.due, (m[2] === '+' ? 1 : -1) * +m[3]);
+        did = true;
+      }
+  }
+  return did;
+}
+
+/* ---- le radar ---- */
+function compteARebours(iso) {
+  const n = daysTo(iso);
+  return n < 0 ? 'passée' : n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : 'J-' + n;
+}
+function classeRadar(iso) {
+  const n = daysTo(iso);
+  return n < 0 ? 'passe' : n <= 7 ? 'imminent' : n <= 30 ? 'proche' : 'loin';
+}
+function prochaineEtape(it) {
+  const i = idx(it.id);
+  return items
+    .slice(i + 1, blockEnd(i))
+    .filter(s => s.kind === 't' && !s.checked && s.due && s.text.trim())
+    .sort((a, b) => (a.due < b.due ? -1 : 1))[0];
+}
+function renderRadar() {
+  const el = $(MOBILE ? '#mRadar' : '#radar');
+  if (!el) return;
+  const L = jalons().filter(x => x.due),
+    proches = L.filter(x => daysTo(x.due) <= RADAR_JOURS),
+    vus = radarTout ? L : proches,
+    plus = L.length - proches.length;
+  el.hidden = seedShown || (MOBILE ? !L.length : false);
+  if (!el.hidden) {
+    const h = [];
+    h.push('<span class="rtit" title="Échéances à moins de ' + RADAR_JOURS + ' jours (rubrique « ' + RUB_ECH + ' »)">⏳</span>');
+    for (const it of vus) {
+      const e = prochaineEtape(it);
+      h.push(
+        '<button type="button" class="rj ' +
+          classeRadar(it.due) +
+          '" data-id="' +
+          it.id +
+          '" title="' +
+          escHtml(fmtDate(it.due) + (it.state === 'attente' ? ' (à confirmer)' : '') + (e ? '\nProchaine étape : ' + plainFmt(e.text) + ' (' + shortDate(e.due) + ')' : '')) +
+          '"><b>' +
+          compteARebours(it.due) +
+          '</b> ' +
+          escHtml(plainFmt(it.text)) +
+          ' <span class="jd">' +
+          escHtml(shortDate(it.due)) +
+          '</span>' +
+          (it.state === 'attente' ? ' <span class="jc">à confirmer</span>' : '') +
+          '</button>'
+      );
+    }
+    if (!vus.length) h.push('<span class="rvide">Aucune échéance d’ici ' + RADAR_JOURS + ' jours</span>');
+    if (plus) h.push('<button type="button" class="rplus" data-r="tout">' + (radarTout ? 'Moins' : '+ ' + plus + ' plus tard') + '</button>');
+    if (!MOBILE) h.push('<button type="button" class="rajout" data-r="ajout" title="Nouvelle échéance, dans la rubrique « ' + RUB_ECH + ' »">+ Échéance</button>');
+    el.innerHTML = h.join('');
+  }
+  document.documentElement.style.setProperty('--rh', (el.hidden ? 0 : el.offsetHeight) + 'px');
+}
+function ajouterJalon() {
+  snapshot();
+  let h = items.find(estRubEch);
+  if (!h) {
+    h = { id: uid(), kind: 'h', text: RUB_ECH, level: 0 };
+    items.push(h);
+  }
+  if (dateView()) setDateView(false);
+  addCard(h.id, 'afaire');
+  toast('Écris l’intitulé suivi de la date (« Conseil d’établissement 12/3 ») ; les étapes en sous-tâches, avec « J-30 »', 9000);
+}
+function allerJalon(id) {
+  if (MOBILE) return mOpenAct(id);
+  const c = $('#list .card[data-id="' + id + '"], #list .jsep[data-id="' + id + '"]');
+  if (!c) return;
+  const haut = $('header').offsetHeight + ($('#radar').hidden ? 0 : $('#radar').offsetHeight) + ($('#rubBar').hidden ? 0 : $('#rubBar').offsetHeight) + 12;
+  scrollTo({ top: c.getBoundingClientRect().top + scrollY - haut, behavior: 'smooth' });
+  c.classList.remove('jflash');
+  void c.offsetWidth;
+  c.classList.add('jflash');
+}
+function clicRadar(ev) {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  if (b.dataset.r === 'tout') {
+    radarTout = !radarTout;
+    return renderRadar();
+  }
+  if (b.dataset.r === 'ajout') return ajouterJalon();
+  if (b.dataset.id) allerJalon(b.dataset.id);
+}
+for (const s of ['#radar', '#mRadar']) {
+  const el = document.querySelector(s);
+  if (el) el.addEventListener('click', clicRadar);
+}
+
+/** Vue par échéance : la ligne de repère qui remplace la carte d'une échéance. */
+function repereJalon(it) {
+  const d = document.createElement('div');
+  d.className = 'jsep ' + classeRadar(it.due);
+  d.dataset.id = it.id;
+  d.innerHTML =
+    '<span>⏳ ' +
+    escHtml(shortDate(it.due)) +
+    ' · <b>' +
+    escHtml(plainFmt(it.text)) +
+    '</b> · ' +
+    compteARebours(it.due) +
+    (it.state === 'attente' ? ' · à confirmer' : '') +
+    '</span>';
+  d.title = 'Échéance : clic pour la voir dans sa rubrique';
+  d.addEventListener('click', () => {
+    setDateView(false);
+    render();
+    requestAnimationFrame(() => allerJalon(it.id));
+  });
+  return d;
+}
+
+/* ---- passée : reconduire l'an prochain, ou ranger ---- */
+function plusUnAn(iso) {
+  const y = +iso.slice(0, 4) + 1;
+  let d = y + iso.slice(4);
+  if (iso.slice(5) === '02-29') d = y + '-02-28';
+  return d;
+}
+function reconduire(id) {
+  const i = idx(id);
+  if (i < 0) return;
+  snapshot();
+  const fin = blockEnd(i),
+    bloc = items.slice(i, fin).map(x => JSON.parse(JSON.stringify(x)));
+  for (const x of bloc) {
+    x.id = uid();
+    delete x._jd;
+    delete x._s;
+    delete x.doneDate;
+    delete x.urgent;
+    x.created = todayISO();
+    if (x.due) x.due = plusUnAn(x.due);
+    if (x.level > 0) delete x.checked;
+  }
+  bloc[0].state = 'attente';
+  delete bloc[0].relance;
+  const it = items[i];
+  it.state = 'fait';
+  it.doneDate = todayISO();
+  items.splice(fin, 0, ...bloc);
+  normalize();
+  changed();
+  rafraichir();
+  toast('Reconduite au ' + shortDate(bloc[0].due) + ', « en attente » : à confirmer à la prochaine note (puis « À faire »)', 8000);
+}
+function rangerJalon(id) {
+  const it = items[idx(id)];
+  if (!it) return;
+  snapshot();
+  it.state = 'fait';
+  it.doneDate = todayISO();
+  normalize();
+  changed();
+  rafraichir();
+}
+/** Encarts des échéances passées (appelé par poserEncarts). */
+function encartsJalons() {
+  for (const it of jalons()) {
+    if (!it.due || daysTo(it.due) >= 0) continue;
+    const c = document.querySelector('.card[data-id="' + it.id + '"], .mcard[data-id="' + it.id + '"]');
+    if (!c || c.querySelector('.encart')) continue;
+    c.append(
+      encart('Échéance passée : la reconduire pour l’an prochain ?', [
+        ['Reconduire', true, () => reconduire(it.id)],
+        ['Ranger', false, () => rangerJalon(it.id)]
+      ])
+    );
+  }
 }
 /* ---------- Tâches sur le socle Officine (3.0, 24/10/2026) ----------
    Le socle (dossier socle/, version figée) lit, fusionne et écrit taches.md, au PC comme dans le Compagnon Officine.
