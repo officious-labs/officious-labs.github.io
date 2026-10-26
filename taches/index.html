@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026132108">
+<meta name="officious-page" content="20261026142248">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5814,6 +5814,91 @@ body.mobile #radar {
     white-space: nowrap;
   }
 }
+
+/* ---- 3.5 : pastilles de rubriques (dépôt, déplacement) et menu volant ---- */
+#rubBar .rnotes {
+  --c: #8a847a;
+}
+#rubBar button {
+  touch-action: none;
+  user-select: none;
+}
+#rubBar button.depot {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 18%, var(--panel));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent);
+}
+#rubBar button.deplace {
+  opacity: 0.35;
+}
+#rubBar button.insere-avant {
+  box-shadow: 0 -3px 0 -1px var(--fg);
+}
+@media (max-width: 1559px) {
+  #rubBar button.insere-avant {
+    box-shadow: -3px 0 0 -1px var(--fg);
+  }
+}
+.rfantome {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  padding: 0.18rem 0.6rem;
+  border: 1px solid var(--c);
+  border-radius: 99px;
+  background: var(--panel);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+}
+.rfantome i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--c);
+}
+body.rub-glisse,
+body.rub-glisse * {
+  cursor: grabbing !important;
+}
+body:has(#fly) #rubBar button[data-sec] {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+/* icône du radar (3.5) : le faisceau tourne lentement, sauf « animations réduites » */
+.iradar {
+  flex: none;
+  vertical-align: -0.3em;
+  color: var(--accent, #2f6f5e);
+}
+.rtit .iradar .faisceau {
+  transform-origin: 12px 12px;
+  animation: balayage 6s linear infinite;
+}
+.jsep .iradar {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+@keyframes balayage {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rtit .iradar .faisceau {
+    animation: none;
+  }
+}
+
+.rtit .iradar {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
 </style>
 </head>
 <body>
@@ -9891,11 +9976,19 @@ function renderRubBar() {
   bar.hidden = dateView() || hs.length < 2;
   if (bar.hidden) return;
   const cols = sectionColors();
+  const notesB = document.createElement('button'); /* 3.5 : « Notes » en tête (clic : le bandeau ; dépôt : une note) */
+  notesB.type = 'button';
+  notesB.dataset.sec = '!notes';
+  notesB.className = 'rnotes';
+  notesB.title = 'Aller aux notes à trier · déposer ici des fichiers ou un lien : une note';
+  notesB.append('📝 Notes');
   bar.replaceChildren(
+    notesB,
     ...hs.map(h => {
       const b = document.createElement('button');
       b.type = 'button';
       b.dataset.sec = h.id;
+      b.title = 'Aller à la rubrique · glisser pour la déplacer · déposer ici des fichiers ou un lien : une tâche';
       b.style.setProperty('--c', cols['#' + h.id] || CARD_COLOR);
       b.append(document.createElement('i'), h.text);
       return b;
@@ -9931,8 +10024,143 @@ function allerRubrique(id) {
   s.classList.add('rubflash');
 }
 $('#rubBar').addEventListener('click', e => {
+  if (rubGlisse.fini && Date.now() - rubGlisse.fini < 300) return; /* fin d'un déplacement, pas un clic */
   const b = e.target.closest('[data-sec]');
-  if (b) allerRubrique(b.dataset.sec);
+  if (!b) return;
+  if (b.dataset.sec === '!notes') {
+    const ib = $('#inbox');
+    if (ib) scrollTo({ top: ib.getBoundingClientRect().top + scrollY - $('header').offsetHeight - ($('#radar').hidden ? 0 : $('#radar').offsetHeight) - rubBarHaut() - 8, behavior: 'smooth' });
+    return;
+  }
+  allerRubrique(b.dataset.sec);
+});
+
+/* ---- 3.5 (demandes de François) ----
+   - fichiers, liens ou e-mails déposés sur une pastille : une tâche dans la rubrique (« Notes » : une note) ;
+   - glisser une pastille : réordonner les rubriques. */
+function dropSurPastille(e) {
+  const b = e.target.closest && e.target.closest('#rubBar [data-sec]');
+  return b && !dragId && !noteDragId && e.dataTransfer ? b : null;
+}
+$('#rubBar').addEventListener('dragover', e => {
+  const b = dropSurPastille(e);
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'copy';
+  document.querySelectorAll('#rubBar .depot').forEach(x => x !== b && x.classList.remove('depot'));
+  b.classList.add('depot');
+});
+$('#rubBar').addEventListener('dragleave', e => {
+  const b = e.target.closest && e.target.closest('#rubBar [data-sec]');
+  if (b && !b.contains(e.relatedTarget)) b.classList.remove('depot');
+});
+$('#rubBar').addEventListener('drop', e => {
+  const b = dropSurPastille(e);
+  document.querySelectorAll('#rubBar .depot').forEach(x => x.classList.remove('depot'));
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const dt = e.dataTransfer,
+    note = b.dataset.sec === '!notes',
+    sec = note ? '' : b.dataset.sec;
+  if (deposerSiFichiers(dt, note ? { nouvelleNote: true } : { sec, state: 'afaire' })) return;
+  const got = linksFromDrop(dt);
+  if (got) {
+    if (note) {
+      snapshot();
+      const n = { id: uid(), at: nowStamp(), text: got[0].label || labelOf(got[0].url), links: got };
+      notes.unshift(n);
+      render();
+      changed();
+      flashNote(n.id);
+      toast('Note créée avec ' + (got.length > 1 ? 'les liens' : 'le lien'));
+    } else newCardsIn(sec, 'afaire', [{ text: got[0].label || labelOf(got[0].url), links: got }]);
+    return;
+  }
+  const txt = dt.getData('text/plain').trim();
+  if (txt) {
+    if (note) {
+      snapshot();
+      const n = { id: uid(), at: nowStamp(), text: txt };
+      notes.unshift(n);
+      render();
+      changed();
+      flashNote(n.id);
+      toast('Note créée');
+    } else newCardsIn(sec, 'afaire', [{ text: txt.split(/\r?\n/)[0], ...(txt.includes('\n') ? { note: txt.split(/\r?\n/).slice(1).join('\n').trim() } : {}) }]);
+    return;
+  }
+  showReport(dropReport(dt, 'sur une pastille de rubrique'));
+});
+
+/** Déplace la rubrique « id » (avec ses tâches) avant la rubrique « avant » (null : à la fin). */
+function deplacerRubrique(id, avant) {
+  const i = idx(id);
+  if (i < 0 || id === avant) return false;
+  const bloc = items.slice(i, blockEnd(i));
+  snapshot();
+  items.splice(i, bloc.length);
+  let j = avant ? idx(avant) : items.length;
+  if (j < 0) j = items.length;
+  items.splice(j, 0, ...bloc);
+  normalize();
+  render();
+  changed();
+  return true;
+}
+const rubGlisse = { fini: 0 };
+$('#rubBar').addEventListener('pointerdown', e => {
+  const b = e.target.closest('[data-sec]');
+  if (!b || e.button !== 0 || b.dataset.sec === '!notes') return;
+  const bar = $('#rubBar'),
+    vertical = getComputedStyle(bar).position === 'fixed',
+    x0 = e.clientX,
+    y0 = e.clientY;
+  let actif = false,
+    fant = null,
+    avant = null;
+  const pastilles = () => [...bar.querySelectorAll('[data-sec]:not(.rnotes)')].filter(x => x !== b);
+  const bouge = ev => {
+    if (!actif) {
+      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+      actif = true;
+      b.classList.add('deplace');
+      fant = b.cloneNode(true);
+      fant.className = 'rfantome';
+      fant.style.setProperty('--c', b.style.getPropertyValue('--c'));
+      document.body.append(fant);
+      document.body.classList.add('rub-glisse');
+    }
+    fant.style.left = ev.clientX + 8 + 'px';
+    fant.style.top = ev.clientY - 12 + 'px';
+    /* point d'insertion : avant la première pastille dont le milieu est après le pointeur */
+    const P = pastilles();
+    const c = P.find(x => {
+      const r = x.getBoundingClientRect();
+      return vertical ? ev.clientY < r.top + r.height / 2 : ev.clientY < r.bottom && (ev.clientX < r.left + r.width / 2 || ev.clientY < r.top);
+    });
+    avant = c ? c.dataset.sec : null;
+    P.forEach(x => x.classList.toggle('insere-avant', x === c));
+    bar.classList.toggle('insere-fin', !c);
+  };
+  const fin = () => {
+    removeEventListener('pointermove', bouge);
+    removeEventListener('pointerup', fin);
+    removeEventListener('pointercancel', fin);
+    if (!actif) return;
+    rubGlisse.fini = Date.now();
+    fant.remove();
+    document.body.classList.remove('rub-glisse');
+    bar.classList.remove('insere-fin');
+    document.querySelectorAll('#rubBar .insere-avant').forEach(x => x.classList.remove('insere-avant'));
+    b.classList.remove('deplace');
+    const h = items[idx(b.dataset.sec)];
+    if (deplacerRubrique(b.dataset.sec, avant)) toast('« ' + (h ? h.text : '') + ' » déplacée · Ctrl+Z pour annuler');
+  };
+  addEventListener('pointermove', bouge);
+  addEventListener('pointerup', fin);
+  addEventListener('pointercancel', fin);
 });
 function renderEnd(list) {
   renderRadar();
@@ -10451,6 +10679,7 @@ function renderInbox() {
     c.addEventListener('drop', e => {
       if (noteDragId || dragId || !e.dataTransfer) return;
       c.classList.remove('link-over');
+      if (deposerSiFichiers(e.dataTransfer, { note: n.id })) return e.preventDefault(), e.stopPropagation();
       const got = linksFromDrop(e.dataTransfer);
       if (!got) return;
       e.preventDefault();
@@ -13289,6 +13518,7 @@ document.addEventListener('drop', e => {
     return;
   }
   if (!dragId && e.dataTransfer && !e.defaultPrevented && e.target.closest && e.target.closest('#inbox')) {
+    if (deposerSiFichiers(e.dataTransfer, { nouvelleNote: true })) return e.preventDefault();
     const got = linksFromDrop(e.dataTransfer);
     if (got) {
       e.preventDefault();
@@ -13312,6 +13542,7 @@ document.addEventListener('drop', e => {
           .find(x => x && !x.startsWith('#')) || dt.getData('text/plain').trim();
     const secEl = e.target.closest && e.target.closest('#list .section'),
       sec = secEl ? secEl.dataset.sec : '';
+    if (deposerSiFichiers(dt, { sec, state: 'afaire' })) return e.preventDefault();
     if (mails) {
       e.preventDefault();
       newCardsIn(
@@ -13501,6 +13732,10 @@ list.addEventListener('drop', e => {
       .find(x => x && !x.startsWith('#')) || dt.getData('text/plain').trim();
   const mails = mailsFrom(dt);
   if (id) {
+    {
+      const r = items[idx(id)];
+      if (deposerSiFichiers(dt, { id: r && r.level > 0 ? items[topIdx(idx(id))].id : id })) return;
+    }
     if (mails) {
       mails.forEach(m => addLink(id, m.url, m.label));
       return;
@@ -13522,6 +13757,7 @@ list.addEventListener('drop', e => {
   /* dépôt dans une case vide de colonne : on crée des tâches */
   const sec = cell.dataset.sec,
     state = cell.dataset.state;
+  if (deposerSiFichiers(dt, { sec, state })) return;
   if (mails) {
     newCardsIn(
       sec,
@@ -13567,7 +13803,7 @@ list.addEventListener('drop', e => {
 function fichiersDe(dt) {
   return dt && [...dt.types].includes('Files') ? [...dt.files] : [];
 }
-async function deposerFichiers(files, cible) {
+async function deposerFichiers(files, cible, plus) {
   if (!(await socle.dossierAutorise())) {
     let ok = false;
     try {
@@ -13579,7 +13815,7 @@ async function deposerFichiers(files, cible) {
           '\u00a0: pour les copier dans «\u00a0Pièces jointes\u00a0», autorise l’accès au dossier de taches.md (une seule fois)',
         'Autoriser…',
         async () => {
-          if (await socle.accesDossier(true)) deposerFichiers(files, cible);
+          if (await socle.accesDossier(true)) deposerFichiers(files, cible, plus);
         },
         15000
       );
@@ -13595,29 +13831,57 @@ async function deposerFichiers(files, cible) {
       toast('« ' + f.name + ' » non copié\u00a0: ' + String(e.message).replace(/^\w+:/, ''), 6000);
     }
   if (!links.length) return;
+  const tous = [...links, ...(plus || [])];
+  const copies = (links.length > 1 ? links.length + ' fichiers copiés' : '« ' + links[0].label + ' » copié') + ' dans Pièces jointes';
   if (cible.id) {
     const it = items[idx(cible.id)];
     if (!it) return;
     snapshot();
-    (it.links || (it.links = [])).push(...links);
+    (it.links || (it.links = [])).push(...tous);
     render();
     changed();
     flash(it.id);
-    toast(
-      (links.length > 1 ? links.length + ' fichiers copiés' : '« ' + links[0].label + ' » copié') +
-        ' dans Pièces jointes et joint' +
-        (links.length > 1 ? 's' : '') +
-        ' à la tâche',
-      4000
-    );
+    toast(copies + ' et joint' + (links.length > 1 ? 's' : '') + ' à la tâche', 4000);
+  } else if (cible.note) {
+    const n = notes.find(x => x.id === cible.note);
+    if (!n) return;
+    snapshot();
+    (n.links || (n.links = [])).push(...tous);
+    render();
+    changed();
+    flashNote(n.id);
+    toast(copies + ' et joint' + (links.length > 1 ? 's' : '') + ' à la note', 4000);
+  } else if (cible.nouvelleNote) {
+    snapshot();
+    const n = { id: uid(), at: nowStamp(), text: titreFichiers(links), links: tous };
+    notes.unshift(n);
+    render();
+    changed();
+    flashNote(n.id);
+    toast(copies + ' · note créée', 4000);
   } else {
-    newCardsIn(
-      cible.sec || '',
-      cible.state || 'afaire',
-      links.map(l => ({ text: l.label.replace(/\.[a-z0-9]{2,5}$/i, ''), links: [l] }))
-    );
-    toast((links.length > 1 ? links.length + ' fichiers copiés' : 'Fichier copié') + ' dans Pièces jointes', 4000);
+    /* 3.5 (François) : plusieurs fichiers déposés ensemble = une seule tâche, tous les fichiers joints */
+    newCardsIn(cible.sec || '', cible.state || 'afaire', [{ text: titreFichiers(links), links: tous }]);
+    toast(copies + ' · tâche créée', 4000);
   }
+}
+/** Intitulé d'une tâche ou d'une note faite de fichiers : leurs noms sans extension (trois au plus). */
+function titreFichiers(links) {
+  const n = links.map(l => l.label.replace(/\.[a-z0-9]{2,5}$/i, ''));
+  return n.length <= 3 ? n.join(', ') : n.slice(0, 2).join(', ') + ' et ' + (n.length - 2) + ' autres fichiers';
+}
+/** Pièce jointe glissée depuis Outlook : le lien vers l'e-mail d'origine, joint en plus du fichier copié (3.5). */
+function lienMailDOrigine(dt) {
+  const m = mailsFrom(dt);
+  return m && m[0].attach ? [{ url: m[0].url, label: 'E-mail d’origine' }] : [];
+}
+/** Fichiers d'un dépôt d'abord (avant le lien vers l'e-mail) : une pièce jointe d'Outlook qui arrive aussi comme
+ *  fichier est copiée dans Pièces jointes (3.5). Renvoie true si le dépôt est traité. */
+function deposerSiFichiers(dt, cible) {
+  const fs = fichiersDe(dt);
+  if (!fs.length) return false;
+  deposerFichiers(fs, cible, lienMailDOrigine(dt));
+  return true;
 }
 
 /* ---------- import depuis Microsoft To Do (réponse JSON de Microsoft Graph collée) ---------- */
@@ -14179,6 +14443,7 @@ function flyOpen(kind, srcId, home) {
       lb.style.top = y - 46 + 'px';
     }
   });
+  flyEnvol(box);
   /* à droite : archiver ou supprimer en déposant (3.2, 26/10/2026, demande de François) */
   for (const [act, lib, ico] of [
     ['archiver', kind === 'note' ? 'Archiver la note' : 'Archiver', '<path d="M3 4h18v5H3zM5 9v11h14V9M10 13h4"/>'],
@@ -14212,6 +14477,28 @@ function flyOpen(kind, srcId, home) {
     fly.raf = requestAnimationFrame(loop);
   };
   /* pointeur immobile sur une autre rubrique : on bascule quand même */ fly.raf = requestAnimationFrame(loop);
+}
+/* 3.5 (bonus demandé par François) : les pastilles de la barre des rubriques s'envolent jusqu'à leur place dans le
+   menu (FLIP : on part de la position de la pastille, on arrive à celle du menu) ; elles s'effacent de la barre le
+   temps du menu (CSS body:has(#fly)). */
+function flyEnvol(box) {
+  const bar = $('#rubBar');
+  if (!bar || bar.hidden || !box.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  box.querySelectorAll('.fp[data-sec]').forEach((p, k) => {
+    const src = p.dataset.sec && bar.querySelector('button[data-sec="' + p.dataset.sec + '"]');
+    if (!src) return;
+    const a = src.getBoundingClientRect(),
+      b = p.getBoundingClientRect();
+    if (!a.width || a.bottom < 0 || a.top > innerHeight) return;
+    p.style.animation = 'none';
+    p.animate(
+      [
+        { transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + Math.max(0.5, a.height / b.height) + ')', opacity: 0.9 },
+        { transform: 'none', opacity: 1 }
+      ],
+      { duration: 360, delay: k * 22, easing: 'cubic-bezier(.2,.8,.25,1)', fill: 'backwards' }
+    );
+  });
 }
 function flyClose() {
   if (!fly) return;
@@ -16131,6 +16418,20 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 16:30',
+    type: 'web',
+    v: '3.5',
+    t: 'Fichiers déposés, pastilles de rubriques',
+    items: [
+      'Plusieurs fichiers déposés ensemble ne font plus qu’un : sur une note ou une tâche, tous lui sont joints ; ailleurs, une seule tâche (ou une seule note dans le bandeau des notes) avec tous les fichiers.',
+      'Pièce jointe glissée depuis un e-mail d’Outlook : si Outlook transmet le fichier, il est copié dans « Pièces jointes », avec en plus un lien « E-mail d’origine ».',
+      'Déposer des fichiers (ou un lien, un e-mail, du texte) sur une pastille de rubrique : une nouvelle tâche dans cette rubrique. Sur la pastille « 📝 Notes » : une nouvelle note.',
+      'Glisser une pastille de rubrique la déplace : l’ordre des rubriques change (Ctrl+Z pour revenir).',
+      'En glissant une tâche ou une note hors de sa place, les pastilles de la marge s’envolent pour former le menu des rubriques.',
+      'Le radar des échéances a une icône de radar, dont le faisceau tourne lentement (plus de sablier).'
+    ]
+  },
   {
     d: '2026-10-26 15:30',
     type: 'web',
@@ -20267,6 +20568,12 @@ function proposerSaison(id) {
      décochées), ou de la ranger. */
 
 const RUB_ECH = 'Échéances';
+/* icône du radar (3.5, François : plutôt qu'un sablier) : cercles concentriques, faisceau qui balaie, un écho */
+const ICONE_RADAR =
+  '<svg class="iradar" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">' +
+  '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6" opacity=".5"/><path d="M12 2v20M2 12h20" opacity=".3"/>' +
+  '<g class="faisceau"><path d="M12 12L12 2A10 10 0 0 1 21.4 8.6Z" fill="currentColor" stroke="none" opacity=".35"/><path d="M12 12L21.4 8.6" stroke-width="1.6"/></g>' +
+  '<circle cx="7.5" cy="8.2" r="1.5" fill="currentColor" stroke="none"/></svg>';
 const RADAR_JOURS = 60;
 let radarTout = false;
 
@@ -20375,7 +20682,7 @@ function renderRadar() {
   el.hidden = seedShown || (MOBILE ? !L.length : false);
   if (!el.hidden) {
     const h = [];
-    h.push('<span class="rtit" title="Échéances à moins de ' + RADAR_JOURS + ' jours (rubrique « ' + RUB_ECH + ' »)">⏳</span>');
+    h.push('<span class="rtit" title="Échéances à moins de ' + RADAR_JOURS + ' jours (rubrique « ' + RUB_ECH + ' »)">' + ICONE_RADAR + '</span>');
     for (const it of vus) {
       const e = prochaineEtape(it);
       h.push(
@@ -20445,7 +20752,7 @@ function repereJalon(it) {
   d.className = 'jsep ' + classeRadar(it.due);
   d.dataset.id = it.id;
   d.innerHTML =
-    '<span>⏳ ' +
+    '<span>' + ICONE_RADAR + ' ' +
     escHtml(shortDate(it.due)) +
     ' · <b>' +
     escHtml(plainFmt(it.text)) +
