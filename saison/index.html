@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026104005">
+<meta name="officious-page" content="20261026105252">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1452,7 +1452,7 @@ button.lien {
 /* A3 : le bloc à droite, en face du titre, pour ne rien prendre en hauteur */
 .page.a3 .pg-tete {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto; /* titre · bloc de l'organisme · logo (s'il y en a un) */
   align-items: end;
 }
 .page.a3 .pg-orga {
@@ -1478,6 +1478,20 @@ button.lien {
   object-fit: contain;
   filter: grayscale(1) contrast(1.1); /* monochrome, quelle que soit l'image fournie */
   opacity: 0.85;
+}
+/* A3 (26/10/2026) : le logo dans sa propre case, à droite du bloc de l'organisme, à la hauteur de ses trois lignes,
+   au lieu d'être posé par-dessus */
+.page.a3 .pg-logo {
+  position: static;
+  grid-column: 3;
+  grid-row: 1;
+  align-self: end;
+  height: 16mm;
+  max-width: 45mm;
+  margin: 0 0 4mm 5mm;
+  padding-left: 5mm;
+  border-left: 0.3mm solid #e3e6ea;
+  object-position: right bottom;
 }
 .page.a3 .pg-mention {
   top: 6mm;
@@ -6821,7 +6835,7 @@ function blocOrga() {
 
 /* ---- logo de la Ville : lu dans un fichier logo.png posé à côté de planning.md (choix de François, 18/10/2026 :
    ni dans planning.md, ni dans la page publiée). Au PC, par l'accès au dossier (socle 1.7), autorisé une fois par le
-   bouton « Logo… » de l'écran de l'affiche ; en haut à droite de l'A3, en niveaux de gris. Au téléphone, pas de logo
+   bouton « Logo… » de l'écran de l'affiche ; à droite du bloc de l'organisme sur l'A3 (sa propre case, 0.60), en niveaux de gris. Au téléphone, pas de logo
    (l'A3 s'imprime au PC). ---- */
 const NOMS_LOGO = ['logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'logo.svg'];
 let logoUrl = '',
@@ -7967,6 +7981,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 17:00',
+    v: '0.60',
+    items: ['A3 : le logo a sa place, à droite du nom du conservatoire et à sa hauteur, séparé par un filet, au lieu d’être posé par-dessus.']
+  },
   {
     d: '2026-10-26 13:00',
     v: '0.59',
