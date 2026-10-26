@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026104027">
+<meta name="officious-page" content="20261026123133">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5631,6 +5631,46 @@ body.mobile #rubBar {
   border-style: solid;
   transform: scale(1.05);
 }
+
+/* encart « L'ajouter au planning des manifestations ? » sous une tâche de Calendrier (3.3) */
+.encart {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 6px 0 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg, #fff);
+  border: 2px solid var(--c, #215e99);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  font-size: 0.9rem;
+  cursor: default;
+  animation: encart-in 0.25s ease-out;
+}
+.encart span {
+  flex: 1 1 100%;
+  font-weight: 600;
+}
+.encart button {
+  font: inherit;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--muted, #999);
+  background: transparent;
+  cursor: pointer;
+}
+.encart button.primaire {
+  background: var(--c, #215e99);
+  border-color: var(--c, #215e99);
+  color: #fff;
+}
+@keyframes encart-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
 </style>
 </head>
 <body>
@@ -9732,6 +9772,7 @@ $('#rubBar').addEventListener('click', e => {
 });
 function renderEnd(list) {
   renderRubBar();
+  poserEncarts();
   list
     .querySelectorAll('.card>.insec')
     .forEach(b => b.parentNode.append(b)); /* nom de la rubrique en bas de la tâche */
@@ -15701,6 +15742,7 @@ function mRender() {
   mRenderTail(list);
 }
 function mRenderTail(list) {
+  setTimeout(poserEncarts); /* après la fin du rendu */
   /* historique : replié par défaut, en bas */
   if (done.length && !filter) {
     if (mState.closed['#hist'] === undefined) mState.closed['#hist'] = true;
@@ -15915,6 +15957,15 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 13:45',
+    type: 'web',
+    v: '3.3',
+    t: 'Proposer au planning des manifestations : un encart sous la tâche',
+    items: [
+      'Une nouvelle tâche dans « Calendrier » montre, accroché sous elle, un encart « L’ajouter au planning des manifestations ? » avec « Proposer à Saison » et « Non ». Il reste tant qu’on n’a pas répondu (le message en bas de page disparaissait trop vite).'
+    ]
+  },
   {
     d: '2026-10-26 13:00',
     type: 'web',
@@ -19937,15 +19988,39 @@ function recevoirSaison(m) {
   return true; /* message inconnu : ignoré */
 }
 
-/** Tâche arrivée dans « Calendrier » (créée ou déplacée ici) : un message propose de l'envoyer à Saison (3.2,
- *  demande de François du 26/10). Rien n'est envoyé sans le geste. */
+/** Tâche arrivée dans « Calendrier » (créée ou déplacée ici) : un encart accroché sous la tâche propose de l'envoyer
+ *  à Saison (3.2 ; 3.3, 26/10 : encart plutôt que message en bas, demande de François). Il reste jusqu'à la réponse
+ *  (en mémoire seulement : rien dans taches.md). Rien n'est envoyé sans le geste. */
+const aProposer = new Set();
 function proposerApres(id) {
-  clearTimeout(proposerApres.t);
-  proposerApres.t = setTimeout(() => {
+  aProposer.add(id);
+  rafraichir();
+}
+function poserEncarts() {
+  for (const id of [...aProposer]) {
     const it = items[idx(id)];
-    if (!it || it.saison || !it.text.trim()) return;
-    toastAct('« ' + it.text + ' » : l’ajouter au planning des manifestations ?', 'Proposer à Saison', () => proposerSaison(id), 9000);
-  }, 700);
+    if (!it || it.saison) {
+      aProposer.delete(id);
+      continue;
+    }
+    const c = document.querySelector('.card[data-id="' + id + '"], .mcard[data-id="' + id + '"]');
+    if (!c || c.querySelector('.encart')) continue;
+    const e = document.createElement('div');
+    e.className = 'encart';
+    e.innerHTML =
+      '<span>L’ajouter au planning des manifestations ?</span><button type="button" class="primaire" data-enc="oui">Proposer à Saison</button><button type="button" data-enc="non">Non</button>';
+    for (const t of ['pointerdown', 'mousedown', 'touchstart', 'dblclick', 'dragstart']) e.addEventListener(t, ev => ev.stopPropagation());
+    e.draggable = false;
+    e.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const b = ev.target.closest('[data-enc]');
+      if (!b) return;
+      aProposer.delete(id);
+      if (b.dataset.enc === 'oui') proposerSaison(id);
+      e.remove();
+    });
+    c.append(e);
+  }
 }
 /** « Ajouter au planning des manifestations » : la tâche est proposée à Saison, qui la présente à valider. */
 function proposerSaison(id) {
