@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026130137">
+<meta name="officious-page" content="20261026132108">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -613,7 +613,7 @@ main {
   grid-template-columns: repeat(var(--ncol), 1fr);
   gap: 0.8rem;
   position: sticky;
-  top: var(--hh, 2.6rem);
+  top: calc(var(--hh, 2.6rem) + var(--rh, 0px) + var(--bh, 0px)); /* sous le radar et la barre des rubriques (3.4.1) */
   z-index: 4;
   background: var(--bg);
   padding: 0.45rem 0 0.35rem;
@@ -5789,6 +5789,31 @@ body.mobile #radar {
 #list .cell.dcell > .jsep {
   grid-column: 1 / -1;
 }
+
+/* 3.4.1 (François) : sur grand écran, les rubriques en colonne dans la marge de gauche, plutôt qu'en barre */
+@media (min-width: 1560px) {
+  #rubBar {
+    position: fixed;
+    left: 0.8rem;
+    top: calc(var(--hh, 2.6rem) + var(--rh, 0px) + 1rem);
+    width: calc((100vw - 1240px) / 2 - 1.2rem);
+    max-height: calc(100vh - var(--hh, 2.6rem) - var(--rh, 0px) - 2rem);
+    overflow-y: auto;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 0.35rem;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+  #rubBar button {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
 </style>
 </head>
 <body>
@@ -9877,11 +9902,29 @@ function renderRubBar() {
     })
   );
   document.documentElement.style.setProperty('--hh', $('header').offsetHeight + 'px');
+  majBh();
 }
+/** Hauteur de la barre des rubriques quand elle est en haut (0 quand elle est dans la marge, sur grand écran). */
+function rubBarHaut() {
+  const bar = $('#rubBar');
+  return !bar || bar.hidden || getComputedStyle(bar).position === 'fixed' ? 0 : bar.offsetHeight;
+}
+function majBh() {
+  document.documentElement.style.setProperty('--bh', rubBarHaut() + 'px');
+}
+addEventListener('resize', () => {
+  if (!MOBILE) majBh();
+});
+/* l'en-tête change de hauteur (texte d'état, fenêtre plus étroite) : les barres collantes suivent (3.4.1) */
+if (window.ResizeObserver && $('header'))
+  new ResizeObserver(() => {
+    document.documentElement.style.setProperty('--hh', $('header').offsetHeight + 'px');
+    if (!MOBILE) majBh();
+  }).observe($('header'));
 function allerRubrique(id) {
   const s = $('#list .section[data-sec="' + id + '"]');
   if (!s) return;
-  const haut = $('header').offsetHeight + ($('#radar').hidden ? 0 : $('#radar').offsetHeight) + ($('#rubBar').hidden ? 0 : $('#rubBar').offsetHeight) + 8;
+  const haut = $('header').offsetHeight + ($('#radar').hidden ? 0 : $('#radar').offsetHeight) + rubBarHaut() + ($('.colheads') && !dateView() ? $('.colheads').offsetHeight : 0) + 8;
   scrollTo({ top: s.getBoundingClientRect().top + scrollY - haut, behavior: 'smooth' });
   s.classList.remove('rubflash');
   void s.offsetWidth;
@@ -16089,6 +16132,15 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-10-26 15:30',
+    type: 'web',
+    v: '3.4.1',
+    items: [
+      'PC : les titres des colonnes (À faire, En attente, Fait) restent sous le radar au lieu de le recouvrir.',
+      'Grand écran : les rubriques sont en colonne dans la marge de gauche. Sur un écran plus étroit, elles restent en barre sous le radar.'
+    ]
+  },
+  {
     d: '2026-10-26 15:00',
     type: 'web',
     v: '3.4',
@@ -20366,7 +20418,7 @@ function allerJalon(id) {
   if (MOBILE) return mOpenAct(id);
   const c = $('#list .card[data-id="' + id + '"], #list .jsep[data-id="' + id + '"]');
   if (!c) return;
-  const haut = $('header').offsetHeight + ($('#radar').hidden ? 0 : $('#radar').offsetHeight) + ($('#rubBar').hidden ? 0 : $('#rubBar').offsetHeight) + 12;
+  const haut = $('header').offsetHeight + ($('#radar').hidden ? 0 : $('#radar').offsetHeight) + rubBarHaut() + ($('.colheads') && !dateView() ? $('.colheads').offsetHeight : 0) + 12;
   scrollTo({ top: c.getBoundingClientRect().top + scrollY - haut, behavior: 'smooth' });
   c.classList.remove('jflash');
   void c.offsetWidth;
