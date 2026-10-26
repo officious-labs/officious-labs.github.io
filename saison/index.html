@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026105252">
+<meta name="officious-page" content="20261026105949">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1476,8 +1476,7 @@ button.lien {
   height: 22mm;
   max-width: 70mm;
   object-fit: contain;
-  filter: grayscale(1) contrast(1.1); /* monochrome, quelle que soit l'image fournie */
-  opacity: 0.85;
+  /* tel quel : la version noir et blanc ou couleur, c'est le fichier logo.png qui la choisit (François, 26/10/2026) */
 }
 /* A3 (26/10/2026) : le logo dans sa propre case, à droite du bloc de l'organisme, à la hauteur de ses trois lignes,
    au lieu d'être posé par-dessus */
@@ -6835,7 +6834,7 @@ function blocOrga() {
 
 /* ---- logo de la Ville : lu dans un fichier logo.png posé à côté de planning.md (choix de François, 18/10/2026 :
    ni dans planning.md, ni dans la page publiée). Au PC, par l'accès au dossier (socle 1.7), autorisé une fois par le
-   bouton « Logo… » de l'écran de l'affiche ; à droite du bloc de l'organisme sur l'A3 (sa propre case, 0.60), en niveaux de gris. Au téléphone, pas de logo
+   bouton « Logo… » de l'écran de l'affiche ; à droite du bloc de l'organisme sur l'A3 (sa propre case, 0.60), tel quel (0.61 : plus de passage en niveaux de gris). Au téléphone, pas de logo
    (l'A3 s'imprime au PC). ---- */
 const NOMS_LOGO = ['logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'logo.svg'];
 let logoUrl = '',
@@ -7981,6 +7980,11 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 12:00',
+    v: '0.61',
+    items: ['A3 : le logo est imprimé tel quel, sans être passé en gris ni éclairci. C’est le fichier logo.png (noir et blanc ou couleur) qui décide.']
+  },
   {
     d: '2026-10-26 17:00',
     v: '0.60',
