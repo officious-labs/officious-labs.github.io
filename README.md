@@ -1,6 +1,8 @@
-# Officious
+# Officine
 
-Pages publiées de la suite **Officious** (Officious Labs) : des outils de travail faits d'une page HTML autonome, dont les données vivent dans un fichier Markdown du OneDrive de l'utilisateur.
+*by Officious Labs*
+
+Pages publiées de la suite **Officine** (Officious Labs) : des outils de travail faits d'une page HTML autonome, dont les données vivent dans un fichier Markdown du OneDrive de l'utilisateur.
 
 - `saison/` : Saison, le planning des manifestations (affiche par période, mail « Demandez le programme »).
 - `taches/` : Tâches, tâches et notes (depuis la 3.0).

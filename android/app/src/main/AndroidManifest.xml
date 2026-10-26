@@ -6,10 +6,10 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- pour confier un fichier à l'appli OneDrive (Android 11 et plus) -->
     <queries><package android:name="com.microsoft.skydrive" /></queries>
-    <!-- Une seule appli (« Officious » dans les réglages), une icône par outil : chaque outil a son activité et sa propre
+    <!-- Une seule appli (« Officine » dans les réglages), une icône par outil : chaque outil a son activité et sa propre
          tâche (taskAffinity), pour apparaître à part dans les applis récentes. -->
     <application
-        android:label="Officious"
+        android:label="Officine"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Officious"
         android:allowBackup="false">

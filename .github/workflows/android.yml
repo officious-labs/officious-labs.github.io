@@ -67,6 +67,6 @@ jobs:
           echo "$GITHUB_RUN_NUMBER" > version.txt
           gh release delete android --yes --cleanup-tag || true
           gh release create android officious.apk version.txt \
-            --title "Compagnon Officious" \
+            --title "Compagnon Officine" \
             --notes "Fabrication ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA::7})." \
             --target "$GITHUB_SHA"

@@ -1,12 +1,12 @@
-# Compagnon Officious
+# Compagnon Officine
 
-Une seule appli Android pour toute la suite (« Officious » dans les réglages du téléphone), avec une icône par outil.
+Une seule appli Android pour toute la suite (« Officine » dans les réglages du téléphone), avec une icône par outil.
 
 - **Ajouter un outil** :
   1. Créer une activité de trois lignes (`XxxActivity extends MainActivity`, `appli()` renvoie le nom de l’outil).
   2. La déclarer dans `AndroidManifest.xml` avec son libellé, son icône (`mipmap-anydpi-v26/ic_xxx.xml`) et sa `taskAffinity`.
   3. L’ajouter à la table de `Outils.java`.
-- **Outils affichés** : depuis n’importe quel outil (menu ⋯), on masque ou réaffiche les icônes des autres. Android désactive l’activité, rien n’est désinstallé. Pour partager un seul outil, on installe Officious et on ne garde que son icône.
+- **Outils affichés** : depuis n’importe quel outil (menu ⋯), on masque ou réaffiche les icônes des autres. Android désactive l’activité, rien n’est désinstallé. Pour partager un seul outil, on installe Officine et on ne garde que son icône.
 - **La page d’un outil** est `https://officious-labs.github.io/<outil>/`, servie par l’appli dans cet ordre :
   - en ligne si le réseau répond en 4 s, et elle est alors gardée en copie ;
   - sinon la dernière copie ;

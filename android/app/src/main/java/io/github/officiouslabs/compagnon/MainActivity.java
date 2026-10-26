@@ -42,7 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Compagnon Officious : une seule appli pour toute la suite, une icône (une activité) par outil.
+ * Compagnon Officine : une seule appli pour toute la suite, une icône (une activité) par outil.
  * Chaque activité affiche la page publiée de son outil (https://officious-labs.github.io/<outil>/) et lui prête l'accès
  * à son fichier par le pont « Compagnon ». Dérivé de la coquille de Tâches (15/10/2026), via celle de Saison.
  *
@@ -637,7 +637,7 @@ public abstract class MainActivity extends Activity {
             try {
                 startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())));
             } catch (Exception ignored) { }
-            repondre(id, false, "autorise d'abord « Officious » à installer des applis, puis touche à nouveau « Mettre à jour »");
+            repondre(id, false, "autorise d'abord « Officine » à installer des applis, puis touche à nouveau « Mettre à jour »");
             return;
         }
         majEnCours = id;

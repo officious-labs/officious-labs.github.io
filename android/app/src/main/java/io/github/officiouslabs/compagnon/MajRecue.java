@@ -29,7 +29,7 @@ public class MajRecue extends BroadcastReceiver {
             PendingIntent pi = PendingIntent.getActivity(ctx, 0, ouvrir, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
             Notification n = new Notification.Builder(ctx, CANAL)
                     .setSmallIcon(R.drawable.ic_notif)
-                    .setContentTitle("Officious est à jour")
+                    .setContentTitle("Officine est à jour")
                     .setContentText("Toucher pour rouvrir l'appli")
                     .setContentIntent(pi)
                     .setAutoCancel(true)
