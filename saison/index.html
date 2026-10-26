@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026111442">
+<meta name="officious-page" content="20261026123210">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -726,6 +726,27 @@ body.avec-fiche #principal {
 }
 #ajout[hidden] {
   display: none;
+}
+/* saisie rapide et « Nouvelle date… » côte à côte (0.64) */
+#ajout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.5rem;
+}
+#ajoutTxt {
+  grid-column: 1;
+  grid-row: 1;
+}
+#ajoutNouv {
+  grid-column: 2;
+  grid-row: 1;
+  white-space: nowrap;
+}
+#ajoutNouv[hidden] {
+  display: none;
+}
+#ajoutApercu {
+  grid-column: 1 / -1;
 }
 #ajoutTxt {
   width: 100%;
@@ -2198,6 +2219,7 @@ dialog.completer {
 <main id="principal">
   <button id="bIci" class="flottant" hidden title="Revenir à la prochaine date" aria-label="Revenir à la prochaine date"><svg class="ico" aria-hidden="true"><use href="#i-ici"/></svg></button>
   <form id="ajout" autocomplete="off">
+    <button type="button" id="ajoutNouv" title="Ouvrir une fiche vierge">Nouvelle date…</button>
     <input id="ajoutTxt" placeholder="Ajouter : jeudi 12 mars 19 h au CCED, Concert des CHAM, entrée libre" aria-label="Ajouter un événement" spellcheck="true">
     <div id="ajoutApercu" aria-live="polite"></div>
   </form>
@@ -2214,7 +2236,7 @@ dialog.completer {
 
 <aside id="fiche" hidden aria-label="Fiche de l’événement">
   <div class="fiche-tete">
-    <span id="ficheDate"></span>
+    <span><b id="ficheNouv" hidden>Nouvelle date · </b><span id="ficheDate"></span></span>
     <button id="ficheFermer" class="icone" title="Fermer (Échap)">×</button>
   </div>
   <label class="champ">Titre<textarea id="fTitre" rows="1" title="Entrée : choisir où le titre passe à la ligne s’il ne tient pas sur une ligne"></textarea></label>
@@ -5795,7 +5817,9 @@ function apercuSaisie() {
   a.className = 'ok';
   return r;
 }
-function ajouter(r) {
+/** Ajout depuis la saisie rapide. Au PC (0.64, demande de François), la fiche s'ouvre en « Nouvelle date » : la date
+ *  est déjà créée et enregistrée, on la complète, « Créer » referme, « Annuler » la retire. Au téléphone, comme avant. */
+function ajouter(r, fenetre = !TACTILE) {
   snapshot();
   const { repriseDe, ...champs } = r;
   const e = { ...evVide(), ...champs, id: idNouveau() };
@@ -5803,6 +5827,7 @@ function ajouter(r) {
   doc.evts.push(e);
   changed();
   toutAfficher();
+  if (fenetre) return ouvrirCreation(e.id);
   const li = $('.ev[data-id="' + e.id + '"]');
   if (li) {
     li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -5867,6 +5892,8 @@ function ouvrirFiche(id) {
   selId = id;
   precChoisie = '';
   ficheAvant = JSON.stringify(doc.evts.find(e => e.id === id) || {});
+  if (creation !== id) creation = null;
+  majCreation();
   $('#fiche').hidden = false;
   document.body.classList.add('avec-fiche');
   majIci();
@@ -5876,8 +5903,39 @@ function ouvrirFiche(id) {
   if (li) li.classList.add('sel');
   if (!TACTILE) $('#fTitre').focus(); /* au téléphone, pas de clavier qui surgit à l'ouverture */
 }
+let creation = null; /* id de la date en cours de création (fiche « Nouvelle date ») */
+function ouvrirCreation(id) {
+  creation = id;
+  ouvrirFiche(id);
+  const li = $('.ev[data-id="' + id + '"]');
+  if (li) {
+    li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    li.classList.add('nouveau');
+  }
+}
+function majCreation() {
+  const c = !!creation && creation === selId;
+  $('#ficheNouv').hidden = !c;
+  $('#fSupprimer').textContent = c ? 'Annuler' : 'Supprimer';
+  $('#fValider').textContent = c ? 'Créer' : 'Valider';
+  $('#fDupliquer').hidden = c;
+}
+/** « Nouvelle date… » : une date vide (« Nouvelle date », date inconnue) dans la fiche de création. */
+function nouvelleDate() {
+  if (!socle.ouvert) return toast('Ouvre d’abord planning.md');
+  ajouter({ titre: 'Nouvelle date' }, true);
+  $('#fTitre').select();
+}
 function fermerFiche() {
   const id = selId;
+  const creee = creation === id ? doc.evts.find(e => e.id === id) : null;
+  creation = null;
+  majCreation();
+  if (creee) {
+    const li = $('.ev[data-id="' + id + '"]');
+    if (li) li.classList.add('nouveau');
+    setTimeout(() => toast('Ajouté : ' + typo(creee.titre.replace(/\s*\|\s*/g, ' '))), 0);
+  }
   const e = evSel(),
     avant = (() => {
       try {
@@ -6250,7 +6308,21 @@ function initListe() {
     modifier('interne', $('#fInterne').checked);
     remplirFiche();
   };
-  $('#fSupprimer').onclick = () => supprimer(selId);
+  $('#fSupprimer').onclick = () => {
+    if (creation && creation === selId) {
+      const id = selId;
+      creation = null;
+      snapshot();
+      doc.evts = doc.evts.filter(x => x.id !== id);
+      fermerFiche();
+      changed();
+      toutAfficher();
+      return toast('Création annulée');
+    }
+    supprimer(selId);
+  };
+  $('#ajoutNouv').onclick = nouvelleDate;
+  $('#ajoutNouv').hidden = TACTILE;
   $('#fDupliquer').onclick = () => {
     const e = evSel();
     if (!e) return;
@@ -6753,6 +6825,16 @@ function initPropositions() {
     if (!p || b.dataset.prop !== 'ajouter') return;
     const champ = $('#ajoutTxt');
     champ.value = (p.date ? +p.date.slice(8) + '/' + +p.date.slice(5, 7) + ' ' : '') + p.titre;
+    /* au PC (0.64) : directement la fiche « Nouvelle date », date et titre remplis, à compléter */
+    if (!TACTILE) {
+      const r = lireSaisie(champ.value, periodes(doc), lieux(doc));
+      if (!r.erreur) {
+        champ.value = '';
+        apercuSaisie();
+        ajouter(r, true);
+        return toast('Proposé par Tâches : complète l’heure, le lieu… puis « Créer »');
+      }
+    }
     champ.dispatchEvent(new Event('input', { bubbles: true }));
     champ.focus();
     toast('Vérifie la saisie (heure, lieu…), puis Entrée');
@@ -8002,6 +8084,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 13:45',
+    v: '0.64',
+    items: [
+      'Au PC, Entrée dans la ligne « Ajouter » ouvre la fiche « Nouvelle date », déjà remplie avec ce que tu as tapé : complète-la, puis « Créer » (ou « Annuler »).',
+      'Bouton « Nouvelle date… » à côté de la ligne : la même fiche, vierge.',
+      'Une manifestation proposée par Tâches : « Ajouter… » ouvre directement cette fiche, avec la date et le titre.'
+    ]
+  },
   {
     d: '2026-10-26 12:30',
     v: '0.63',
