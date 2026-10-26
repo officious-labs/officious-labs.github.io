@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261024102120">
+<meta name="officious-page" content="20261026104027">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5528,6 +5528,109 @@ body.mobile:has(dialog:modal) {
 body:has(#s-toast.on) #toast {
   opacity: 0;
 }
+/* accès en un clic à une rubrique (3.2) : PC, barre sous l'en-tête ; téléphone, puces en haut de la liste */
+#rubBar {
+  position: sticky;
+  top: var(--hh, 2.6rem);
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.35rem 1rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+#rubBar[hidden],
+body.mobile #rubBar {
+  display: none;
+}
+#rubBar button,
+.mtabs.rubs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  padding: 0.18rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--panel);
+  color: var(--fg);
+  cursor: pointer;
+}
+#rubBar button:hover {
+  border-color: var(--c);
+}
+#rubBar i,
+.mtabs.rubs i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--c);
+}
+.mtabs.rubs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mtabs.rubs button {
+  flex: none;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+}
+.section.rubflash > .row,
+.section.rubflash > .lanelabel {
+  animation: rubflash 1.2s ease-out;
+}
+@keyframes rubflash {
+  0%,
+  30% {
+    background: color-mix(in srgb, var(--c) 22%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+/* menu volant : archiver ou supprimer en déposant à droite (3.2) */
+#fly .fx {
+  pointer-events: auto;
+  z-index: 2;
+  position: fixed;
+  right: 0.8rem;
+  width: 8.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px dashed color-mix(in srgb, var(--xc) 55%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel, #fff) 88%, transparent);
+  color: var(--xc);
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.12s,
+    background 0.12s,
+    color 0.12s;
+  animation: fpIn 0.2s both cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+#fly .fx-archiver {
+  --xc: #2f6f5e;
+  top: 18vh;
+  height: 30vh;
+}
+#fly .fx-supprimer {
+  --xc: #b3402f;
+  top: 52vh;
+  height: 30vh;
+}
+#fly .fx.on {
+  background: var(--xc);
+  color: #fff;
+  border-style: solid;
+  transform: scale(1.05);
+}
 </style>
 </head>
 <body>
@@ -5573,6 +5676,7 @@ body:has(#s-toast.on) #toast {
     <li>Coller plusieurs lignes : import (titres <kbd>#</kbd>, puces <kbd>-</kbd>, lignes <kbd>&gt;</kbd> = commentaire de la tâche au-dessus)</li>
   </ul>
 </div>
+<nav id="rubBar" aria-label="Aller à une rubrique" hidden></nav>
 <div class="banner" id="banner" hidden></div>
 <main id="main"><div id="inbox" hidden></div><div id="list"></div></main>
 <div id="m" hidden>
@@ -7018,6 +7122,90 @@ async function demarragePc() {
     addEventListener('keydown', premier, true);
   }
 }
+
+/* ---- dossier du fichier, au PC (1.7, 26/10/2026) : fichiers voisins (logo de l'affiche, pièces jointes) ----
+   Le navigateur ne donne accès qu'au fichier choisi : pour lire ou écrire à côté, il faut choisir son dossier, une fois
+   (gardé dans IndexedDB). Edge peut redemander l'autorisation à la session suivante : accesDossier(true) la redemande,
+   et doit donc être appelé depuis un clic (ou un dépôt de fichiers). */
+const dossierPc = { handle: null };
+async function accesDossier(demander) {
+  if (AND || typeof window.showDirectoryPicker !== 'function') return null;
+  if (!dossierPc.handle) dossierPc.handle = (await idbGet('dossier').catch(() => null)) || null;
+  const h = dossierPc.handle;
+  if (h) {
+    let p = 'prompt';
+    try {
+      p = await h.queryPermission({ mode: 'readwrite' });
+      if (p !== 'granted' && demander) p = await h.requestPermission({ mode: 'readwrite' });
+    } catch (e) {}
+    if (p === 'granted') return h;
+    if (!demander) return null;
+  }
+  if (!demander) return null;
+  const nom = fichierPc.handle ? fichierPc.handle.name : A.fichier;
+  let d;
+  try {
+    d = await showDirectoryPicker({ id: 'dossier-' + C.appli, mode: 'readwrite', startIn: fichierPc.handle || 'documents' });
+  } catch (e) {
+    return null; /* annulé */
+  }
+  try {
+    await d.getFileHandle(nom);
+  } catch (e) {
+    toast('Ce dossier ne contient pas ' + nom + ' : choisis celui où il se trouve', null, null, 6000);
+    return null;
+  }
+  dossierPc.handle = d;
+  await idbSet('dossier', d).catch(() => {});
+  journal('dossier autorisé', { nom: d.name });
+  return d;
+}
+/** Le dossier est-il déjà accessible (sans rien demander) ? */
+async function dossierAutorise() {
+  return !!(await accesDossier(false));
+}
+async function sousDossierPc(chemin, creer) {
+  const d = await accesDossier(false);
+  if (!d) throw new Error('dossier:accès au dossier à autoriser');
+  const parts = String(chemin).split('/');
+  let r = d;
+  for (const p of parts.slice(0, -1)) r = await r.getDirectoryHandle(p, { create: creer });
+  return [r, parts[parts.length - 1]];
+}
+/** PC : un fichier voisin (« logo.png », « Pièces jointes/devis.pdf ») → File, ou null s'il n'existe pas. */
+async function lireFichierVoisin(chemin) {
+  try {
+    const [r, nom] = await sousDossierPc(chemin, false);
+    return await (await r.getFileHandle(nom)).getFile();
+  } catch (e) {
+    if (e.name === 'NotFoundError' || e.name === 'TypeError') return null;
+    throw e;
+  }
+}
+/** PC : dépose un fichier dans un sous-dossier voisin, sans rien écraser (« nom (2).ext ») ; renvoie le nom retenu. */
+async function deposerFichierVoisin(dossier, nom, donnees) {
+  const [r] = await sousDossierPc(dossier + '/x', true);
+  const propre = String(nom).replace(/[\\/:*?"<>|]/g, '-').trim() || 'fichier';
+  const pt = propre.lastIndexOf('.'),
+    base = pt > 0 ? propre.slice(0, pt) : propre,
+    ext = pt > 0 ? propre.slice(pt) : '';
+  let n = propre;
+  for (let k = 2; ; k++) {
+    try {
+      await r.getFileHandle(n);
+      n = base + ' (' + k + ')' + ext;
+    } catch (e) {
+      break;
+    }
+  }
+  const f = await r.getFileHandle(n, { create: true }),
+    w = await f.createWritable();
+  await w.write(donnees);
+  await w.close();
+  journal('fichier déposé', { dossier, nom: n });
+  return n;
+}
+
 /* socle/js/18-onedrive.js : le fichier depuis le Compagnon.
    Au premier lancement, on choisit le fichier dans l'appli OneDrive ; dès que son réglage « en ligne » est connu,
    le Compagnon passe à l'accès direct. Ensuite : actualiser, ramasser les copies en double, envoyer quand même. */
@@ -7601,7 +7789,7 @@ function initBoite() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.6.0',
+  version: '1.7.0',
   demarrer,
   /* fichier */
   modifie,
@@ -7654,6 +7842,11 @@ return {
   voisinPossible,
   journal,
   texteEtat,
+  /* dossier du fichier au PC (1.7) */
+  accesDossier,
+  dossierAutorise,
+  lireFichierVoisin,
+  deposerFichierVoisin,
   /* boîte d'échange entre outils (1.6) */
   envoyer,
   enAttenteDans,
@@ -7685,6 +7878,7 @@ return {
     verifierPage,
     verifierAppli,
     fichierPc,
+    dossierPc,
     tel,
     mem
   }
@@ -9502,7 +9696,42 @@ function render() {
   });
   renderEnd(list);
 }
+/* accès en un clic à une rubrique (3.2, 26/10/2026, demande de François) : une barre de puces sous l'en-tête,
+   dans les vues par rubrique (pas par échéance) ; un clic fait défiler jusqu'à la rubrique et la signale */
+function renderRubBar() {
+  const bar = $('#rubBar');
+  if (!bar) return;
+  const hs = items.filter(x => x.kind === 'h');
+  bar.hidden = dateView() || hs.length < 2;
+  if (bar.hidden) return;
+  const cols = sectionColors();
+  bar.replaceChildren(
+    ...hs.map(h => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.sec = h.id;
+      b.style.setProperty('--c', cols['#' + h.id] || CARD_COLOR);
+      b.append(document.createElement('i'), h.text);
+      return b;
+    })
+  );
+  document.documentElement.style.setProperty('--hh', $('header').offsetHeight + 'px');
+}
+function allerRubrique(id) {
+  const s = $('#list .section[data-sec="' + id + '"]');
+  if (!s) return;
+  const haut = $('header').offsetHeight + ($('#rubBar').hidden ? 0 : $('#rubBar').offsetHeight) + 8;
+  scrollTo({ top: s.getBoundingClientRect().top + scrollY - haut, behavior: 'smooth' });
+  s.classList.remove('rubflash');
+  void s.offsetWidth;
+  s.classList.add('rubflash');
+}
+$('#rubBar').addEventListener('click', e => {
+  const b = e.target.closest('[data-sec]');
+  if (b) allerRubrique(b.dataset.sec);
+});
 function renderEnd(list) {
+  renderRubBar();
   list
     .querySelectorAll('.card>.insec')
     .forEach(b => b.parentNode.append(b)); /* nom de la rubrique en bas de la tâche */
@@ -12892,6 +13121,11 @@ document.addEventListener('drop', e => {
   if (dragId || !e.dataTransfer || e.defaultPrevented) return;
   if (e.target.closest && e.target.closest('#list .card')) return;
   e.preventDefault();
+  {
+    const fs = fichiersDe(e.dataTransfer),
+      secEl = e.target.closest && e.target.closest('#list .section');
+    if (fs.length) return deposerFichiers(fs, { sec: secEl ? secEl.dataset.sec : '', state: 'afaire' });
+  }
   showReport(dropReport(e.dataTransfer, 'hors tâche'));
 });
 document.addEventListener('dragenter', e => {
@@ -13062,6 +13296,13 @@ list.addEventListener('drop', e => {
       addLink(id, uri);
       return;
     }
+    {
+      const fs = fichiersDe(dt);
+      if (fs.length) {
+        const r = items[idx(id)];
+        return deposerFichiers(fs, { id: r && r.level > 0 ? items[topIdx(idx(id))].id : id });
+      }
+    }
     showReport(dropReport(dt, 'sur une tâche'));
     return;
   }
@@ -13098,8 +13339,73 @@ list.addEventListener('drop', e => {
     );
     return;
   }
+  {
+    const fs = fichiersDe(dt);
+    if (fs.length) return deposerFichiers(fs, { sec, state });
+  }
   showReport(dropReport(dt, 'dans une colonne'));
 });
+
+/* ---------- fichiers déposés au PC (3.2, 26/10/2026, demande de François) : copiés dans « Pièces jointes », à côté
+   de taches.md, comme ceux partagés au téléphone ; le lien « Pièces jointes/nom » s'ouvre au PC (réglage ⚙ dossier) et
+   au téléphone. La première fois, le navigateur demande l'accès au dossier de taches.md (socle 1.7) ; un dépôt ne
+   compte pas comme un clic pour Edge : la demande passe alors par un bouton. Sur une tâche : liens ajoutés ;
+   ailleurs : une tâche par fichier. ---------- */
+function fichiersDe(dt) {
+  return dt && [...dt.types].includes('Files') ? [...dt.files] : [];
+}
+async function deposerFichiers(files, cible) {
+  if (!(await socle.dossierAutorise())) {
+    let ok = false;
+    try {
+      ok = !!(await socle.accesDossier(true));
+    } catch (e) {}
+    if (!ok) {
+      toastAct(
+        (files.length > 1 ? files.length + ' fichiers' : '« ' + files[0].name + ' »') +
+          '\u00a0: pour les copier dans «\u00a0Pièces jointes\u00a0», autorise l’accès au dossier de taches.md (une seule fois)',
+        'Autoriser…',
+        async () => {
+          if (await socle.accesDossier(true)) deposerFichiers(files, cible);
+        },
+        15000
+      );
+      return;
+    }
+  }
+  const links = [];
+  for (const f of files)
+    try {
+      const n = await socle.deposerFichierVoisin(PJ_DIR, f.name, f);
+      links.push({ url: PJ_DIR + '/' + n, label: n });
+    } catch (e) {
+      toast('« ' + f.name + ' » non copié\u00a0: ' + String(e.message).replace(/^\w+:/, ''), 6000);
+    }
+  if (!links.length) return;
+  if (cible.id) {
+    const it = items[idx(cible.id)];
+    if (!it) return;
+    snapshot();
+    (it.links || (it.links = [])).push(...links);
+    render();
+    changed();
+    flash(it.id);
+    toast(
+      (links.length > 1 ? links.length + ' fichiers copiés' : '« ' + links[0].label + ' » copié') +
+        ' dans Pièces jointes et joint' +
+        (links.length > 1 ? 's' : '') +
+        ' à la tâche',
+      4000
+    );
+  } else {
+    newCardsIn(
+      cible.sec || '',
+      cible.state || 'afaire',
+      links.map(l => ({ text: l.label.replace(/\.[a-z0-9]{2,5}$/i, ''), links: [l] }))
+    );
+    toast((links.length > 1 ? links.length + ' fichiers copiés' : 'Fichier copié') + ' dans Pièces jointes', 4000);
+  }
+}
 
 /* ---------- import depuis Microsoft To Do (réponse JSON de Microsoft Graph collée) ---------- */
 function todoTasksFrom(txt) {
@@ -13660,12 +13966,27 @@ function flyOpen(kind, srcId, home) {
       lb.style.top = y - 46 + 'px';
     }
   });
+  /* à droite : archiver ou supprimer en déposant (3.2, 26/10/2026, demande de François) */
+  for (const [act, lib, ico] of [
+    ['archiver', kind === 'note' ? 'Archiver la note' : 'Archiver', '<path d="M3 4h18v5H3zM5 9v11h14V9M10 13h4"/>'],
+    ['supprimer', kind === 'note' ? 'Supprimer la note' : 'Supprimer', '<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 11v5.5M14 11v5.5"/>']
+  ]) {
+    const d = document.createElement('div');
+    d.className = 'fx fx-' + act;
+    d.dataset.act = act;
+    d.innerHTML =
+      '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      ico +
+      '</svg><span></span>';
+    d.lastChild.textContent = lib;
+    box.append(d);
+  }
   const h = document.createElement('div');
   h.className = 'fh';
   h.textContent =
     kind === 'note'
-      ? 'Lâcher sur une rubrique\u00a0: nouvelle tâche · sur une tâche\u00a0: commentaire ou sous-tâche · ailleurs\u00a0: rien'
-      : 'Lâcher sur une rubrique\u00a0: l’y ranger · sur une tâche\u00a0: sous-tâche, commentaire ou liens seulement · ailleurs\u00a0: rien · Échap\u00a0: annuler';
+      ? 'Lâcher sur une rubrique\u00a0: nouvelle tâche · sur une tâche\u00a0: commentaire ou sous-tâche · à droite\u00a0: archiver ou supprimer · ailleurs\u00a0: rien'
+      : 'Lâcher sur une rubrique\u00a0: l’y ranger · sur une tâche\u00a0: sous-tâche, commentaire ou liens seulement · à droite\u00a0: archiver ou supprimer · ailleurs\u00a0: rien · Échap\u00a0: annuler';
   box.append(h);
   const loop = () => {
     if (!fly) return;
@@ -13804,7 +14125,8 @@ function flyScroll() {
 function flyMove(kind, srcId, homeEl, x, y) {
   const inR = (r, m) => x >= r.left - m && x <= r.right + m && y >= r.top - m && y <= r.bottom + m;
   const hr = homeEl && homeEl.getBoundingClientRect(),
-    inHome = hr && inR(hr, 0);
+    /* le bord droit de la fenêtre compte comme dehors : on y archive ou supprime (3.2) */
+    inHome = hr && inR(hr, 0) && (dateView() || x < innerWidth - 150); /* par échéance, le calendrier est à droite */
   if (!fly) {
     if (!homeEl || inHome) return false;
     flyOpen(kind, srcId, homeEl);
@@ -13844,6 +14166,9 @@ function flyMove(kind, srcId, homeEl, x, y) {
   }
   fly.onPill = !!p;
   fly.pill = p ? p.dataset.sec : null;
+  const fx = el && el.closest && el.closest('#fly .fx');
+  fly.act = fx ? fx.dataset.act : null;
+  fly.box.querySelectorAll('.fx').forEach(d => d.classList.toggle('on', d === fx));
   return true;
 }
 /* lâcher : true si le menu a traité le dépôt (ou l'a annulé) */
@@ -13851,6 +14176,10 @@ function flyDrop() {
   if (!fly) return false;
   const f = fly;
   flyClose();
+  if (f.act) {
+    flyRanger(f);
+    return true;
+  }
   if (f.kind === 'note') {
     if (f.hot && f.zone === 'sub') noteToSub(f.srcId, f.hot);
     else if (f.hot) noteToComment(f.srcId, f.hot);
@@ -13867,6 +14196,38 @@ function flyDrop() {
     }
   }
   return true;
+}
+/* déposée à droite : archivée (historique) ou supprimée (corbeille), Ctrl+Z pour revenir */
+function flyRanger(f) {
+  if (f.kind === 'note') {
+    const n = notes.find(x => x.id === f.srcId);
+    if (!n) return;
+    if (f.act === 'archiver') {
+      if (archiveNote(n.id)) {
+        render();
+        toast('Note archivée · dans l’historique · Ctrl+Z pour annuler');
+      }
+    } else {
+      snapshot();
+      trashNote(n);
+      notes = notes.filter(y => y.id !== n.id);
+      render();
+      changed();
+      toast('Note supprimée · dans la corbeille · Ctrl+Z pour annuler');
+    }
+    return;
+  }
+  const i = idx(f.srcId);
+  if (i < 0) return;
+  if (f.act === 'archiver') {
+    snapshot();
+    archiveAt(i);
+    commit();
+    toast('Rangée dans l’historique · Ctrl+Z pour annuler');
+  } else {
+    removeTask(f.srcId, false);
+    toast('Tâche supprimée · dans la corbeille · Ctrl+Z pour annuler');
+  }
 }
 document.addEventListener('pointermove', e => {
   if (!pd) return;
@@ -14240,6 +14601,8 @@ function rulesTick() {
       if (!it.text.trim() || editingId() === it.id)
         continue; /* carte en cours de saisie : on attend qu'elle ait son nom */
       it._s = sec;
+      /* nouvelle tâche dans « Calendrier » : proposer de l'ajouter au planning des manifestations (3.2) */
+      if (h && !it.saison && typeof proposerApres === 'function' && normName(h.text) === normName(RUB_CAL)) proposerApres(it.id);
       if (!h || !R.length) continue;
       for (const r of R.filter(x => x.sec === normName(h.text))) {
         const e = blockEnd(i),
@@ -15110,7 +15473,24 @@ function mRender() {
       fb.append(b);
     }
   }
-  $('#mTabs').innerHTML = '';
+  /* accès en un clic à une rubrique (3.2) : puces en haut de l'écran, dans la vue par rubrique */
+  {
+    const tb = $('#mTabs'),
+      hs = items.filter(x => x.kind === 'h');
+    tb.classList.toggle('rubs', !dateView() && hs.length > 1);
+    tb.replaceChildren(
+      ...(dateView() || hs.length < 2
+        ? []
+        : hs.map(h => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.dataset.rub = h.text;
+            b.style.setProperty('--c', COLORS[h.color] || CARD_COLOR);
+            b.append(document.createElement('i'), h.text);
+            return b;
+          }))
+    );
+  }
   /* tout sur un seul écran : notes, puis rubriques (à faire, puis faites en grisé), puis « En attente » */
   if (notes.length && !filter) {
     list.append(
@@ -15514,11 +15894,39 @@ function mFlashCard(id) {
     setTimeout(() => c.classList.remove('flash'), 1900);
   });
 }
+/* puce de rubrique (téléphone) : la section s'ouvre si elle était repliée, puis vient sous l'en-tête */
+$('#mTabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-rub]');
+  if (!b) return;
+  const k = b.dataset.rub;
+  if (mState.closed[k]) {
+    mState.closed[k] = false;
+    mstore.set(MKEY + '-ui', mState);
+    mRender();
+  }
+  const s = [...document.querySelectorAll('#mList .msec')].find(x => x.dataset.key === k);
+  if (!s) return toast('Rien à afficher dans « ' + k + ' »');
+  const haut = $('#m .mh').offsetHeight + $('#mTabs').offsetHeight + 6;
+  scrollTo({ top: s.getBoundingClientRect().top + scrollY - haut, behavior: 'smooth' });
+  buzz('tick');
+});
 /* ---------- notes de version ----------
    Une entrée par publication qui change quelque chose de visible. type 'web' (« Application web Chromium » = cette page, arrive toute seule ; v = numéro suivant)
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-26 13:00',
+    type: 'web',
+    v: '3.2',
+    t: 'Rubriques en un clic, fichiers déposés, archiver en glissant',
+    items: [
+      'Rubriques en un clic : au PC, une barre de puces sous l’en-tête ; au téléphone, des puces en haut de la liste (une rubrique repliée s’ouvre).',
+      'PC\u00a0: des fichiers déposés sur une tâche sont copiés dans «\u00a0Pièces jointes\u00a0», à côté de taches.md, et joints à la tâche (consultables aussi au téléphone) ; déposés ailleurs, une tâche par fichier. La première fois, un bouton demande l’accès au dossier.',
+      'PC\u00a0: une tâche ou une note glissée vers le bord droit se dépose sur «\u00a0Archiver\u00a0» (historique) ou «\u00a0Supprimer\u00a0» (corbeille) ; Ctrl+Z pour revenir.',
+      'Une tâche créée ou rangée dans «\u00a0Calendrier\u00a0» propose d’être ajoutée au planning des manifestations (Saison).'
+    ]
+  },
   {
     d: '2026-10-24 18:00',
     type: 'web',
@@ -16947,6 +17355,7 @@ async function loadArchives() {
 function mSection(key, title, count, color, fill, cls, alert) {
   const sec = document.createElement('section');
   sec.className = 'msec' + (cls ? ' ' + cls : '') + (mState.closed[key] ? ' closed' : '');
+  sec.dataset.key = key;
   sec.style.setProperty('--c', color);
   const hw = document.createElement('div');
   hw.className = 'msechw';
@@ -19528,6 +19937,16 @@ function recevoirSaison(m) {
   return true; /* message inconnu : ignoré */
 }
 
+/** Tâche arrivée dans « Calendrier » (créée ou déplacée ici) : un message propose de l'envoyer à Saison (3.2,
+ *  demande de François du 26/10). Rien n'est envoyé sans le geste. */
+function proposerApres(id) {
+  clearTimeout(proposerApres.t);
+  proposerApres.t = setTimeout(() => {
+    const it = items[idx(id)];
+    if (!it || it.saison || !it.text.trim()) return;
+    toastAct('« ' + it.text + ' » : l’ajouter au planning des manifestations ?', 'Proposer à Saison', () => proposerSaison(id), 9000);
+  }, 700);
+}
 /** « Ajouter au planning des manifestations » : la tâche est proposée à Saison, qui la présente à valider. */
 function proposerSaison(id) {
   const it = items[idx(id)];
