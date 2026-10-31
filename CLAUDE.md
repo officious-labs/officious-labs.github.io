@@ -23,4 +23,4 @@ Pages publiées de la suite Officine (une par outil, déposées par `livrer.sh` 
 - Ce que François voit : la page **publiée** (`officious-labs.github.io/<appli>/index.html`), jamais la copie de travail.
 - Contraintes de François : OneDrive seulement pendant ses heures de travail (9 h – 18 h 30, jours ouvrés) ; son PC de bureau ne parle pas à GitHub.
 - **Interface** : `socle/docs/charte-interface.md` (onze principes, game feel). Décisions en attente ou validées : `socle/docs/propositions-2026-10-31.md`.
-- Les docs de chaque dépôt (`docs/`) ont une copie dans le Projet claude.ai « Conservatoire : régie, conventions, etc. » (`officious/`, `planning/`, `outil-taches/`) : la mettre à jour quand on en a l'accès, sinon le signaler à François.
+- Les docs vivent seulement dans les dépôts (`docs/`) : plus de copie dans le Projet claude.ai (décision de François, 31/10/2026).
