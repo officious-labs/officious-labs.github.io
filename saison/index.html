@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261031123809">
+<meta name="officious-page" content="20261031144913">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -547,6 +547,79 @@ mark.trouve {
   .s-inter i,
   .s-inter i::after {
     transition: none;
+  }
+}
+
+/* une couche à la fois (1.11, charte, principe 11) : l'arrière-plan ne défile plus, le voile capte le toucher à côté */
+html:has(dialog:modal),
+html.s-couche {
+  overflow: hidden;
+}
+dialog {
+  overscroll-behavior: contain;
+}
+.s-voile {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  touch-action: none;
+}
+/* une fenêtre où l'on a tapé quelque chose résiste au toucher à côté */
+dialog.s-resiste {
+  animation: s-resiste 0.36s ease-out;
+}
+@keyframes s-resiste {
+  0%,
+  100% {
+    translate: 0;
+  }
+  20% {
+    translate: -8px;
+  }
+  45% {
+    translate: 7px;
+  }
+  70% {
+    translate: -4px;
+  }
+  85% {
+    translate: 2px;
+  }
+}
+/* fenêtre de saisie : plein écran au téléphone (comme une note de Tâches), au PC une feuille posée au milieu */
+@media (max-width: 760px) {
+  dialog.s-plein[open] {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: auto !important;
+    animation: s-monte 0.24s ease-out !important;
+  }
+  dialog.s-plein::backdrop {
+    background: transparent;
+  }
+}
+@keyframes s-monte {
+  from {
+    transform: translateY(24px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.s-resiste,
+  dialog.s-plein[open] {
+    animation: none !important;
   }
 }
 :root {
@@ -2641,7 +2714,7 @@ dialog.completer {
   </div>
 </dialog>
 
-<dialog id="completer" class="s-dialogue completer" aria-label="À compléter">
+<dialog id="completer" class="s-dialogue completer s-plein" aria-label="À compléter">
   <div class="mail-tete"><h2 id="cTitre">À compléter</h2><button id="cFermer" class="icone" title="Fermer (Échap)">×</button></div>
   <p class="aide">Chaque champ s’enregistre dès que tu le quittes. <button type="button" id="cTaches" class="lien">Copier pour Tâches</button></p>
   <div id="cListe"></div>
@@ -2649,7 +2722,7 @@ dialog.completer {
   <div class="mail-pied"><span id="cReste" class="aide"></span><button id="cMail" class="primaire">Revenir au mail</button></div>
 </dialog>
 
-<dialog id="etapes" class="s-dialogue etapes" aria-label="Modèles de rétroplanning">
+<dialog id="etapes" class="s-dialogue etapes s-plein" aria-label="Modèles de rétroplanning">
   <h2>Modèles de rétroplanning</h2>
   <p class="aide">Un modèle s’applique aux manifestations dont le titre contient son mot (« Concert », « Audition »…) ; celui sans mot, à toutes les autres. Une étape par ligne, avec son écart à la date : « Affiche J-21 », « Bilan J+2 ».</p>
   <div id="etapesListe"></div>
@@ -3057,7 +3130,7 @@ function creerInterface() {
   const vb = ajoute('<div id="s-version" class="s-bandeau" hidden></div>');
   if (tete) tete.after(vb);
   ajoute(
-    `<dialog id="s-enligne" class="s-dialogue" aria-label="Adresse en ligne">
+    `<dialog id="s-enligne" class="s-dialogue s-plein" aria-label="Adresse en ligne">
       <h2>Adresse en ligne de ${A.fichier}</h2>
       <p id="s-elAide" class="s-aide">${AIDE_EN_LIGNE()}</p>
       <input id="s-elAdresse" placeholder="https://…sharepoint.com/personal/…/Documents/…" spellcheck="false" autocomplete="off">
@@ -3088,8 +3161,7 @@ function creerInterface() {
       <form method="dialog" class="s-pied"><button class="s-primaire">Fermer</button></form>
     </dialog>`
   );
-  for (const d of document.querySelectorAll('.s-dialogue'))
-    d.addEventListener('click', e => e.target === d && d.close()); /* toucher le fond referme */
+  /* toucher à côté d'une fenêtre : 23-couche.js (1.11), pour toutes les fenêtres de la page */
   initEnLigne();
   $s('#s-forcerOk').onclick = () => envoyerQuandMeme();
   $s('#s-libre').onchange = e => basculerLibre(e.target.checked);
@@ -4713,6 +4785,7 @@ window.compagnonBack = () => {
     d.close();
     return true;
   }
+  if (fermerCouche()) return true; /* menu posé sur un voile (1.11) */
   if (A.retour && A.retour()) return true;
   /* recherche ouverte (1.9) : après ce que l'outil referme lui-même (fiche, menu) */
   return fermerRecherche();
@@ -5041,10 +5114,99 @@ function fermerRecherche() {
   }
   return false;
 }
+/* socle/js/23-couche.js : « une couche à la fois » (1.11, charte d'interface, principe 11).
+   Tant qu'un menu, une feuille ou une fenêtre est ouvert, le reste de l'écran est inerte : il ne défile pas et ne
+   réagit à rien. Toucher à côté referme la couche, et ce toucher ne fait rien d'autre. Le bouton retour la referme aussi.
+   - Fenêtres (<dialog> ouvertes par showModal) : toucher hors du cadre la referme ; si l'on y a tapé quelque chose
+     depuis l'ouverture, elle résiste (petite secousse) et reste ouverte : on la quitte par ses boutons ou par le bouton
+     retour. Une fenêtre marquée data-garder ne se ferme jamais ainsi.
+   - Menus qui ne sont pas des fenêtres (un <div> qui s'affiche) : couche(el, fermer) pose dessous un voile transparent
+     qui capte le toucher à côté et ne le laisse pas passer ; finCouche() le retire (à appeler quand le menu se ferme
+     autrement, par un choix).
+   - Défilement de l'arrière-plan bloqué tant qu'une couche est ouverte (feuille de style : html:has(dialog:modal),
+     html.s-couche). */
+
+let voile = null,
+  voileFermer = null;
+
+/* ce qu'on tape dans une fenêtre la rend « modifiée » jusqu'à sa prochaine ouverture */
+document.addEventListener(
+  'input',
+  e => {
+    const d = e.target.closest && e.target.closest('dialog[open]');
+    if (d) d.__modifiee = true;
+  },
+  true
+);
+new MutationObserver(ms => {
+  for (const m of ms) if (m.target.open) m.target.__modifiee = false;
+}).observe(document.documentElement, { attributes: true, attributeFilter: ['open'], subtree: true });
+
+function resister(d) {
+  d.classList.remove('s-resiste');
+  void d.offsetWidth;
+  d.classList.add('s-resiste');
+  vibrer('click');
+  setTimeout(() => d.classList.remove('s-resiste'), 400);
+}
+/* toucher hors du cadre d'une fenêtre : la cible est la fenêtre elle-même (son fond grisé lui appartient) ; on vérifie
+   la position, sinon un toucher dans sa marge intérieure la fermerait */
+document.addEventListener(
+  'click',
+  e => {
+    const d = e.target;
+    if (!(d instanceof HTMLDialogElement) || !d.open || !d.matches(':modal')) return;
+    const r = d.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (d.hasAttribute('data-garder')) return;
+    if (d.__modifiee) return resister(d);
+    d.close();
+  },
+  true
+);
+
+/** Pose un voile sous un menu qui n'est pas une fenêtre. fermer() est appelé au toucher à côté ou au bouton retour. */
+function couche(el, fermer) {
+  finCouche();
+  const z = parseInt(getComputedStyle(el).zIndex, 10);
+  if (!(z > 1)) el.style.zIndex = 2;
+  voile = document.createElement('div');
+  voile.className = 's-voile';
+  voile.style.zIndex = (parseInt(el.style.zIndex || z, 10) || 2) - 1;
+  voileFermer = fermer;
+  const fin = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const f = voileFermer;
+    finCouche();
+    if (f) f();
+  };
+  voile.addEventListener('pointerdown', fin);
+  voile.addEventListener('click', e => (e.preventDefault(), e.stopPropagation()));
+  voile.addEventListener('touchmove', e => e.cancelable && e.preventDefault(), { passive: false });
+  voile.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+  el.parentNode.insertBefore(voile, el);
+  document.documentElement.classList.add('s-couche');
+}
+function finCouche() {
+  if (voile) voile.remove();
+  voile = voileFermer = null;
+  document.documentElement.classList.remove('s-couche');
+}
+/** Bouton retour : referme le menu posé sur un voile. Vrai si quelque chose a été fait. */
+function fermerCouche() {
+  if (!voile) return false;
+  const f = voileFermer;
+  finCouche();
+  if (f) f();
+  return true;
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.10.0',
+  version: '1.11.0',
   demarrer,
   /* fichier */
   modifie,
@@ -5123,6 +5285,9 @@ return {
   effacerSurlignage,
   champRecherche,
   fermerRecherche,
+  /* une couche à la fois (1.11) */
+  couche,
+  finCouche,
   /* interface */
   toast,
   occupe,
@@ -8899,6 +9064,14 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-31 15:45',
+    v: '0.68',
+    items: [
+      'Toucher à côté d’un menu ou d’une fenêtre la referme, sans rien faire d’autre : la liste ne défile plus et la ligne touchée ne s’ouvre pas. Une fenêtre où tu as écrit quelque chose ne se ferme pas ainsi : elle tremble un peu.',
+      'Au téléphone, « À compléter » et les modèles de rétroplanning prennent tout l’écran.'
+    ]
+  },
+  {
     d: '2026-10-31 13:30',
     v: '0.67',
     items: [
@@ -9418,12 +9591,18 @@ function initBoutons() {
   if (TACTILE) $('#aideClavier').hidden = true; /* pas de clavier : pas de raccourcis ; le reste de l'aide sert partout */
   $('#mMaj').onclick = () => socle.mettreAJourAppli();
   const menu = $('#menu');
+  /* une couche à la fois (socle 1.11) : toucher à côté du menu le referme, sans rien faire d'autre */
+  const fermerMenu = () => {
+    menu.hidden = true;
+    socle.finCouche();
+  };
   $('#bMenu').onclick = ev => {
     ev.stopPropagation();
+    if (!menu.hidden) return fermerMenu();
     $('[data-act=horsheures]').setAttribute('aria-checked', String(socle.synchroLibre));
-    menu.hidden = !menu.hidden;
+    menu.hidden = false;
+    socle.couche(menu, fermerMenu);
   };
-  document.addEventListener('click', () => (menu.hidden = true));
   menu.addEventListener('click', ev => {
     const a = ev.target.closest('[data-act]');
     if (!a) return;
@@ -9433,10 +9612,10 @@ function initBoutons() {
       const on = !socle.synchroLibre;
       a.setAttribute('aria-checked', String(on));
       socle.basculerSynchroLibre(on);
-      setTimeout(() => (menu.hidden = true), 300);
+      setTimeout(fermerMenu, 300);
       return;
     }
-    menu.hidden = true;
+    fermerMenu();
     ({
       ouvrir: () => socle.ouvrir(),
       nouveau: () => socle.nouveauFichier(),
@@ -9495,6 +9674,7 @@ function raccourcis(ev) {
   }
   if (ev.key === 'Escape') {
     if (document.querySelector('dialog[open]')) return; /* les fenêtres se ferment d'elles-mêmes */
+    if (!$('#menu').hidden) return ($('#menu').hidden = true), socle.finCouche();
     if (!$('#affiche').hidden) fermerAffiche();
     else if (selId) fermerFiche();
     else if (document.activeElement === $('#ajoutTxt')) {
@@ -9507,7 +9687,7 @@ function raccourcis(ev) {
 
 /** Bouton retour du téléphone, après les fenêtres (gérées par le socle) : menu, affiche, fiche. */
 function retour() {
-  if (!$('#menu').hidden) return !($('#menu').hidden = true) || true;
+  if (!$('#menu').hidden) return ($('#menu').hidden = true), socle.finCouche(), true;
   if (!$('#affiche').hidden) return (fermerAffiche(), true);
   if (selId) return (fermerFiche(), true);
   return false;
