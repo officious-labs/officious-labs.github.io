@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261031144827">
+<meta name="officious-page" content="20261031150549">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -9336,21 +9336,46 @@ function couche(el, fermer) {
   voile.className = 's-voile';
   voile.style.zIndex = (parseInt(el.style.zIndex || z, 10) || 2) - 1;
   voileFermer = fermer;
+  /* toucher à côté : le menu se referme tout de suite, mais le voile reste jusqu'au « clic » que le navigateur envoie
+     au relâcher (1.11.1). Sans cela, ce clic tombait sur ce qui est dessous : une carte s'ouvrait (constaté par
+     François au téléphone ; la souris des tests ne le montrait pas, son clic n'atteint pas l'élément dessous). */
+  const v = voile;
   const fin = e => {
     e.preventDefault();
     e.stopPropagation();
+    if (v.dataset.fini) return;
+    v.dataset.fini = '1';
     const f = voileFermer;
-    finCouche();
+    voileFermer = null;
     if (f) f();
+    retirerVoile(v, 700); /* au plus tard : un toucher qui devient un défilement n'envoie pas de clic */
   };
-  voile.addEventListener('pointerdown', fin);
-  voile.addEventListener('click', e => (e.preventDefault(), e.stopPropagation()));
+  v.addEventListener('pointerdown', fin);
+  v.addEventListener('touchstart', fin, { passive: false });
+  /* à la souris, le clic qui suit ne vise pas l'élément dessous : le voile peut partir dès le bouton relâché */
+  v.addEventListener('pointerup', e => e.pointerType === 'mouse' && v.dataset.fini && retirerVoile(v, 0));
+  v.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    retirerVoile(v, 0);
+  });
   voile.addEventListener('touchmove', e => e.cancelable && e.preventDefault(), { passive: false });
   voile.addEventListener('wheel', e => e.preventDefault(), { passive: false });
   el.parentNode.insertBefore(voile, el);
   document.documentElement.classList.add('s-couche');
 }
+function retirerVoile(v, ms) {
+  setTimeout(() => {
+    v.remove();
+    if (voile === v) {
+      voile = voileFermer = null;
+      document.documentElement.classList.remove('s-couche');
+    }
+  }, ms);
+}
+/** Le menu s'est refermé par un choix : le voile part. Pendant un toucher à côté, il reste jusqu'au clic qui suit. */
 function finCouche() {
+  if (voile && voile.dataset.fini) return; /* fermé par un toucher à côté : retirerVoile s'en charge */
   if (voile) voile.remove();
   voile = voileFermer = null;
   document.documentElement.classList.remove('s-couche');
@@ -9358,6 +9383,9 @@ function finCouche() {
 /** Bouton retour : referme le menu posé sur un voile. Vrai si quelque chose a été fait. */
 function fermerCouche() {
   if (!voile) return false;
+  /* menu déjà refermé par le toucher qui commence le geste « retour » d'Android (balayage depuis le bord) : le retour
+     qui suit est avalé, il ne doit ni fermer l'appli ni agir derrière (1.11.1) */
+  if (voile.dataset.fini) return true;
   const f = voileFermer;
   finCouche();
   if (f) f();
@@ -9366,7 +9394,7 @@ function fermerCouche() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.11.0',
+  version: '1.11.1',
   demarrer,
   /* fichier */
   modifie,
@@ -18290,6 +18318,15 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-31 16:05',
+    type: 'web',
+    v: '3.9.1',
+    items: [
+      'Corrigé : toucher à côté du menu de l’appui long ouvrait la carte de dessous. Le menu se referme, et rien d’autre ne se passe.',
+      'Bouton retour avec le menu ouvert : il referme le menu, sans rien faire d’autre.'
+    ]
+  },
   {
     d: '2026-10-31 15:45',
     type: 'web',
