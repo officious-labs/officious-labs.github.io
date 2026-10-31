@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026123210">
+<meta name="officious-page" content="20261031084315">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -504,14 +504,24 @@ sup {
     z-index: 2;
   }
 }
-@media (max-width: 1919px) {
-  body.avec-fiche #miniCal {
-    display: none !important; /* la fiche pousse la liste : plus de place à gauche */
+/* fiche ouverte (31/10/2026, François) : la fiche prend la marge de droite, aussi large qu'elle le permet ; la liste
+   ne bouge pas tant que la fiche tient dans la marge, et le mini-mois reste à gauche dès que la place existe */
+:root {
+  --wf: 380px;
+}
+@media (min-width: 1480px) {
+  :root {
+    --wf: clamp(420px, calc((100vw - 860px) / 2 - 28px), 620px);
   }
 }
-@media (min-width: 1920px) {
+@media (max-width: 1619px) {
+  body.avec-fiche #miniCal {
+    display: none !important; /* la liste a dû glisser à gauche : plus de place pour le mini-mois */
+  }
+}
+@media (min-width: 1620px) {
   body.avec-fiche #miniCal:not([hidden]) {
-    left: calc(100vw - max(400px, calc((100vw - 860px) / 2)) - 860px - 290px);
+    left: calc(100vw - max(calc(var(--wf) + 28px), calc((100vw - 860px) / 2)) - 860px - 290px);
   }
 }
 .mc-tete {
@@ -715,7 +725,7 @@ sup {
   transition: margin 0.2s ease;
 }
 body.avec-fiche #principal {
-  margin-right: max(400px, calc((100vw - 860px) / 2));
+  margin-right: max(calc(var(--wf) + 28px), calc((100vw - 860px) / 2));
 }
 #ajout {
   position: sticky;
@@ -1044,7 +1054,8 @@ body.avec-fiche #principal {
   top: 3.1rem;
   right: 0;
   bottom: 0;
-  width: 380px;
+  width: var(--wf);
+  box-sizing: border-box;
   overflow: auto;
   background: var(--papier);
   border-left: 1px solid var(--filet);
@@ -3780,6 +3791,36 @@ async function lireFichierVoisin(chemin) {
     throw e;
   }
 }
+/** PC (1.8) : supprime un fichier voisin (« Pièces jointes/devis.pdf ») ; true s'il a été supprimé, false s'il
+ *  n'existait pas. Ne supprime jamais un dossier, ni le fichier de données lui-même. */
+async function supprimerFichierVoisin(chemin) {
+  const nom = String(chemin).split('/').pop();
+  if (!nom || String(chemin) === (fichierPc.handle ? fichierPc.handle.name : A.fichier)) return false;
+  let r;
+  try {
+    [r] = await sousDossierPc(chemin, false);
+    await r.getFileHandle(nom);
+  } catch (e) {
+    if (e.name === 'NotFoundError' || e.name === 'TypeError' || e.name === 'TypeMismatchError') return false;
+    throw e;
+  }
+  await r.removeEntry(nom);
+  journal('fichier supprimé', { chemin: String(chemin) });
+  return true;
+}
+/** PC (1.8) : noms des fichiers d'un sous-dossier voisin (« Pièces jointes »), [] s'il n'existe pas. */
+async function listerDossierVoisin(dossier) {
+  let r;
+  try {
+    [r] = await sousDossierPc(dossier + '/x', false);
+  } catch (e) {
+    if (e.name === 'NotFoundError' || e.name === 'TypeError') return [];
+    throw e;
+  }
+  const L = [];
+  for await (const [n, h] of r.entries()) if (h.kind === 'file') L.push(n);
+  return L.sort();
+}
 /** PC : dépose un fichier dans un sous-dossier voisin, sans rien écraser (« nom (2).ext ») ; renvoie le nom retenu. */
 async function deposerFichierVoisin(dossier, nom, donnees) {
   const [r] = await sousDossierPc(dossier + '/x', true);
@@ -4171,6 +4212,10 @@ async function mettreAJourAppli() {
 }
 
 /* ---- notes de version ---- */
+/** La date la plus récente des notes de version (la liste peut ne pas être triée : 1.8). */
+function nouveauteRecente() {
+  return (A.nouveautes || []).reduce((m, n) => (n.d > m ? n.d : m), '');
+}
 function nouveautesNonVues() {
   const L = A.nouveautes || [],
     vu = mem.get('nouveautes-vues', '');
@@ -4193,14 +4238,14 @@ function montrerNouveautes(liste) {
     )
     .join('');
   $s('#s-nouveautes').showModal();
-  if (A.nouveautes && A.nouveautes.length) mem.set('nouveautes-vues', A.nouveautes[0].d);
+  if (A.nouveautes && A.nouveautes.length) mem.set('nouveautes-vues', nouveauteRecente());
 }
 /** Au démarrage : après une mise à jour, une seule fois, ce qui a changé. La toute première fois, rien. */
 function annoncerNouveautes() {
   const L = A.nouveautes || [];
   if (!L.length) return;
-  if (!mem.get('nouveautes-vues', '')) return mem.set('nouveautes-vues', L[0].d);
-  const n = nouveautesNonVues();
+  if (!mem.get('nouveautes-vues', '')) return mem.set('nouveautes-vues', nouveauteRecente());
+  const n = nouveautesNonVues().sort((a, b) => (a.d < b.d ? 1 : -1));
   if (n.length) toast('Nouveautés de ' + A.titre + ' ' + n[0].v, 'Voir', () => montrerNouveautes(n), 8000);
 }
 /* socle/js/20-demarrage.js : démarrage, relectures, cycle de vie du Compagnon. */
@@ -4300,7 +4345,7 @@ window.compagnonBack = () => {
 /* socle/js/21-boite.js : boîte d'échange entre les outils de la suite (socle 1.6, 24/10/2026).
 
    Un outil dépose un message pour un autre : socle.envoyer('taches', 'retroplanning', {…}). Le message attend dans la
-   mémoire du navigateur, que les pages Officious partagent sur un même appareil (même origine : officious-labs.github.io
+   mémoire du navigateur, que les pages Officine partagent sur un même appareil (même origine : officious-labs.github.io
    dans le Compagnon ; file:// au PC, où les pages sont ouvertes depuis le dossier OneDrive). L'outil destinataire le
    relève à son démarrage, au retour sur la page et dès qu'il est déposé si sa page est ouverte (événement « storage »),
    l'applique (A.recevoir), puis l'enregistre dans son propre fichier comme toute modification. Le PC et le téléphone se
@@ -4387,7 +4432,7 @@ function initBoite() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.7.0',
+  version: '1.8.0',
   demarrer,
   /* fichier */
   modifie,
@@ -4445,6 +4490,8 @@ return {
   dossierAutorise,
   lireFichierVoisin,
   deposerFichierVoisin,
+  supprimerFichierVoisin,
+  listerDossierVoisin,
   /* boîte d'échange entre outils (1.6) */
   envoyer,
   enAttenteDans,
@@ -5048,7 +5095,7 @@ function estPublic(e) {
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-/* fichier, synchronisation, téléphone : le socle Officious (socle/, version figée) ; ici, seulement le métier */
+/* fichier, synchronisation, téléphone : le socle Officine (socle/, version figée) ; ici, seulement le métier */
 const { AND, TACTILE, hasFS } = socle;
 
 let doc = { titre: '', evts: [], reglages: [] };
@@ -5131,6 +5178,10 @@ function lieuDe(e) {
   });
   const reste = e.lieu.includes(',') ? majuscule(e.lieu.slice(e.lieu.indexOf(',') + 1).trim()) : '';
   if (B) return { cle: '', nom: e.lieu, court: reste || e.lieu, libre: true, couleur: B.couleur, hex: COULEURS[B.couleur] };
+  /* « Conservatoire » (sans salle) : le bleu du conservatoire, même si aucun lieu du référentiel ne s'appelle ainsi
+     (François, 31/10/2026) */
+  if (/\bconservatoire\b/.test(sansAccents(e.lieu)))
+    return { cle: '', nom: e.lieu, court: reste || e.lieu, libre: true, couleur: 'bleu', hex: COULEURS.bleu };
   return { cle: '', nom: e.lieu, libre: true, hex: COULEURS.gris }; /* autres lieux : la cinquième couleur */
 }
 /** Couleur franche, pour le papier (affiches). */
@@ -7528,6 +7579,9 @@ function paragraphesMail(t, style) {
  * noir), le titre, le sous-titre, l'heure, le lieu (seule couleur, celle du lieu), puis descriptif, élèves concernés et
  * infos pratiques. Une manifestation à plusieurs dates : le titre d'abord, puis chaque date avec son heure et son lieu.
  */
+/* début et fin du mail aux familles (François, 31/10/2026) */
+const MAIL_DEBUT = ['Chers élèves, chers parents,', 'L’équipe du conservatoire a le plaisir de vous présenter le programme des rendez-vous artistiques à venir.'];
+const MAIL_FIN = ['Nous espérons vous retrouver nombreux lors de ces moments de musique, de théâtre et de découverte.', 'Bien à vous,'];
 function htmlMail(p, avenir) {
   const G = groupes(evtsMail(p, avenir));
   const t = (taille, coul, plus = '') =>
@@ -7547,7 +7601,11 @@ function htmlMail(p, avenir) {
   let h = '<div style="margin:0;padding:0 10px;max-width:620px;font-family:' + MF + ';color:' + ENCRE + '">';
   h += ligne(esc(typo('Demandez le programme !')), 24, COULEURS.bleu, 'font-weight:bold;');
   h += ligne(esc(typo(p.nom)), 16, GRIS, 'padding-bottom:6px;');
-  if (!G.length) return h + ligne('Programme à venir.', 15, ENCRE, 'padding-top:12px;') + '</div>';
+  h += ligne(esc(typo(MAIL_DEBUT[0])), 15, ENCRE, 'padding-top:14px;');
+  h += ligne(esc(typo(MAIL_DEBUT[1])), 15, ENCRE, 'padding-top:8px;padding-bottom:4px;');
+  const fin = () =>
+    ligne(esc(typo(MAIL_FIN[0])), 15, ENCRE, 'border-top:1px solid ' + FILET + ';padding-top:16px;') + ligne(esc(typo(MAIL_FIN[1])), 15, ENCRE, 'padding-top:10px;padding-bottom:14px;');
+  if (!G.length) return h + ligne('Programme à venir.', 15, ENCRE, 'padding-top:12px;') + fin() + '</div>';
   let mois = '';
   for (const g of G) {
     const m = MOIS[jour(g.d1).getMonth()];
@@ -7573,6 +7631,7 @@ function htmlMail(p, avenir) {
     if (g.pratique) h += '<div style="padding-top:6px">' + paragraphesMail(g.pratique, t(14, GRIS, 'font-style:italic;')) + '</div>';
     h += '</div>';
   }
+  h += fin();
   const adr = reglage('adresse');
   if (adr) h += ligne(rich(adr), 12, GRIS, 'border-top:1px solid ' + FILET + ';padding-top:12px;');
   /* exposants (1re, 2e) sans écarter les lignes */
@@ -7582,8 +7641,8 @@ function htmlMail(p, avenir) {
 function texteMail(p, avenir) {
   const G = groupes(evtsMail(p, avenir));
   const net = s => typo(s).replace(/\*/g, '');
-  const out = [net('Demandez le programme !'), typo(p.nom)];
-  if (!G.length) return out.concat('', 'Programme à venir.').join('\n');
+  const out = [net('Demandez le programme !'), typo(p.nom), '', typo(MAIL_DEBUT[0]), '', typo(MAIL_DEBUT[1])];
+  if (!G.length) return out.concat('', 'Programme à venir.', '', typo(MAIL_FIN[0]), '', typo(MAIL_FIN[1])).join('\n');
   const quand = e => {
     const r = [majuscule(net(libDate(e)))];
     if (e.heures) r.push(majuscule(net(libHeures(e.heures))));
@@ -7608,6 +7667,7 @@ function texteMail(p, avenir) {
     if (g.eleves) out.push('Élèves concernés' + NBSP + ': ' + net(g.eleves));
     for (const l of (g.pratique || '').split('\n')) if (l.trim()) out.push(net(l));
   }
+  out.push('', typo(MAIL_FIN[0]), '', typo(MAIL_FIN[1]));
   if (reglage('adresse')) out.push('', typo(reglage('adresse')));
   return out.join('\n');
 }
@@ -8085,6 +8145,16 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-31 12:00',
+    v: '0.65',
+    items: [
+      'Fiche ouverte sur grand écran : elle est plus large et prend la marge de droite ; la liste ne bouge plus et le mini-mois reste à gauche.',
+      'Lieu « Conservatoire » (sans salle) : en bleu, comme les salles du conservatoire.',
+      '« Demandez le programme » commence par « Chers élèves, chers parents, » et l’annonce du programme, et finit par « Nous espérons vous retrouver nombreux… Bien à vous, ».',
+      'La fenêtre « Nouveautés » ne revient plus à chaque ouverture une fois vue (une note de version était datée de travers).'
+    ]
+  },
+  {
     d: '2026-10-26 13:45',
     v: '0.64',
     items: [
@@ -8109,12 +8179,12 @@ const NOUVEAUTES = [
     items: ['A3 : le logo est imprimé tel quel, sans être passé en gris ni éclairci. C’est le fichier logo.png (noir et blanc ou couleur) qui décide.']
   },
   {
-    d: '2026-10-26 17:00',
+    d: '2026-10-26 11:50',
     v: '0.60',
     items: ['A3 : le logo a sa place, à droite du nom du conservatoire et à sa hauteur, séparé par un filet, au lieu d’être posé par-dessus.']
   },
   {
-    d: '2026-10-26 13:00',
+    d: '2026-10-26 11:00',
     v: '0.59',
     items: [
       'Logo de la Ville sur l’affiche A3 : il est lu dans logo.png, à côté de planning.md. Au PC, la première fois, bouton « Logo… » dans l’écran de l’affiche pour autoriser l’accès au dossier.',
@@ -8272,7 +8342,7 @@ const NOUVEAUTES = [
     ]
   },
   {
-    d: '2026-10-19 13:30',
+    d: '2026-10-19 13:05',
     v: '0.34',
     items: [
       'Événements « à dater » : la saisie rapide accepte une ligne sans date (« Concert des professeurs »), avec seulement le mois (« en mai Concert ») ou deux mois (« mars-avril Projet »). Ils se rangent dans « À dater », en haut de la liste.',
@@ -8289,7 +8359,7 @@ const NOUVEAUTES = [
     ]
   },
   {
-    d: '2026-10-19 11:20',
+    d: '2026-10-19 11:05',
     v: '0.32',
     items: [
       'À l’ouverture, la liste défile jusqu’à la prochaine date (les dates annulées sont sautées), juste sous la barre d’ajout. Le calendrier s’ouvrait déjà sur le mois en cours.'
@@ -8319,7 +8389,7 @@ const NOUVEAUTES = [
     ]
   },
   {
-    d: '2026-10-19 10:30',
+    d: '2026-10-19 10:20',
     v: '0.28',
     items: [
       'Affiche A3 : un mois ne se coupe plus entre deux colonnes, et les colonnes s’équilibrent. L’ajustement préfère des titres sur une ligne à un texte plus gros, et rend la place gagnée en air entre les lignes.',
