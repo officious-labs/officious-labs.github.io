@@ -2,7 +2,7 @@ name: Compagnon Android
 
 on:
   push:
-    paths: ['android/**', '.github/workflows/android.yml']   # les pages se chargent en ligne : pas de nouvelle appli pour un changement de page
+    paths: ['android/**', '!android/**/*.md', '.github/workflows/android.yml']   # un lisez-moi ne refabrique pas l'appli (31/10) ; les pages se chargent en ligne : pas de nouvelle appli pour un changement de page
   workflow_dispatch:
 
 permissions:
