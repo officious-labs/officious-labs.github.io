@@ -22,5 +22,5 @@ Pages publiées de la suite Officine (une par outil, déposées par `livrer.sh` 
 - **Compagnon Android** (`officious-labs.github.io/android/`) : toute modification du code déclenche une fabrication (numérotée 12, 13…, c'est aussi le numéro de version affiché). Un `.md` n'en déclenche pas.
 - Ce que François voit : la page **publiée** (`officious-labs.github.io/<appli>/index.html`), jamais la copie de travail.
 - Contraintes de François : OneDrive seulement pendant ses heures de travail (9 h – 18 h 30, jours ouvrés) ; son PC de bureau ne parle pas à GitHub.
-- **Interface** : `socle/docs/charte-interface.md` (dix principes, game feel). Décisions en attente ou validées : `socle/docs/propositions-2026-10-31.md`.
+- **Interface** : `socle/docs/charte-interface.md` (onze principes, game feel). Décisions en attente ou validées : `socle/docs/propositions-2026-10-31.md`.
 - Les docs de chaque dépôt (`docs/`) ont une copie dans le Projet claude.ai « Conservatoire : régie, conventions, etc. » (`officious/`, `planning/`, `outil-taches/`) : la mettre à jour quand on en a l'accès, sinon le signaler à François.
