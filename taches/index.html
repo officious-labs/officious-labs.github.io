@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261026142248">
+<meta name="officious-page" content="20261031084234">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5899,6 +5899,385 @@ body:has(#fly) #rubBar button[data-sec] {
   height: 22px;
   display: block;
 }
+
+/* ---- 3.6 : la note ouverte prend toute la place (PC) : une feuille au-dessus de la page, titre à part ---- */
+#noteFond {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: color-mix(in srgb, var(--fg) 26%, transparent);
+  animation: noteFondIn 0.22s ease-out;
+}
+@keyframes noteFondIn {
+  from {
+    opacity: 0;
+  }
+}
+.inote-place {
+  flex: none;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+.inote.plein {
+  position: fixed;
+  z-index: 61;
+  top: calc(var(--hh, 2.6rem) + 1.2rem);
+  bottom: 1.4rem;
+  left: max(1rem, calc(50vw - 30rem));
+  width: min(60rem, calc(100vw - 2rem));
+  max-width: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.6rem 0.8rem;
+  border-radius: 14px;
+  transform: none;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 24px 60px rgb(0 0 0 / 22%);
+}
+.inote.plein .when {
+  padding-right: 0;
+  margin-bottom: 0.2rem;
+}
+.inote .ntitre {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 650;
+  padding: 0.1rem 0;
+  margin: 0 0 0.3rem;
+}
+.inote.plein .ntitre {
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+  padding: 0.2rem 0 0.35rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+}
+.inote .ntitre::placeholder {
+  color: var(--muted);
+  opacity: 0.55;
+  font-weight: 500;
+}
+.inote.plein .ned {
+  flex: 1;
+  min-height: 0;
+  max-width: none;
+  overflow: auto;
+  font-size: 1rem;
+  line-height: 1.55;
+  padding-right: 0.4rem;
+}
+.inote.plein .links {
+  flex: none;
+  max-height: 30%;
+  overflow: auto;
+}
+.inote.plein .fmtb {
+  flex: none;
+}
+
+/* ---- 3.6 : note du téléphone en plein écran, titre à part ---- */
+#mNote {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  padding: 0.8rem 0.9rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+#mNote[open] #nForm {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+#mNote .nwrap {
+  flex: 1;
+  min-height: 6rem;
+  display: flex;
+}
+#mNote .nwrap textarea {
+  flex: 1;
+  height: auto;
+  resize: none;
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+#mNote #nTitle {
+  font-size: 1.25rem;
+  font-weight: 650;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: 0.35rem 0.1rem 0.45rem;
+}
+#mNote #nTitle:focus {
+  border-bottom-color: var(--accent);
+}
+#mNote #nTriage {
+  flex: none;
+  max-height: 45dvh;
+  overflow: auto;
+}
+
+.selbar {
+  z-index: 70 !important; /* au-dessus de la note ouverte en grand (3.6) */
+}
+
+/* ---- 3.6 : pièces jointes ---- */
+/* les liens ne font pas grandir la note : en ligne s'ils tiennent, sinon les uns sous les autres */
+.inote .links,
+.mlinks {
+  width: 0;
+  min-width: 100%;
+}
+.links.mesure,
+.mlinks.mesure {
+  flex-wrap: nowrap !important;
+}
+.links.col,
+.mlinks.col {
+  flex-direction: column;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+.inote .links.col {
+  width: max-content;
+  max-width: 26rem;
+  min-width: 0;
+}
+.lnk {
+  min-width: 0;
+}
+.lnk .lt {
+  min-width: 0;
+  white-space: nowrap;
+}
+.mlinks .lnk {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.lnk.absent {
+  opacity: 0.55;
+  text-decoration: line-through;
+  border-style: dashed;
+}
+.vign {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0.1rem;
+}
+.vign a {
+  display: block;
+  line-height: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.vign img {
+  height: 4.5rem;
+  max-width: 9rem;
+  object-fit: cover;
+}
+.vign img:not([src]) {
+  width: 4.5rem;
+}
+.vign a.absent {
+  opacity: 0.4;
+}
+.inote.plein .vign img {
+  height: 9rem;
+  max-width: 18rem;
+}
+
+/* ---- 3.6 : en-tête — l'Historique ressort, le reste dans « ⋯ » ---- */
+#histBtn.hbtn-hist {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg));
+  font-weight: 600;
+}
+#histBtn.hbtn-hist:hover {
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg));
+}
+.hmenu-w {
+  position: relative;
+}
+#hmenuBtn {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  min-width: 2.1rem;
+}
+#hmenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  padding: 0.3rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 16%);
+  animation: hmenuIn 0.14s ease-out;
+}
+#hmenu[hidden] {
+  display: none;
+}
+#hmenu button {
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0.45rem 0.7rem;
+  border-radius: 6px;
+}
+#hmenu button:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+@keyframes hmenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.hfiltre {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px;
+  background: var(--bg);
+  flex: none;
+}
+.hfiltre button {
+  border: none;
+  background: none;
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.hfiltre button.on {
+  background: var(--accent);
+  color: #fff;
+}
+/* 3.6 : tâche étendue d'un clic */
+#list .card.etendue {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 45%, transparent),
+    0 6px 18px rgb(0 0 0 / 10%);
+}
+/* 3.6 : l'en-tête de l'historique passe sur deux lignes (titre, filtre ; recherche, corbeille, fermer) */
+.hhead {
+  flex-wrap: wrap;
+  row-gap: 0.45rem;
+}
+.hhead input {
+  min-width: 8rem;
+}
+.hhead .hfiltre {
+  margin-right: auto;
+}
+
+/* 3.6 (François) : l'écho du radar s'éteint peu à peu et se rallume quand le faisceau repasse dessus (à 240° du
+   départ du faisceau, soit aux deux tiers du tour de 6 s) */
+.rtit .iradar .echo {
+  animation: echo 6s linear infinite;
+}
+@keyframes echo {
+  0% {
+    opacity: 0.42;
+  }
+  66.4% {
+    opacity: 0.05;
+  }
+  66.9% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.42;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rtit .iradar .echo {
+    animation: none;
+  }
+}
+
+/* ---- 3.6 : échéances — l'échéance entre la tâche et la rubrique, ses étapes comme des tâches ---- */
+#list .card.jalon {
+  --j: #8a8f98;
+  border-left-width: 5px;
+  border-left-color: var(--j);
+  background: color-mix(in srgb, var(--j) 7%, var(--panel, var(--bg)));
+}
+#list .card.jalon.j-proche {
+  --j: #c48a2a;
+}
+#list .card.jalon.j-imminent,
+#list .card.jalon.j-passe {
+  --j: #c4524a;
+}
+#list .card.jalon .jtete {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: -0.1rem 0 0.15rem;
+  letter-spacing: 0.02em;
+}
+#list .card.jalon .jtete b {
+  color: var(--j);
+  font-size: 0.8rem;
+}
+#list .card.jalon > .row.top .txt {
+  font-weight: 650;
+}
+#list .card.etape .row.etape-row {
+  margin-left: 0;
+}
+#list .card.etape > .insec.jdeb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+#list .card.etape > .insec.jdeb .iradar {
+  width: 13px;
+  height: 13px;
+}
+#list .card.jalon .jtete .iradar {
+  width: 14px;
+  height: 14px;
+  align-self: center;
+  color: var(--j);
+}
+
+.links.mesure > .lnk,
+.mlinks.mesure > .lnk {
+  flex-shrink: 0;
+  max-width: none;
+}
 </style>
 </head>
 <body>
@@ -5906,10 +6285,13 @@ body:has(#fly) #rubBar button[data-sec] {
   <h1>Tâches</h1>
   <span id="status"></span>
   <span id="filters"></span>
-  <button id="histBtn">Historique</button>
-  <button id="expBtn" title="Copier la liste des tâches en cours, mise en page, à coller dans un e-mail">Copier la liste</button>
-  <button id="openBtn" title="Ouvrir un fichier .md existant">Ouvrir…</button>
-  <button id="newBtn" title="Enregistrer la liste dans un nouveau fichier">Créer…</button>
+  <button id="histBtn" class="hbtn-hist" title="Tâches faites et notes archivées ; corbeille"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4.5v4h4"/><path d="M12 7.5V12l3 2"/></svg><span>Historique</span></button>
+  <span class="hmenu-w"><button id="hmenuBtn" title="Copier la liste, ouvrir ou créer un fichier" aria-haspopup="menu" aria-expanded="false">⋯</button>
+    <div id="hmenu" role="menu" hidden>
+      <button id="expBtn" role="menuitem" title="Copier la liste des tâches en cours, mise en page, à coller dans un e-mail">Copier la liste</button>
+      <button id="openBtn" role="menuitem" title="Ouvrir un fichier .md existant">Ouvrir…</button>
+      <button id="newBtn" role="menuitem" title="Enregistrer la liste dans un nouveau fichier">Créer…</button>
+    </div></span>
   <button id="setBtn" title="Réglages">⚙</button>
   <button id="newsBtn" title="Ce qui a changé">Notes de version</button>
   <button id="helpBtn" title="Raccourcis">?</button>
@@ -6015,7 +6397,7 @@ body:has(#fly) #rubBar button[data-sec] {
       <div class="mrb"><button type="button" id="tCancel">Annuler</button><span class="sp"></span><button type="submit" class="primary" id="tOk">Créer la tâche</button></div>
     </form>
   </dialog>
-  <dialog id="news"><form method="dialog"><div class="nwhd"><strong>Notes de version</strong><button class="nwx" aria-label="Fermer">✕</button></div><p class="nwintro"><span id="nwver"></span></p><details class="nwabout"><summary>Application web Chromium, Compagnon Android : c’est quoi ?</summary><p class="nwintro"><strong>Application web Chromium</strong> : tout ce que tu vois et utilises, à ouvrir dans Edge ou Chrome (Chromium est leur socle commun, celui qui fait aussi tourner le Compagnon) ; se met à jour toute seule (tirer pour actualiser au téléphone, recharger la page au PC).<br><strong>Compagnon Android</strong> : l’appli du téléphone qui fait tourner l’application web et lui prête les fichiers, la connexion, le vibreur ; se met à jour depuis le menu ⋮.</p></details><div id="nwlist"></div></form></dialog>
+  <dialog id="news"><form method="dialog"><div class="nwhd"><strong>Notes de version</strong><button class="nwx" aria-label="Fermer">✕</button></div><p class="nwintro"><span id="nwver"></span></p><details class="nwabout"><summary>Application web Chromium, Compagnon Officine : c’est quoi ?</summary><p class="nwintro"><strong>Application web Chromium</strong> : tout ce que tu vois et utilises, à ouvrir dans Edge ou Chrome (Chromium est leur socle commun, celui qui fait aussi tourner le Compagnon) ; se met à jour toute seule (tirer pour actualiser au téléphone, recharger la page au PC). Numérotée 3.6, 3.7…<br><strong>Compagnon Officine</strong> : l’appli du téléphone (une pour toute la suite) qui fait tourner l’application web et lui prête les fichiers, la connexion, le vibreur ; se met à jour depuis le menu ⋮. Numérotée par fabrications : 11, 12…<br><strong>Ancien Compagnon (appli Tâches)</strong> : l’appli d’avant la 3.0, numérotée de 1.0 à 2.5 ; ses notes restent pour mémoire.</p></details><div id="nwlist"></div></form></dialog>
   <dialog id="mMenu">
     <form method="dialog">
       <div class="mmh"><span>Affichage</span><button type="submit" class="mmx" aria-label="Fermer" title="Fermer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></div>
@@ -6026,7 +6408,7 @@ body:has(#fly) #rubBar button[data-sec] {
       <button type="button" class="mitem" id="oExport">Copier la liste des tâches<small>pour un e-mail : rubriques, échéances, sous-tâches, commentaires</small></button>
       <button type="button" class="mitem mnews" id="oNews">Notes de version</button>
       <details class="madv" id="oAdv"><summary>Plus d’options</summary>
-        <button type="button" class="mitem" id="oUpdate">Vérifier la mise à jour du Compagnon Android</button>
+        <button type="button" class="mitem" id="oUpdate">Vérifier la mise à jour du Compagnon</button>
         <button type="button" class="mitem" id="oSp">Accès direct à OneDrive</button>
         <button type="button" class="mitem" id="oFile">Choisir un autre fichier</button>
         <button type="button" class="mitem" id="oJournal">Copier le journal de synchronisation</button>
@@ -6039,6 +6421,7 @@ body:has(#fly) #rubBar button[data-sec] {
     <form method="dialog" id="nForm">
       <p class="ameta" id="nMeta"></p>
       <div class="ntool"><button type="button" id="nBold" class="ico" title="Gras" aria-label="Gras"><b>B</b></button><button type="button" id="nItal" class="ico" title="Italique" aria-label="Italique"><i>I</i></button><button type="button" id="nBullet" class="ico" title="Liste à puces" aria-label="Liste à puces"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg></button><span class="sp"></span><button type="button" id="nPaste" class="ico npaste" title="Coller le presse-papiers" aria-label="Coller le presse-papiers"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg><span>Coller</span></button></div>
+      <input id="nTitle" class="ntitre" placeholder="Titre" aria-label="Titre de la note" enterkeyhint="next" autocomplete="off">
       <div id="nLinks"></div><div class="nwrap"><textarea id="nText" rows="6" placeholder="Ce qu’on vient de te dire…"></textarea><button type="button" id="nCopy" class="ico ccopy" title="Copier la note" aria-label="Copier la note"><span class="i1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg></span><span class="i2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button></div>
       <div class="nbar"><button type="button" id="nDel" class="ico adel" title="Supprimer la note" aria-label="Supprimer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg></button><button type="button" id="nArch" class="ico" title="Archiver la note" aria-label="Archiver la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.2"/><path d="M5 9v10h14V9M10 13h4"/></svg></button><button type="button" id="nCancel" class="ico" title="Annuler" aria-label="Annuler"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="sp"></span><span class="ntabs"><button type="button" class="ico" data-p="task" title="En faire une tâche" aria-label="En faire une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></svg></button><button type="button" class="ico" data-p="attach" title="Ajouter à une tâche" aria-label="Ajouter à une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button></span><button type="submit" class="ico ok" id="nOk" title="Enregistrer la note" aria-label="Enregistrer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
       <div id="nTriage">
@@ -6059,7 +6442,7 @@ body:has(#fly) #rubBar button[data-sec] {
   </dialog>
 </div>
 <aside id="hist">
-  <div class="hhead"><strong id="htitle">Historique</strong><input id="hq" placeholder="Rechercher…"><button id="htrash" title="Tâches et notes supprimées depuis moins de 30 jours">Corbeille</button><button id="hclose">Fermer</button></div>
+  <div class="hhead"><strong id="htitle">Historique</strong><span class="hfiltre" id="hfiltre" role="group" aria-label="Afficher"><button type="button" data-v="tout" class="on">Tout</button><button type="button" data-v="taches">Tâches</button><button type="button" data-v="notes">Notes</button></span><input id="hq" placeholder="Rechercher…"><button id="htrash" title="Tâches et notes supprimées depuis moins de 30 jours">Corbeille</button><button id="hclose">Fermer</button></div>
   <div id="hlist"></div>
 </aside>
 <div id="fabMenu" hidden><button type="button" class="fabo" id="fabSec"><span>Nouvelle rubrique</span><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="10" r="2.6" fill="currentColor" stroke="none"/><path d="M11.5 10h9"/><path d="M3.5 16.5h17"/></svg></i></button><button type="button" class="fabo" id="fabNote" title="Alt+N"><span>Nouvelle note</span><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 4.5h15v9.5l-5.5 5.5H4.5z"/><path d="M14 19.5V14h5.5"/><path d="M8 9h8M8 12.5h4"/></svg></i></button><button type="button" class="fabo furg" id="fabUrg" title="Hors rubrique, marquée importante : elle va dans les Priorités"><span>Tâche prioritaire</span><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.5v8.5"/><circle cx="12" cy="18.2" r="1.2" fill="currentColor" stroke="none"/></svg></i></button><button type="button" class="fabo" id="fabTask" title="Hors rubrique · Alt+T"><span>Nouvelle tâche</span><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></svg></i></button></div>
@@ -7453,6 +7836,36 @@ async function lireFichierVoisin(chemin) {
     throw e;
   }
 }
+/** PC (1.8) : supprime un fichier voisin (« Pièces jointes/devis.pdf ») ; true s'il a été supprimé, false s'il
+ *  n'existait pas. Ne supprime jamais un dossier, ni le fichier de données lui-même. */
+async function supprimerFichierVoisin(chemin) {
+  const nom = String(chemin).split('/').pop();
+  if (!nom || String(chemin) === (fichierPc.handle ? fichierPc.handle.name : A.fichier)) return false;
+  let r;
+  try {
+    [r] = await sousDossierPc(chemin, false);
+    await r.getFileHandle(nom);
+  } catch (e) {
+    if (e.name === 'NotFoundError' || e.name === 'TypeError' || e.name === 'TypeMismatchError') return false;
+    throw e;
+  }
+  await r.removeEntry(nom);
+  journal('fichier supprimé', { chemin: String(chemin) });
+  return true;
+}
+/** PC (1.8) : noms des fichiers d'un sous-dossier voisin (« Pièces jointes »), [] s'il n'existe pas. */
+async function listerDossierVoisin(dossier) {
+  let r;
+  try {
+    [r] = await sousDossierPc(dossier + '/x', false);
+  } catch (e) {
+    if (e.name === 'NotFoundError' || e.name === 'TypeError') return [];
+    throw e;
+  }
+  const L = [];
+  for await (const [n, h] of r.entries()) if (h.kind === 'file') L.push(n);
+  return L.sort();
+}
 /** PC : dépose un fichier dans un sous-dossier voisin, sans rien écraser (« nom (2).ext ») ; renvoie le nom retenu. */
 async function deposerFichierVoisin(dossier, nom, donnees) {
   const [r] = await sousDossierPc(dossier + '/x', true);
@@ -7844,6 +8257,10 @@ async function mettreAJourAppli() {
 }
 
 /* ---- notes de version ---- */
+/** La date la plus récente des notes de version (la liste peut ne pas être triée : 1.8). */
+function nouveauteRecente() {
+  return (A.nouveautes || []).reduce((m, n) => (n.d > m ? n.d : m), '');
+}
 function nouveautesNonVues() {
   const L = A.nouveautes || [],
     vu = mem.get('nouveautes-vues', '');
@@ -7866,14 +8283,14 @@ function montrerNouveautes(liste) {
     )
     .join('');
   $s('#s-nouveautes').showModal();
-  if (A.nouveautes && A.nouveautes.length) mem.set('nouveautes-vues', A.nouveautes[0].d);
+  if (A.nouveautes && A.nouveautes.length) mem.set('nouveautes-vues', nouveauteRecente());
 }
 /** Au démarrage : après une mise à jour, une seule fois, ce qui a changé. La toute première fois, rien. */
 function annoncerNouveautes() {
   const L = A.nouveautes || [];
   if (!L.length) return;
-  if (!mem.get('nouveautes-vues', '')) return mem.set('nouveautes-vues', L[0].d);
-  const n = nouveautesNonVues();
+  if (!mem.get('nouveautes-vues', '')) return mem.set('nouveautes-vues', nouveauteRecente());
+  const n = nouveautesNonVues().sort((a, b) => (a.d < b.d ? 1 : -1));
   if (n.length) toast('Nouveautés de ' + A.titre + ' ' + n[0].v, 'Voir', () => montrerNouveautes(n), 8000);
 }
 /* socle/js/20-demarrage.js : démarrage, relectures, cycle de vie du Compagnon. */
@@ -7973,7 +8390,7 @@ window.compagnonBack = () => {
 /* socle/js/21-boite.js : boîte d'échange entre les outils de la suite (socle 1.6, 24/10/2026).
 
    Un outil dépose un message pour un autre : socle.envoyer('taches', 'retroplanning', {…}). Le message attend dans la
-   mémoire du navigateur, que les pages Officious partagent sur un même appareil (même origine : officious-labs.github.io
+   mémoire du navigateur, que les pages Officine partagent sur un même appareil (même origine : officious-labs.github.io
    dans le Compagnon ; file:// au PC, où les pages sont ouvertes depuis le dossier OneDrive). L'outil destinataire le
    relève à son démarrage, au retour sur la page et dès qu'il est déposé si sa page est ouverte (événement « storage »),
    l'applique (A.recevoir), puis l'enregistre dans son propre fichier comme toute modification. Le PC et le téléphone se
@@ -8060,7 +8477,7 @@ function initBoite() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.7.0',
+  version: '1.8.0',
   demarrer,
   /* fichier */
   modifie,
@@ -8118,6 +8535,8 @@ return {
   dossierAutorise,
   lireFichierVoisin,
   deposerFichierVoisin,
+  supprimerFichierVoisin,
+  listerDossierVoisin,
   /* boîte d'échange entre outils (1.6) */
   envoyer,
   enAttenteDans,
@@ -8373,6 +8792,10 @@ function mkLinks(links, removable) {
     a.draggable = false;
     a.title = l.url;
     a.dataset.k = k;
+    if (typeof pjAbsents !== 'undefined' && pjAbsents.has(l.url)) {
+      a.classList.add('absent');
+      a.title = 'Fichier introuvable dans « Pièces jointes » (déplacé, renommé ou supprimé) · ' + l.url;
+    }
     if (isRel(l.url) && !settings.dossier)
       a.onclick = e => {
         if (e.target.closest('.lx')) return;
@@ -8897,6 +9320,9 @@ function bandTops() {
   for (const [k] of BANDS) by[k] = [];
   items.forEach((it, i) => {
     if (it.kind === 't' && it.level === 0 && it.state !== 'fait' && matchFilter(i)) by[bandOf(it)].push(i);
+    /* 3.6 (François) : les étapes datées d'une échéance (ses sous-tâches) comptent comme de vraies tâches */
+    else if (it.kind === 't' && it.level > 0 && !it.checked && it.due && it.text.trim() && typeof estEtape === 'function' && estEtape(it) && matchFilter(i))
+      by[bandOf(it)].push(i);
   });
   for (const k in by)
     by[k] = sortIdx(by[k], k === 'sans' ? it => (it.important ? '0' : '1') + createdOf(it) : it => bandDue(it) + urgKey(it));
@@ -9909,6 +10335,7 @@ function render() {
         (dueSoon(it) && daysTo(it.due) === 0 ? ' jour' : '');
       card.style.setProperty('--c', COLORS[it.color] || (cur_h && COLORS[cur_h.color]) || CARD_COLOR);
       card.dataset.id = it.id;
+      if (it.level === 0 && estRubEch(cur_h) && it.state !== 'fait') habillerJalon(card, it); /* 3.6 */
       if (up) {
         const b = document.createElement('div');
         b.className = 'insec';
@@ -10065,6 +10492,7 @@ $('#rubBar').addEventListener('drop', e => {
     note = b.dataset.sec === '!notes',
     sec = note ? '' : b.dataset.sec;
   if (deposerSiFichiers(dt, note ? { nouvelleNote: true } : { sec, state: 'afaire' })) return;
+  signalerPJOutlook(dt);
   const got = linksFromDrop(dt);
   if (got) {
     if (note) {
@@ -10177,7 +10605,7 @@ function renderEnd(list) {
   document.body.classList.toggle('dateview', dateView());
   renderFilters();
   renderInbox();
-  $('#histBtn').textContent = 'Historique (' + done.length + ')';
+  $('#histBtn').querySelector('span').textContent = 'Historique (' + done.length + ')';
   if ($('#hist').classList.contains('open')) renderHist();
 }
 /* affichage par échéance (PC) : une bande par période, chaque tâche avec le nom de sa rubrique */
@@ -10209,6 +10637,10 @@ function renderDates(list, cols) {
     for (const i of by[k]) {
       if (estJalon(items[i]) && items[i].due) {
         cell.append(repereJalon(items[i])); /* échéance : ligne de repère (3.4) */
+        continue;
+      }
+      if (items[i].level > 0) {
+        cell.append(carteEtape(i, cols)); /* étape d'une échéance : une carte comme une tâche (3.6) */
         continue;
       }
       const it = items[i],
@@ -10252,6 +10684,7 @@ function dcalEl() {
     if (it.kind === 't' && it.level === 0 && it.state !== 'fait' && bandDue(it) && matchFilter(i))
       if (estJalon(it)) (perJ[it.due] = perJ[it.due] || []).push(it);
       else (per[bandDue(it)] = per[bandDue(it)] || []).push(it);
+    else if (it.kind === 't' && it.level > 0 && !it.checked && it.due && estEtape(it) && matchFilter(i)) (per[it.due] = per[it.due] || []).push(it); /* étapes (3.6) */
   });
   const t0 = new Date(today + 'T12:00');
   for (let m = 0; m < 2; m++) {
@@ -10323,6 +10756,39 @@ function liLevel(ind) {
 /* titre d'une note : sa première ligne, quand une ligne vide la sépare de la suite (comme l'objet d'un e-mail) */
 function noteTitled(ls) {
   return ls.length > 2 && !!ls[0].trim() && !RX_LI.test(ls[0]) && !ls[1].trim() && ls.slice(2).some(l => l.trim());
+}
+/* ---- titre des notes, à la Joplin (3.6, idée de François) ----
+   Le titre est un champ à part. Une note écrite sans titre prend sa première ligne comme titre, et le titre la suit
+   tant que la note est ouverte ; une fois enregistrée, il ne bouge plus (on peut toujours le changer à la main).
+   Dans taches.md, rien de nouveau : un titre, c'est la première ligne suivie d'une ligne vide (noteTitled). */
+function notePartie(text) {
+  const ls = (text || '').split('\n');
+  if (noteTitled(ls)) return { titre: ls[0].trim(), corps: ls.slice(2).join('\n').replace(/^\s*\n/, '') };
+  return { titre: '', corps: text || '' };
+}
+/** Titre tiré du corps : sa première ligne non vide, si ce n'est pas une puce. */
+function titreAuto(corps) {
+  const l = (corps || '').split('\n').find(x => x.trim());
+  return l && !RX_LI.test(l) ? l.trim() : '';
+}
+/** Texte enregistré. auto : titre tiré du corps (sa première ligne devient le titre, sans être répétée). */
+function noteAssemblee(titre, corps, auto) {
+  corps = (corps || '').replace(/^(\s*\n)+/, '').replace(/\s+$/, '');
+  if (auto) {
+    const ls = corps.split('\n'),
+      l = ls[0] || '';
+    if (!l.trim() || RX_LI.test(l)) return corps;
+    const reste = ls.slice(1).join('\n').replace(/^(\s*\n)+/, '').replace(/\s+$/, '');
+    return reste ? l.trim() + '\n\n' + reste : l.trim();
+  }
+  titre = (titre || '').replace(/^\s*[-*•]\s+/, '').replace(/\s+/g, ' ').trim();
+  if (!titre) return corps;
+  return corps ? titre + '\n\n' + corps : titre;
+}
+/** Première ligne non vide de l'éditeur, comme dans le fichier (« - » pour une puce). */
+function edPremiereLigne(root) {
+  for (const d of root.children) if (d.textContent.trim()) return (d.classList.contains('b') ? '- ' : '') + d.textContent.replace(/\u00a0/g, ' ');
+  return '';
 }
 function noteView(t) {
   /* une ligne par bloc, comme dans l'éditeur : mêmes puces, même titre */
@@ -10569,7 +11035,13 @@ function renderInbox() {
       notes = notes.filter(y => y.id !== n.id);
       render();
       changed();
-      toast('Note supprimée · dans la corbeille · Ctrl+Z pour annuler');
+      const k = pjDe(n.links);
+      toast(
+        'Note supprimée · dans la corbeille' +
+          (k ? ' (ses ' + (k > 1 ? k + ' pièces jointes partiront' : 'pièce jointe partira') + ' quand elle en sortira)' : '') +
+          ' · Ctrl+Z pour annuler',
+        k ? 6000 : undefined
+      );
     };
     const cp = document.createElement('button');
     cp.className = 'cp';
@@ -10666,6 +11138,8 @@ function renderInbox() {
         changed();
       };
       c.append(lk);
+      const vg = vignettes(n.links);
+      if (vg) lk.before(vg);
     }
     /* un e-mail, une adresse ou un chemin lâché sur la note : relié à elle */
     c.addEventListener('dragover', e => {
@@ -10680,6 +11154,7 @@ function renderInbox() {
       if (noteDragId || dragId || !e.dataTransfer) return;
       c.classList.remove('link-over');
       if (deposerSiFichiers(e.dataTransfer, { note: n.id })) return e.preventDefault(), e.stopPropagation();
+      signalerPJOutlook(e.dataTransfer);
       const got = linksFromDrop(e.dataTransfer);
       if (!got) return;
       e.preventDefault();
@@ -10693,6 +11168,7 @@ function renderInbox() {
   }
   box.append(wrap);
   add();
+  requestAnimationFrame(() => ajusterLiens(box));
   if (noteEditId) {
     const id = noteEditId;
     noteEditId = null;
@@ -10974,12 +11450,36 @@ function edIndent(root, dir) {
 }
 /* « - » tapé (ou collé) en début de ligne devient une puce */
 function edNorm(root) {
+  /* 3.6 (bug signalé par François) : tout effacé, le navigateur laisse un <br> ou du texte nu à la racine ; on remet
+     chaque morceau dans sa ligne en gardant le curseur où il était (avant : il partait au début, et le <br> resté seul
+     faisait une deuxième ligne, donc un titre) */
+  const s0 = getSelection(),
+    an = s0.rangeCount ? s0.anchorNode : null,
+    ao = s0.rangeCount ? s0.anchorOffset : 0;
+  let garde = null;
   for (const n of [...root.childNodes]) {
     if (n.nodeType === 3 && n.nodeValue.trim()) {
       const d = document.createElement('div');
       n.replaceWith(d);
       d.append(n);
+      if (an === n) garde = [n, ao];
+    } else if (n.nodeType === 3 && !n.nodeValue) n.remove();
+    else if (n.nodeName === 'BR') {
+      if (root.children.length > 1 || [...root.childNodes].some(x => x !== n && (x.nodeType === 1 || (x.nodeValue || '').trim()))) n.remove();
+      else {
+        const d = document.createElement('div');
+        n.replaceWith(d);
+        d.append(n);
+        if (an === root) garde = [d, 0];
+      }
     }
+  }
+  if (garde) {
+    const r = document.createRange();
+    r.setStart(garde[0], Math.min(garde[1], garde[0].nodeType === 3 ? garde[0].nodeValue.length : garde[0].childNodes.length));
+    r.collapse(true);
+    s0.removeAllRanges();
+    s0.addRange(r);
   }
   for (const d of root.children) {
     if (!/^[-*•][ \u00a0]/.test(d.textContent)) continue;
@@ -11050,13 +11550,53 @@ function editNote(id) {
   ed.className = 'tx ned';
   ed.contentEditable = 'true';
   ed.spellcheck = true;
-  ed.innerHTML = noteToEd(n.text) || '<div><br></div>';
+  /* 3.6 : titre séparé, à la Joplin (notePartie, noteAssemblee) */
+  const parts = notePartie(n.text);
+  ed.innerHTML = noteToEd(parts.corps) || '<div><br></div>';
   [...ed.children].forEach(L => (L._src = L.textContent));
+  /* 3.6 : la note s'ouvre en grand (« entrer dans la note ») ; une place vide garde sa position dans le bandeau */
+  const r0 = c.getBoundingClientRect(),
+    place = document.createElement('div');
+  place.className = 'inote-place';
+  place.style.width = r0.width + 'px';
+  place.style.height = r0.height + 'px';
+  c.before(place);
   old.replaceWith(ed);
+  const ti = document.createElement('input');
+  ti.className = 'ntitre';
+  ti.placeholder = 'Titre';
+  ti.spellcheck = true;
+  ti.setAttribute('aria-label', 'Titre de la note');
+  ed.before(ti);
+  const auto0 = !parts.titre;
+  let titreTouche = false;
+  ti.value = parts.titre;
+  const majTitre = () => {
+    if (auto0 && !titreTouche) ti.value = plainFmt(titreAuto(edPremiereLigne(ed)));
+  };
+  majTitre();
+  ti.addEventListener('input', () => (titreTouche = true));
   const hist = edHistory(ed);
-  c.classList.add('editing');
+  c.classList.add('editing', 'plein');
   $('#inbox').classList.add('noting');
   c.draggable = false;
+  const fond = document.createElement('div');
+  fond.id = 'noteFond';
+  document.body.append(fond);
+  if (c.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const r1 = c.getBoundingClientRect();
+    c.animate(
+      [
+        { transform: 'translate(' + (r0.left - r1.left) + 'px,' + (r0.top - r1.top) + 'px) scale(' + r0.width / r1.width + ',' + r0.height / r1.height + ')', transformOrigin: '0 0', opacity: 0.6 },
+        { transform: 'none', transformOrigin: '0 0', opacity: 1 }
+      ],
+      { duration: 260, easing: 'cubic-bezier(.2,.8,.25,1)' }
+    );
+  }
+  /* un clic dans la feuille hors des champs ne la referme pas (il garde la main où elle était) */
+  c.addEventListener('mousedown', e => {
+    if (!e.target.closest('.ned, .ntitre, a, button, input, textarea')) e.preventDefault();
+  });
   const bar = document.createElement('div');
   bar.className = 'fmtb';
   const I = p =>
@@ -11068,7 +11608,7 @@ function editNote(id) {
     I(
       '<circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/>'
     ) +
-    '</button><span class="sp"></span><span class="hint ent"><kbd>Entrée</kbd> enregistrer · <kbd>Maj+Entrée</kbd> titre</span><button type="button" data-f="x" class="fx" title="Quitter sans enregistrer (Échap)">' +
+    '</button><span class="sp"></span><span class="hint ent"><kbd>Entrée</kbd> enregistrer · <kbd>Maj+Entrée</kbd> à la ligne</span><button type="button" data-f="x" class="fx" title="Quitter sans enregistrer (Échap)">' +
     I('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>') +
     '</button><button type="button" data-f="ok" class="fok" title="Enregistrer (Ctrl+Entrée, ou Entrée sur une note d’une ligne) · Échap : annuler">' +
     I('<path d="M5 12.5l4.5 4.5L19 7.5"/>') +
@@ -11093,8 +11633,7 @@ function editNote(id) {
   const ent = bar.querySelector('.ent'),
     entSync = () => {
       ent.classList.toggle('on', ed.children.length === 1 && !ed.children[0].classList.contains('b'));
-      const ch = [...ed.children];
-      ch.forEach((d, k) => d.classList.toggle('nt1', k === 0 && noteTitled(ch.map(x => (x.classList.contains('b') ? '- ' : '') + x.textContent))));
+      majTitre();
     };
   entSync();
   /* texte sélectionné : petite barre G | I | liste juste au-dessus de la sélection */
@@ -11133,7 +11672,41 @@ function editNote(id) {
     });
   document.addEventListener('selectionchange', onSel);
   let cancelled = false;
+  /* liens et vignettes de la note ouverte, refaits sur place (un rendu complet fermerait la note) */
+  const notePjMaj = () => {
+    c.querySelectorAll(':scope > .links, :scope > .vign').forEach(x => x.remove());
+    if (!n.links || !n.links.length) return;
+    const lk = mkLinks(n.links, true);
+    lk.onclick = ev => {
+      const lx = ev.target.closest('.lx');
+      if (!lx) return;
+      ev.preventDefault();
+      snapshot();
+      n.links.splice(+lx.closest('.lnk').dataset.k, 1);
+      if (!n.links.length) delete n.links;
+      socle.modifie();
+      notePjMaj();
+    };
+    const vg = vignettes(n.links);
+    bar.before(...(vg ? [vg, lk] : [lk]));
+  };
   ed.addEventListener('paste', e => {
+    /* 3.6 : fichiers ou images collés : copiés dans « Pièces jointes » et reliés à la note (vignettes pour les images) */
+    const fs = [...((e.clipboardData && e.clipboardData.files) || [])];
+    if (fs.length) {
+      e.preventDefault();
+      pjCopier(fs).then(L => {
+        if (L === null) return toast('Pour coller des fichiers, autorise l’accès au dossier de taches.md (une seule fois)', 6000);
+        if (!L.length) return;
+        snapshot();
+        (n.links || (n.links = [])).push(...L);
+        socle.modifie();
+        setStatus();
+        notePjMaj();
+        toast((L.length > 1 ? L.length + ' fichiers copiés' : '« ' + L[0].label + ' » copié') + ' dans Pièces jointes et relié' + (L.length > 1 ? 's' : '') + ' à la note', 4000);
+      });
+      return;
+    }
     /* coller du texte brut (Outlook, Word…) : pas de mise en forme étrangère dans le fichier */
     e.preventDefault();
     const tx = (e.clipboardData.getData('text/plain') || '').replace(/\r\n?/g, '\n');
@@ -11196,9 +11769,8 @@ function editNote(id) {
     if (e.key === 'Enter' && !e.isComposing && ed.children.length === 1 && !ed.children[0].classList.contains('b')) {
       e.preventDefault();
       if (e.shiftKey) {
-        /* le titre : une ligne vide le sépare de la suite */
+        /* 3.6 : le titre a son champ ; Maj+Entrée va simplement à la ligne */
         hist.push(true);
-        document.execCommand('insertParagraph');
         document.execCommand('insertParagraph');
       } else ed.blur();
       return;
@@ -11236,11 +11808,50 @@ function editNote(id) {
       }
     }
   };
-  ed.onblur = () => {
+  /* 3.6 : la note se referme quand la main quitte la feuille (clic à côté, Tab dehors), ou par ✓, Ctrl+Entrée,
+     Entrée sur une note d'une ligne, Échap / ✕ (sans enregistrer) */
+  let fini = false;
+  const quitte = () =>
+    setTimeout(() => {
+      if (!fini && !c.contains(document.activeElement)) finir();
+    }, 0);
+  ed.addEventListener('blur', quitte);
+  ti.addEventListener('blur', quitte);
+  ti.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelled = true;
+      return finir();
+    }
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      return finir();
+    }
+    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      ed.focus();
+      edPlace(ed, { i: 0, o: 0 });
+    }
+  });
+  fond.addEventListener('mousedown', e => {
+    e.preventDefault();
+    finir();
+  });
+  ed.blur = () => finir(); /* les gestes existants (✓, Échap, Entrée…) appelaient ed.blur() */
+  const finir = () => {
+    if (fini) return;
+    fini = true;
     document.removeEventListener('selectionchange', onSel);
     sel.remove();
+    fond.remove();
+    place.remove();
+    c.classList.remove('plein');
     $('#inbox').classList.remove('noting');
-    const v = edToNote(ed);
+    HTMLElement.prototype.blur.call(ed);
+    const net = s => s.replace(/\u00a0/g, ' ').replace(/^\s+|\s+$/g, ''),
+      corps = edToNote(ed),
+      v = !titreTouche && net(corps) === net(parts.corps) ? n.text.replace(/^\s+|\s+$/g, '') : noteAssemblee(ti.value, corps, auto0 && !titreTouche);
     if (!v || (cancelled && !n.text)) {
       if (n.text) {
         snapshot();
@@ -11393,6 +12004,14 @@ function noteToSub(nid, taskId) {
   toast('Note devenue sous-tâche de « ' + it.text + ' » · Ctrl+Z pour annuler');
 }
 let histTrash = false;
+let histFiltre = 'tout'; /* 3.6 (François) : historique des notes, des tâches, ou tout */
+$('#hfiltre').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]');
+  if (!b) return;
+  histFiltre = b.dataset.v;
+  document.querySelectorAll('#hfiltre button').forEach(x => x.classList.toggle('on', x === b));
+  renderHist();
+});
 function renderHist() {
   const q = $('#hq').value.trim().toLowerCase(),
     box = $('#hlist');
@@ -11411,6 +12030,7 @@ function renderHist() {
   for (const e of T ? [...trash].sort((a, b) => b.date.localeCompare(a.date)) : sortedDone()) {
     const all = (e.items.map(x => x.text).join(' ') + ' ' + e.section + ' ' + e.path.join(' ')).toLowerCase();
     if (q && !all.includes(q)) continue;
+    if (histFiltre !== 'tout' && (e.section === NOTESEC) !== (histFiltre === 'notes')) continue; /* 3.6 */
     if (e.date !== d) {
       d = e.date;
       const h = document.createElement('h3');
@@ -13204,6 +13824,14 @@ list.addEventListener('click', e => {
     return;
   }
   const ins = e.target.closest('.card > .insec');
+  if (ins && ins.classList.contains('jdeb')) {
+    /* étape d'une échéance (3.6) : aller à son échéance */
+    const jid = ins.closest('.card').dataset.jalon;
+    setDateView(false);
+    render();
+    requestAnimationFrame(() => allerJalon(jid));
+    return;
+  }
   if (ins) {
     /* nom de la rubrique sous une tâche (Priorités, vue par échéance) : en changer */
     const id = ins.closest('.card').dataset.id,
@@ -13268,12 +13896,43 @@ list.addEventListener('click', e => {
     openNote(idx(a.closest('.row').dataset.id));
     return;
   }
+  /* 3.6 (François) : un clic n'importe où sur une tâche l'étend (son volet : importante, échéance, état, rubrique,
+     ajouts) ; un second clic la replie ; le double-clic reste pour écrire dans le titre */
   const card = e.target.closest('.card');
-  if (card && !e.target.closest('.row')) {
-    const rows = card.querySelectorAll('.row');
-    const last = rows[rows.length - 1];
-    if (last) focusItem(last.dataset.id);
-  }
+  if (
+    card &&
+    e.detail <= 1 &&
+    !cardEditing(card) &&
+    !e.target.closest('button, a, input, .chk, .handle, .tools, .qadd, .insec, .ghost, .rel, .who, .urg, .relok, .colb')
+  )
+    voletLibre(card);
+});
+function voletLibre(card) {
+  const it = items[idx(card.dataset.id)];
+  if (!it || it.kind !== 't' || it.level !== 0) return;
+  const old = card.querySelector(':scope > .qadd');
+  qaddDrop();
+  if (old) return; /* deuxième clic : on replie */
+  qaddBuild(card, it);
+  const q = card.querySelector(':scope > .qadd');
+  if (q) q.dataset.libre = '1';
+  card.classList.add('etendue');
+}
+function voletRouvrir(id) {
+  const c = document.querySelector('#list .card[data-id="' + id + '"]');
+  if (c && !c.querySelector(':scope > .qadd')) voletLibre(c);
+}
+document.addEventListener(
+  'pointerdown',
+  e => {
+    const q = document.querySelector('#list .qadd[data-libre]');
+    if (!q || (e.target.closest && e.target.closest('.card.etendue, .cmenu, .palette'))) return;
+    qaddDrop();
+  },
+  true
+);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.querySelector('#list .qadd[data-libre]')) qaddDrop();
 });
 list.addEventListener('keydown', e => {
   const cm = e.target.closest('.cmt');
@@ -13543,6 +14202,7 @@ document.addEventListener('drop', e => {
     const secEl = e.target.closest && e.target.closest('#list .section'),
       sec = secEl ? secEl.dataset.sec : '';
     if (deposerSiFichiers(dt, { sec, state: 'afaire' })) return e.preventDefault();
+    signalerPJOutlook(dt);
     if (mails) {
       e.preventDefault();
       newCardsIn(
@@ -13736,6 +14396,7 @@ list.addEventListener('drop', e => {
       const r = items[idx(id)];
       if (deposerSiFichiers(dt, { id: r && r.level > 0 ? items[topIdx(idx(id))].id : id })) return;
     }
+    signalerPJOutlook(dt);
     if (mails) {
       mails.forEach(m => addLink(id, m.url, m.label));
       return;
@@ -13758,6 +14419,7 @@ list.addEventListener('drop', e => {
   const sec = cell.dataset.sec,
     state = cell.dataset.state;
   if (deposerSiFichiers(dt, { sec, state })) return;
+  signalerPJOutlook(dt);
   if (mails) {
     newCardsIn(
       sec,
@@ -13804,32 +14466,19 @@ function fichiersDe(dt) {
   return dt && [...dt.types].includes('Files') ? [...dt.files] : [];
 }
 async function deposerFichiers(files, cible, plus) {
-  if (!(await socle.dossierAutorise())) {
-    let ok = false;
-    try {
-      ok = !!(await socle.accesDossier(true));
-    } catch (e) {}
-    if (!ok) {
-      toastAct(
-        (files.length > 1 ? files.length + ' fichiers' : '« ' + files[0].name + ' »') +
-          '\u00a0: pour les copier dans «\u00a0Pièces jointes\u00a0», autorise l’accès au dossier de taches.md (une seule fois)',
-        'Autoriser…',
-        async () => {
-          if (await socle.accesDossier(true)) deposerFichiers(files, cible, plus);
-        },
-        15000
-      );
-      return;
-    }
+  const links = await pjCopier(files);
+  if (links === null) {
+    toastAct(
+      (files.length > 1 ? files.length + ' fichiers' : '« ' + files[0].name + ' »') +
+        '\u00a0: pour les copier dans «\u00a0Pièces jointes\u00a0», autorise l’accès au dossier de taches.md (une seule fois)',
+      'Autoriser…',
+      async () => {
+        if (await socle.accesDossier(true)) deposerFichiers(files, cible, plus);
+      },
+      15000
+    );
+    return;
   }
-  const links = [];
-  for (const f of files)
-    try {
-      const n = await socle.deposerFichierVoisin(PJ_DIR, f.name, f);
-      links.push({ url: PJ_DIR + '/' + n, label: n });
-    } catch (e) {
-      toast('« ' + f.name + ' » non copié\u00a0: ' + String(e.message).replace(/^\w+:/, ''), 6000);
-    }
   if (!links.length) return;
   const tous = [...links, ...(plus || [])];
   const copies = (links.length > 1 ? links.length + ' fichiers copiés' : '« ' + links[0].label + ' » copié') + ' dans Pièces jointes';
@@ -14016,14 +14665,14 @@ function computeTarget(t, y) {
     if (!hr || hr.dataset.id === dragId) return null;
     return { el: hr, tgt: { id: hr.dataset.id, after: vert(sec) } };
   }
-  if (src.level === 0 && dateView()) {
+  if ((src.level === 0 || estEtape(src)) && dateView()) {
     /* un jour du calendrier (pas un jour passé) : cette échéance */
     const day = t.closest('#list .dcal .dcd');
     if (day) return day.classList.contains('past') ? null : { el: day, tgt: { due: day.dataset.d } };
     /* par échéance : on change la date en changeant de bande (ou on en fait une sous-tâche, au milieu d'une tâche) */
     const dc = t.closest('#list .dcell');
     if (!dc) return null;
-    if (card && card.dataset.id !== dragId) {
+    if (card && card.dataset.id !== dragId && src.level === 0) {
       const r = card.getBoundingClientRect(),
         f = (y - r.top) / r.height;
       if (f > 0.28 && f < 0.72) return { el: card, tgt: { id: card.dataset.id, into: true } };
@@ -14157,6 +14806,7 @@ function stopDrag(apply) {
    sans quitter l'écriture (chaque choix rend la main à la tâche). */
 function qaddDrop() {
   document.querySelectorAll('#list .qadd').forEach(q => q.remove());
+  document.querySelectorAll('#list .card.etendue').forEach(c => c.classList.remove('etendue'));
 }
 const CAL_I =
   '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>';
@@ -14199,7 +14849,8 @@ function qaddAct(b) {
     r = b.getBoundingClientRect();
   if (!it) return;
   const info = activeInfo(),
-    back = () => focusItem(id, info && info.id === id ? info.off : undefined),
+    libre = !!q.dataset.libre,
+    back = () => (libre ? voletRouvrir(id) : focusItem(id, info && info.id === id ? info.off : undefined)),
     commit2 = msg => {
       normalize();
       render();
@@ -14279,7 +14930,10 @@ list.addEventListener('focusin', e => {
     it = items[idx(row.dataset.id)];
   if (!card || !it) return;
   const old = card.querySelector(':scope > .qadd');
-  if (old && old.dataset.id === it.id) return;
+  if (old && old.dataset.id === it.id) {
+    delete old.dataset.libre; /* étendue d'un clic, puis double-clic : on écrit, le volet reste */
+    return;
+  }
   qaddDrop();
   qaddBuild(card, it);
 });
@@ -14345,8 +14999,29 @@ function checkAnim(c) {
   c.classList.add('on', 'pop');
   if (it.level > 0) return setTimeout(() => toggle(id, false), 180);
   const card = row.closest('.card');
-  setTimeout(() => card && card.classList.add('leaving'), 260);
-  setTimeout(() => toggle(id, false), 560);
+  if (dateView() || !card || !card.animate) {
+    /* vue par échéance : une tâche faite n'y a plus de place, elle s'efface */
+    setTimeout(() => card && card.classList.add('leaving'), 260);
+    setTimeout(() => toggle(id, false), 560);
+    return;
+  }
+  /* 3.6 (François) : la tâche cochée glisse jusqu'à sa place dans « Fait », sans faire défiler la page */
+  setTimeout(() => {
+    const r0 = card.getBoundingClientRect();
+    toggle(id, false);
+    const c2 = document.querySelector('#list .cell[data-state="fait"] .card[data-id="' + id + '"]');
+    if (!c2) return;
+    const r1 = c2.getBoundingClientRect();
+    c2.style.zIndex = 6;
+    c2.animate(
+      [
+        { transform: 'translate(' + (r0.left - r1.left) + 'px,' + (r0.top - r1.top) + 'px) rotate(-1.2deg)', boxShadow: '0 12px 28px rgb(0 0 0 / 18%)' },
+        { offset: 0.75, transform: 'translate(0, -3px) rotate(0.3deg)', boxShadow: '0 6px 14px rgb(0 0 0 / 12%)' },
+        { transform: 'none', boxShadow: 'none' }
+      ],
+      { duration: 520, easing: 'cubic-bezier(.3,.7,.2,1)' }
+    ).onfinish = () => (c2.style.zIndex = '');
+  }, 300);
 }
 
 /* garder la main sur la tâche en cours d'écriture quand on clique le nom de sa rubrique */
@@ -14905,6 +15580,29 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !$('#fabMenu').hidden) fabToggle(false);
 });
 $('#expBtn').onclick = e => exportCopy(e.target);
+/* 3.6 (François) : Copier la liste, Ouvrir, Créer regroupés dans « ⋯ » ; l'Historique, plus utile, ressort */
+{
+  const mb = $('#hmenuBtn'),
+    m = $('#hmenu');
+  const fermer = () => {
+    m.hidden = true;
+    mb.setAttribute('aria-expanded', 'false');
+  };
+  mb.onclick = e => {
+    e.stopPropagation();
+    m.hidden = !m.hidden;
+    mb.setAttribute('aria-expanded', String(!m.hidden));
+  };
+  m.addEventListener('click', e => {
+    if (e.target.closest('button')) setTimeout(fermer, 0);
+  });
+  document.addEventListener('pointerdown', e => {
+    if (!m.hidden && !e.target.closest('.hmenu-w')) fermer();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !m.hidden) fermer();
+  });
+}
 $('#setBtn').onclick = () => {
   let d = $('#settings');
   if (!d) {
@@ -15200,6 +15898,7 @@ function changed() {
     } else render();
   }
   if (!seedShown) socle.modifie(); /* copie de secours tout de suite, fichier 700 ms plus tard */
+  if (!MOBILE && typeof pjVerifierBientot === 'function') pjVerifierBientot(); /* pièces jointes (3.6) */
   setStatus();
 }
 function editing() {
@@ -15236,7 +15935,7 @@ function setStatus() {
     return;
   }
   socle.etat();
-  document.title = 'Tâches' + (socle.nomFichier ? ' — ' + socle.nomFichier : '');
+  document.title = 'Tâches'; /* 3.6 (François) : le nom du fichier est déjà dans la barre d'état */
 }
 /* Ouvrir / Nouveau / Exporter : le socle. L'exemple (seedShown) n'est jamais écrit ni fusionné dans un fichier. */
 async function openFile() {
@@ -16045,6 +16744,7 @@ function mRender() {
             if (AND) {
               c.onclick = () => {
                 if (c.dataset.swiped) return;
+                mNoteDepuis = c.getBoundingClientRect(); /* 3.6 : la fiche grandit depuis la note */
                 mOpenNote(n.id);
               };
               mDragInit(c);
@@ -16203,7 +16903,10 @@ function mRender() {
 }
 function mRenderTail(list) {
   renderRadar();
-  setTimeout(poserEncarts); /* après la fin du rendu */
+  setTimeout(() => {
+    poserEncarts(); /* après la fin du rendu */
+    ajusterLiens(list);
+  });
   /* historique : replié par défaut, en bas */
   if (done.length && !filter) {
     if (mState.closed['#hist'] === undefined) mState.closed['#hist'] = true;
@@ -16418,6 +17121,26 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-31 12:00',
+    type: 'web',
+    v: '3.6',
+    t: 'Notes en grand avec titre, pièces jointes, tâche étendue d’un clic',
+    items: [
+      'Notes : un titre à part, comme dans Joplin. Sans titre, la première ligne en devient un et le suit tant que la note est ouverte ; une fois enregistré, il ne bouge plus (on peut toujours le changer à la main).',
+      'Une note s’ouvre en grand, au PC sur une feuille au milieu de l’écran, au téléphone en plein écran. Clic à côté : enregistrée ; Échap ou ✕ : sans enregistrer.',
+      'Corrigé : en effaçant toute la première ligne d’une note puis en retapant, le curseur repartait au début et la ligne devenait un titre.',
+      'Coller des fichiers ou des images dans une note : copiés dans « Pièces jointes » et reliés à la note ; les images s’affichent en vignettes.',
+      'Pièces jointes : un fichier disparu du dossier est barré (« introuvable ») ; les fichiers d’une note ou d’une tâche supprimée sont effacés du dossier le lendemain de sa sortie de la corbeille (30 jours, ou « Effacer définitivement »). Un fichier posé à la main dans le dossier n’est jamais touché.',
+      'Les pièces jointes d’une note s’alignent si elles tiennent dans sa largeur, sinon elles se rangent les unes sous les autres ; au téléphone, les noms trop longs ne débordent plus.',
+      'Pièce jointe glissée depuis Outlook : si Outlook ne donne que le lien vers l’e-mail, un message le dit et montre ce qu’il transmet.',
+      'Un clic sur une tâche l’étend (importante, échéance, état, rubrique, sous-tâche, commentaire) ; un second clic la replie ; le double-clic reste pour écrire dans le titre.',
+      'Une tâche cochée glisse jusqu’à sa place dans « Fait ».',
+      'En-tête : l’Historique ressort ; « Copier la liste », « Ouvrir… » et « Créer… » sont dans « ⋯ ». L’historique se filtre : tout, tâches ou notes. L’onglet s’appelle simplement « Tâches ».',
+      'Échéances : dans la vue par échéance, les étapes (sous-tâches datées) sont des cartes comme les tâches, avec leur échéance en pied ; dans la rubrique, l’échéance porte son compte à rebours. L’écho du radar s’éteint puis se rallume au passage du faisceau.',
+      'Notes de version : le Compagnon Officine se compte par fabrications (11, 12…) ; les anciennes notes « 1.0 à 2.5 » sont celles de l’ancien Compagnon de Tâches.'
+    ]
+  },
   {
     d: '2026-10-26 16:30',
     type: 'web',
@@ -17497,10 +18220,9 @@ function openNews() {
     v.textContent = vtxt(e);
     const t = document.createElement('span');
     t.className = 'nwtag' + (e.type === 'appli' ? ' app' : '');
-    t.textContent =
-      e.type === 'appli'
-        ? 'Compagnon Android' + (mAndV ? (e.v > mAndV ? ' · à installer depuis ⋮' : '') : '')
-        : 'Application web Chromium';
+    /* 3.6 : les notes « appli » sont celles de l'ancien Compagnon (appli Tâches, numérotation 1.0 à 2.5) ; le
+       Compagnon Officine se compte par fabrications (1, 2… 11), sans rapport avec elles */
+    t.textContent = e.type === 'appli' ? 'Ancien Compagnon (appli Tâches)' : 'Application web Chromium';
     const d = document.createElement('span');
     d.className = 'nwd';
     const dd = g.last.slice(0, 10);
@@ -17555,7 +18277,7 @@ function openNews() {
   $('#nwver').textContent =
     'Sur cet appareil\u00a0: Application web Chromium v' +
     WEB_V +
-    (mAndV ? ', Compagnon Android ' + compV(mAndV) : '') +
+    (mAndV ? ', Compagnon Officine fabrication ' + mAndV : '') +
     '.';
   mstore.set('taches-nouveautes-vues', NOUVEAUTES[0].d);
   newsDot();
@@ -17808,15 +18530,12 @@ function vmRender() {
     if (vc.prev && vc.prev !== WEB_V) h.append(el('div', 'vmp', 'précédente\u00a0: v' + vc.prev));
   }
   if (cp0) {
-    h.append(el('div', 'vmv', 'Compagnon Android ' + compV(cp0.cur)));
-    if (cp0.prev) h.append(el('div', 'vmp', 'précédent\u00a0: ' + compV(cp0.prev)));
+    /* 3.6 : le Compagnon Officine se compte par fabrications ; les notes « appli » (ancien Compagnon) n'en parlent pas */
+    h.append(el('div', 'vmv', 'Compagnon Officine · fabrication ' + cp0.cur));
+    if (cp0.prev) h.append(el('div', 'vmp', 'précédente\u00a0: fabrication ' + cp0.prev));
   }
   const b = el('div', 'vmb'),
-    u = newsUnseen();
-  /* les notes du Compagnon installé, même déjà vues (elles arrivent souvent avant l'appli elle-même) */
-  if (cp0)
-    for (const e of NOUVEAUTES)
-      if (e.type === 'appli' && e.v > cp0.prev && e.v <= cp0.cur && !u.includes(e)) u.push(e);
+    u = newsUnseen().filter(e => e.type !== 'appli');
   u.sort((x, y) => (x.d < y.d ? 1 : x.d > y.d ? -1 : 0));
   for (const e of u) {
     const s = el('section');
@@ -17824,7 +18543,7 @@ function vmRender() {
       el(
         'h4',
         null,
-        (e.type === 'appli' ? 'Compagnon Android v' + compName(e.v) : 'v' + e.v) + (e.t ? ' · ' + e.t : '')
+        'v' + e.v + (e.t ? ' · ' + e.t : '')
       )
     );
     const ul = el('ul');
@@ -19337,7 +20056,15 @@ function mOpenNote(id, text) {
   mNoteId = id;
   const n = id ? notes.find(x => x.id === id) : null;
   if (id && !n) return;
-  $('#nText').value = n ? n.text : text || '';
+  /* 3.6 : titre à part, à la Joplin (notePartie / noteAssemblee, comme au PC) */
+  mNoteTexte0 = n ? n.text : text || '';
+  const parts = notePartie(mNoteTexte0);
+  mNoteAuto = !parts.titre;
+  mNoteTitreTouche = false;
+  mNoteCorps0 = parts.corps.replace(/^\s+|\s+$/g, '');
+  $('#nText').value = parts.corps;
+  $('#nTitle').value = parts.titre;
+  mNoteMajTitre();
   mNoteLinks(n);
   $('#nMeta').textContent = n ? 'Note du ' + mStamp(n.at) : 'Nouvelle note';
   $('#nTriage').hidden = false;
@@ -19351,7 +20078,22 @@ function mOpenNote(id, text) {
   $('#nTask').hidden = true;
   $('#nAttach').hidden = true;
   const d = $('#mNote');
-  if (!d.open) d.showModal();
+  if (!d.open) {
+    d.showModal();
+    /* 3.6 : la note s'ouvre en plein écran, en grandissant depuis sa place dans la liste */
+    const r0 = mNoteDepuis;
+    mNoteDepuis = null;
+    if (r0 && d.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const r1 = d.getBoundingClientRect();
+      d.animate(
+        [
+          { transform: 'translate(' + (r0.left - r1.left) + 'px,' + (r0.top - r1.top) + 'px) scale(' + r0.width / r1.width + ',' + r0.height / r1.height + ')', transformOrigin: '0 0', borderRadius: '12px' },
+          { transform: 'none', transformOrigin: '0 0', borderRadius: '0' }
+        ],
+        { duration: 240, easing: 'cubic-bezier(.2,.8,.25,1)' }
+      );
+    }
+  }
   const t = $('#nText');
   if (n) {
     if (document.activeElement) document.activeElement.blur();
@@ -19397,7 +20139,7 @@ async function mPaste(ta) {
       txt = await navigator.clipboard.readText();
     } catch (e) {}
   if (txt == null) {
-    toast('Pour coller d’un toucher, mets à jour le Compagnon Android (menu ⋮)\u00a0; en attendant\u00a0: appui long dans le texte, Coller', 5000);
+    toast('Pour coller d’un toucher, mets à jour le Compagnon (menu ⋮)\u00a0; en attendant\u00a0: appui long dans le texte, Coller', 5000);
     return;
   }
   txt = txt.replace(/\r\n?/g, '\n').replace(/\s+$/, '');
@@ -19474,8 +20216,19 @@ async function mCopyText(v, b, raw, note = true) {
   b._t = setTimeout(() => b.classList.remove('done'), 1400);
   if (!sys) toast('Note copiée'); /* Android 13 et plus confirme déjà lui-même */
 }
+let mNoteDepuis = null,
+  mNoteTexte0 = '',
+  mNoteAuto = true,
+  mNoteTitreTouche = false,
+  mNoteCorps0 = '';
+function mNoteMajTitre() {
+  if (mNoteAuto && !mNoteTitreTouche) $('#nTitle').value = plainFmt(titreAuto($('#nText').value));
+}
+/** Le texte de la note en cours, titre compris (3.6). Rien de touché : le texte d'origine, tel quel. */
 function mNoteText() {
-  return $('#nText').value.replace(/\s+$/, '').replace(/^\s+/, '');
+  const corps = $('#nText').value.replace(/\s+$/, '').replace(/^\s+/, '');
+  if (!mNoteTitreTouche && corps === mNoteCorps0) return mNoteTexte0.replace(/^\s+|\s+$/g, '');
+  return noteAssemblee($('#nTitle').value, corps, mNoteAuto && !mNoteTitreTouche);
 }
 function mSaveNoteEdit() {
   const n = mNoteId && notes.find(x => x.id === mNoteId);
@@ -19674,6 +20427,19 @@ function mInitNotes() {
   };
   $('#nMake').onclick = mNoteToTask;
   $('#nText').addEventListener('input', mTaskPreview);
+  $('#nText').addEventListener('input', mNoteMajTitre);
+  $('#nTitle').addEventListener('input', () => {
+    mNoteTitreTouche = true;
+    mTaskPreview();
+  });
+  $('#nTitle').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const t = $('#nText');
+      t.focus();
+      t.setSelectionRange(0, 0);
+    }
+  });
   $('#nDueOn').onchange = () => {
     mDueOff = $('#nDueOn').checked ? '' : $('#nDue').dataset.d;
   };
@@ -20573,7 +21339,7 @@ const ICONE_RADAR =
   '<svg class="iradar" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">' +
   '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6" opacity=".5"/><path d="M12 2v20M2 12h20" opacity=".3"/>' +
   '<g class="faisceau"><path d="M12 12L12 2A10 10 0 0 1 21.4 8.6Z" fill="currentColor" stroke="none" opacity=".35"/><path d="M12 12L21.4 8.6" stroke-width="1.6"/></g>' +
-  '<circle cx="7.5" cy="8.2" r="1.5" fill="currentColor" stroke="none"/></svg>';
+  '<circle class="echo" cx="7.5" cy="8.2" r="1.5" fill="currentColor" stroke="none"/></svg>';
 const RADAR_JOURS = 60;
 let radarTout = false;
 
@@ -20706,7 +21472,12 @@ function renderRadar() {
     if (!vus.length) h.push('<span class="rvide">Aucune échéance d’ici ' + RADAR_JOURS + ' jours</span>');
     if (plus) h.push('<button type="button" class="rplus" data-r="tout">' + (radarTout ? 'Moins' : '+ ' + plus + ' plus tard') + '</button>');
     if (!MOBILE) h.push('<button type="button" class="rajout" data-r="ajout" title="Nouvelle échéance, dans la rubrique « ' + RUB_ECH + ' »">+ Échéance</button>');
-    el.innerHTML = h.join('');
+    const html = h.join('');
+    if (el._html !== html) {
+      /* seulement si quelque chose a changé : le faisceau ne repart pas de zéro à chaque rendu (3.6) */
+      el.innerHTML = html;
+      el._html = html;
+    }
   }
   document.documentElement.style.setProperty('--rh', (el.hidden ? 0 : el.offsetHeight) + 'px');
 }
@@ -20826,6 +21597,262 @@ function encartsJalons() {
       ])
     );
   }
+}
+
+/* ---- 3.6 : étapes de rétroplanning traitées comme de vraies tâches, échéance entre la tâche et la rubrique ---- */
+/** Une sous-tâche d'une échéance (une étape de son rétroplanning). */
+function estEtape(it) {
+  if (!it || it.kind !== 't' || it.level < 1) return false;
+  const i = idx(it.id);
+  if (i < 0) return false;
+  let k = i;
+  while (k > 0 && !(items[k].kind === 't' && items[k].level === 0)) k--;
+  return estJalon(items[k]);
+}
+function jalonDe(i) {
+  let k = i;
+  while (k > 0 && !(items[k].kind === 't' && items[k].level === 0)) k--;
+  return items[k];
+}
+/** Vue par échéance : la carte d'une étape, comme une tâche, avec son échéance d'origine en pied. */
+function carteEtape(i, cols) {
+  const it = items[i],
+    j = jalonDe(i),
+    h = headingOf(i),
+    card = document.createElement('div');
+  card.className =
+    'card inurg etape' +
+    (daysTo(it.due) < 0 ? ' retard late' : '') +
+    (daysTo(it.due) === 0 ? ' jour' : '') +
+    (dueNear(it) ? ' bientot' : '');
+  card.style.setProperty('--c', (h && COLORS[h.color]) || CARD_COLOR);
+  card.dataset.id = it.id;
+  card.dataset.due = it.due;
+  card.dataset.jalon = j.id;
+  const fin = blockEnd(i);
+  for (let k = i; k < fin; k++) {
+    const r = makeRow(items[k]);
+    r.style.setProperty('--lv', items[k].level - it.level);
+    if (k === i) r.classList.add('etape-row');
+    card.append(r);
+  }
+  const b = document.createElement('div');
+  b.className = 'insec jdeb';
+  b.title = 'Étape du rétroplanning de cette échéance';
+  b.innerHTML = ICONE_RADAR + ' ' + escHtml(plainFmt(j.text)) + (j.due ? ' · ' + escHtml(shortDate(j.due)) : '');
+  b.style.setProperty('--sc', h ? cols['#' + h.id] || CARD_COLOR : 'var(--muted)');
+  card.append(b);
+  return card;
+}
+/** Rubrique « Échéances » : la carte d'une échéance prend l'allure d'un petit en-tête (compte à rebours, date) et ses
+ *  étapes, datées, se lisent comme des tâches. */
+function habillerJalon(card, it) {
+  card.classList.add('jalon');
+  if (!it.due) return;
+  card.classList.add('j-' + classeRadar(it.due));
+  const t = document.createElement('div');
+  t.className = 'jtete';
+  t.innerHTML =
+    ICONE_RADAR + '<b>' + escHtml(compteARebours(it.due)) + '</b>' + (it.state === 'attente' ? '<span>à confirmer</span>' : '');
+  card.prepend(t);
+}
+/* ---------- pièces jointes (3.6, liste de François du 31/10/2026) ----------
+   Les fichiers vivent dans « Pièces jointes », à côté de taches.md ; tâches et notes n'en gardent qu'un lien
+   (« Pièces jointes/nom »). Au PC, l'accès au dossier (socle 1.7, autorisé une fois) permet de :
+   - coller des fichiers ou des images dans une note en cours d'écriture : copiés, reliés à la note ;
+   - montrer les images en vignettes sous la note ;
+   - repérer les fichiers disparus du dossier (lien barré, « introuvable ») ;
+   - faire le ménage (pjMenage) : un fichier que plus rien ne cite — ni tâche, ni note, ni historique, ni corbeille —
+     est supprimé du dossier le lendemain. Supprimer une note l'envoie d'abord à la corbeille (30 jours, ou
+     « Effacer définitivement ») : ses fichiers partent quand elle en sort. Un fichier que l'appli n'a jamais cité
+     (posé à la main dans le dossier) n'est jamais touché.
+   Au téléphone, rien de tout cela : le Compagnon ne lit pas encore les fichiers binaires. */
+
+const RX_IMAGE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+const pjAbsents = new Set(); /* liens « Pièces jointes/… » dont le fichier manque dans le dossier */
+const pjImages = new Map(); /* lien → adresse blob: de l'image (lue une fois) */
+
+function estPJ(url) {
+  return typeof isRel === 'function' && isRel(url);
+}
+/** Nom de fichier pour une image collée sans nom utile (« image.png » d'une capture d'écran). */
+function nomColle(f) {
+  const n = (f.name || '').trim();
+  if (n && !/^image\.(png|jpe?g|gif|webp|bmp)$/i.test(n)) return n;
+  const d = new Date(),
+    ext = (n.match(/\.[a-z]+$/i) || ['.' + ((f.type || '').split('/')[1] || 'png').replace('jpeg', 'jpg')])[0];
+  return 'Image du ' + todayISO() + ' à ' + String(d.getHours()).padStart(2, '0') + ' h ' + String(d.getMinutes()).padStart(2, '0') + ext;
+}
+/** Copie des fichiers dans « Pièces jointes » ; renvoie leurs liens (ceux qui ont pu être copiés). Demande l'accès au
+ *  dossier si besoin (doit venir d'un geste : collage, dépôt, clic) ; refusé → []. */
+async function pjCopier(files, demander = true) {
+  if (!(await socle.dossierAutorise())) {
+    let ok = false;
+    if (demander)
+      try {
+        ok = !!(await socle.accesDossier(true));
+      } catch (e) {}
+    if (!ok) return null;
+  }
+  const links = [];
+  for (const f of files)
+    try {
+      const n = await socle.deposerFichierVoisin(PJ_DIR, nomColle(f), f);
+      links.push({ url: PJ_DIR + '/' + n, label: n });
+      if (RX_IMAGE.test(n)) pjImages.set(PJ_DIR + '/' + n, URL.createObjectURL(f));
+      pjAbsents.delete(PJ_DIR + '/' + n);
+    } catch (e) {
+      toast('« ' + f.name + ' » non copié : ' + String(e.message).replace(/^\w+:/, ''), 6000);
+    }
+  return links;
+}
+
+/* ---- vignettes des images ---- */
+async function pjImageUrl(url) {
+  if (pjImages.has(url)) return pjImages.get(url);
+  if (!MOBILE && (await socle.dossierAutorise().catch(() => false))) {
+    const f = await socle.lireFichierVoisin(url).catch(() => null);
+    if (f) {
+      const u = URL.createObjectURL(f);
+      pjImages.set(url, u);
+      return u;
+    }
+    pjAbsents.add(url);
+    return null;
+  }
+  const h = hrefOf(url);
+  return h && h !== '#' ? h : null;
+}
+/** Vignettes des images parmi des liens (null s'il n'y en a pas). Un clic ouvre l'image. */
+function vignettes(links) {
+  const im = (links || []).filter(l => RX_IMAGE.test(l.url) && estPJ(l.url));
+  if (!im.length) return null;
+  const d = document.createElement('div');
+  d.className = 'vign';
+  for (const l of im) {
+    const a = document.createElement('a');
+    a.href = hrefOf(l.url);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.title = l.label || labelOf(l.url);
+    a.draggable = false;
+    const img = document.createElement('img');
+    img.alt = l.label || '';
+    img.loading = 'lazy';
+    a.append(img);
+    pjImageUrl(l.url).then(u => {
+      if (u) {
+        img.src = u;
+        a.href = u;
+      } else a.classList.add('absent');
+    });
+    d.append(a);
+  }
+  return d;
+}
+
+/* ---- disposition des liens (3.6, François) : en ligne s'ils tiennent dans la largeur de la note (ou de la carte),
+   sinon les uns sous les autres ---- */
+function ajusterLiens(root) {
+  (root || document).querySelectorAll('.inote .links, .mlinks').forEach(el => {
+    el.classList.remove('col');
+    el.classList.add('mesure');
+    const trop = el.scrollWidth > el.clientWidth + 1;
+    el.classList.remove('mesure');
+    el.classList.toggle('col', trop && el.children.length > 1);
+  });
+}
+
+/* ---- fichiers disparus, ménage ---- */
+function pjCites() {
+  const S = new Set(),
+    voir = L => (L || []).forEach(l => estPJ(l.url) && S.add(l.url));
+  for (const it of items) voir(it.links);
+  for (const n of notes) voir(n.links);
+  for (const e of [...done, ...trash]) for (const x of e.items || []) voir(x.links);
+  return S;
+}
+let pjVerifT = 0;
+/** PC : compare les liens aux fichiers du dossier ; marque les absents, puis fait le ménage. */
+async function pjVerifier() {
+  if (MOBILE || seedShown || !socle.ouvert || !(await socle.dossierAutorise().catch(() => false))) return;
+  let noms;
+  try {
+    noms = new Set(await socle.listerDossierVoisin(PJ_DIR));
+  } catch (e) {
+    return;
+  }
+  const avant = [...pjAbsents].join('|');
+  pjAbsents.clear();
+  const cites = pjCites();
+  for (const u of cites) if (!noms.has(u.slice(PJ_DIR.length + 1))) pjAbsents.add(u);
+  if ([...pjAbsents].join('|') !== avant) render();
+  await pjMenage(cites, noms);
+}
+function pjVerifierBientot() {
+  clearTimeout(pjVerifT);
+  pjVerifT = setTimeout(() => pjVerifier().catch(() => {}), 1500);
+}
+async function pjMenage(cites, noms) {
+  const auj = todayISO();
+  let connus = mstore.get('taches-pj-connus') || [],
+    orph = mstore.get('taches-pj-orphelins') || {};
+  const C = new Set(connus);
+  for (const u of cites) {
+    C.add(u);
+    delete orph[u];
+  }
+  const partis = [];
+  for (const u of [...C]) {
+    if (cites.has(u)) continue;
+    if (!noms.has(u.slice(PJ_DIR.length + 1))) {
+      C.delete(u); /* déjà parti du dossier */
+      delete orph[u];
+      continue;
+    }
+    if (!orph[u]) orph[u] = auj;
+    else if (orph[u] < auj) {
+      try {
+        if (await socle.supprimerFichierVoisin(u)) partis.push(u);
+      } catch (e) {
+        continue;
+      }
+      C.delete(u);
+      delete orph[u];
+    }
+  }
+  mstore.set('taches-pj-connus', [...C]);
+  mstore.set('taches-pj-orphelins', orph);
+  if (partis.length) {
+    if (typeof sjLog === 'function') sjLog('pièces jointes effacées', { fichiers: partis.map(u => u.slice(PJ_DIR.length + 1)).join(', ') });
+    toast(
+      (partis.length > 1 ? partis.length + ' pièces jointes effacées' : '« ' + partis[0].slice(PJ_DIR.length + 1) + ' » effacée') +
+        ' de « Pièces jointes » (plus rien ne les citait)',
+      6000
+    );
+  }
+}
+/** Combien de fichiers « Pièces jointes » une note ou un bloc de tâche emporte (pour le message de suppression). */
+function pjDe(links) {
+  return (links || []).filter(l => estPJ(l.url)).length;
+}
+
+/* ---- pièce jointe glissée depuis Outlook : si Outlook ne transmet que ses données (pas le fichier), on le dit et on
+   garde de quoi comprendre ce qu'il envoie ---- */
+function signalerPJOutlook(dt) {
+  const m = mailsFrom(dt);
+  if (!m || !m.some(x => x.attach) || fichiersDe(dt).length) return;
+  const rep = dropReport(dt, 'pièce jointe glissée depuis Outlook');
+  setTimeout(
+    () =>
+      toastAct(
+        'Outlook n’a transmis que le lien vers l’e-mail, pas le fichier : lien gardé. Pour une copie, enregistre d’abord la pièce jointe (ou glisse-la depuis l’Explorateur)',
+        'Ce qu’il transmet',
+        () => showReport(rep),
+        12000
+      ),
+    400
+  );
 }
 /* ---------- Tâches sur le socle Officine (3.0, 24/10/2026) ----------
    Le socle (dossier socle/, version figée) lit, fusionne et écrit taches.md, au PC comme dans le Compagnon Officine.
@@ -20959,6 +21986,7 @@ async function demarrerTaches() {
       applyModel({ items: m.items, done: m.done, settings: m.settings || {}, notes: m.notes || [], trash: m.trash || [] });
       if (premier && !MOBILE) hideBanner();
       setStatus();
+      if (!MOBILE) pjVerifierBientot(); /* fichiers disparus, ménage des pièces jointes (3.6) */
     },
     reglage: (m, k) => {
       const st = m.settings || {};
