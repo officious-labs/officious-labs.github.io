@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261031084234">
+<meta name="officious-page" content="20261031104727">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -371,6 +371,102 @@ button.s-primaire {
   .s-bandeau,
   .s-tirer {
     display: none !important;
+  }
+}
+
+/* recherche (1.9) : champ « .s-cherche » (loupe, compteur) et correspondances surlignées */
+.s-cherche {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.s-cherche input {
+  width: 13rem;
+  max-width: 100%;
+  height: 1.9rem;
+  padding: 0 3.6rem 0 1.9rem;
+  border: 1px solid var(--s-filet);
+  border-radius: 999px;
+  background: var(--s-fond)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235b6470' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.3 10.3 14 14'/%3E%3C/svg%3E")
+    no-repeat 0.65rem 50% / 0.85rem;
+  color: var(--s-encre);
+  font: inherit;
+  font-size: 0.9rem;
+  transition:
+    width 0.18s ease-out,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.s-cherche input:placeholder-shown {
+  padding-right: 0.8rem;
+}
+.s-cherche input::placeholder {
+  color: var(--s-gris);
+}
+.s-cherche input:focus,
+.s-cherche input:not(:placeholder-shown) {
+  width: 18rem;
+  outline: none;
+  border-color: var(--s-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--s-accent) 18%, transparent);
+}
+.s-cherche input::-webkit-search-cancel-button {
+  display: none;
+  -webkit-appearance: none;
+}
+.s-cherche .s-x {
+  position: absolute;
+  right: 0.3rem;
+  display: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--s-gris);
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.s-cherche .s-x:hover {
+  background: color-mix(in srgb, var(--s-gris) 15%, transparent);
+  color: var(--s-encre);
+}
+.s-cherche.s-plein .s-x {
+  display: block;
+}
+.s-cherche .s-n {
+  position: absolute;
+  right: 1.95rem;
+  color: var(--s-gris);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.s-cherche.s-rien input {
+  border-color: #c8102e;
+}
+mark.trouve {
+  padding: 0 0.05em;
+  border-radius: 2px;
+  background: #ffe27a;
+  color: inherit;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+@media (prefers-color-scheme: dark) {
+  mark.trouve {
+    background: #8a6d00;
+    color: #fff;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s-cherche input {
+    transition: none;
   }
 }
 :root {
@@ -6278,11 +6374,150 @@ body:has(#fly) #rubBar button[data-sec] {
   flex-shrink: 0;
   max-width: none;
 }
+
+/* ---------- recherche partout (3.7, socle 1.9) ---------- */
+.s-cherche input {
+  background-color: var(--panel);
+  color: var(--fg);
+  border-color: var(--line);
+}
+header .s-cherche {
+  margin-left: 0.8rem;
+  flex: none;
+}
+header .s-cherche input {
+  width: 13.5rem;
+}
+header .s-cherche input:focus,
+header .s-cherche input:not(:placeholder-shown) {
+  width: 17rem;
+}
+/* bande « Dans l'historique », en bas du tableau */
+.rechhist {
+  margin: 1.4rem 0 2rem;
+  --c: #8a8f98;
+}
+.rechhist .lanehd {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-weight: 650;
+  font-size: 1.05rem;
+  color: var(--muted);
+  padding: 0.1rem 0.3rem 0.2rem;
+  border-bottom: 2px solid var(--line);
+  margin-bottom: 0.4rem;
+}
+.rechhist .dn {
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+.rhl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
+  gap: 0.15rem 1rem;
+}
+.rhe {
+  display: grid;
+  grid-template-columns: 4.2rem 9rem 1fr;
+  align-items: baseline;
+  gap: 0 0.6rem;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: 0;
+  border-left: 3px solid var(--c);
+  border-radius: 4px;
+  background: none;
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+}
+.rhe:hover {
+  background: var(--hover);
+}
+.rhd,
+.rhs {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rht {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+.rhp {
+  grid-column: 3;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rhplus {
+  margin: 0.4rem 0 0 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+.rechrien {
+  margin: 2.5rem 0;
+  text-align: center;
+  color: var(--muted);
+}
+#hlist .hentry.flash {
+  animation: cardFlash 1.8s ease-out;
+}
+/* téléphone : la loupe change l'en-tête en champ */
+.mfind {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  margin-right: -0.3rem;
+  border: none;
+  background: none;
+  color: var(--muted);
+}
+.mh .mq,
+.mh .mqx {
+  display: none;
+}
+#m.cherche .mh > :not(.mq, .mqx) {
+  display: none;
+}
+#m.cherche .mh .mq {
+  display: flex;
+  flex: 1;
+}
+#m.cherche .mh .mq input,
+#m.cherche .mh .mq input:focus {
+  width: 100%;
+  height: 2.4rem;
+  font-size: 1rem;
+}
+#m.cherche .mh .mqx {
+  display: block;
+  flex: none;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  padding: 0.4rem 0.1rem;
+}
 </style>
 </head>
 <body>
 <header>
   <h1>Tâches</h1>
+  <label class="s-cherche" id="chercheW" title="Chercher dans les notes, les tâches et l’historique (Ctrl+K) · Échap pour tout revoir"><input id="cherche" type="search" placeholder="Rechercher (Ctrl+K)" aria-label="Rechercher" autocomplete="off" spellcheck="false"><span class="s-n"></span></label>
   <span id="status"></span>
   <span id="filters"></span>
   <button id="histBtn" class="hbtn-hist" title="Tâches faites et notes archivées ; corbeille"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4.5v4h4"/><path d="M12 7.5V12l3 2"/></svg><span>Historique</span></button>
@@ -6298,6 +6533,7 @@ body:has(#fly) #rubBar button[data-sec] {
 </header>
 <div id="help" hidden>
   <ul>
+    <li><kbd>Ctrl</kbd>+<kbd>K</kbd> : <strong>rechercher</strong> dans les notes, les tâches (sous-tâches et commentaires compris) et l’historique, sans tenir compte des accents ni des majuscules ; tous les mots tapés doivent s’y trouver. La liste se filtre à chaque lettre ; <kbd>Entrée</kbd> va au premier résultat ; <kbd>Échap</kbd> vide le champ et rend tout</li>
     <li>Gros <kbd>+</kbd> en bas à droite ou <kbd>Alt</kbd>+<kbd>N</kbd> : note rapide hors rubrique, tout en haut</li>
     <li><kbd>Entrée</kbd> valide la tâche ; <kbd>Alt</kbd>+<kbd>Entrée</kbd> ajoute une ligne en dessous (sur une ligne vide décalée, la ressort en nouvelle tâche)</li>
     <li><kbd>Maj</kbd>+<kbd>Entrée</kbd> ou ✎ au survol : commentaire de la tâche ; dedans, <kbd>Entrée</kbd> va à la ligne, <kbd>Échap</kbd> revient à la tâche, le vider le supprime</li>
@@ -6337,7 +6573,10 @@ body:has(#fly) #rubBar button[data-sec] {
     <button class="mver" id="mVer" hidden></button>
     <button class="mbtn mupd" id="mUpd" hidden>Mettre à jour l’appli</button>
     <button class="mbtn" id="mReload">⟳ Relire</button><input type="file" id="mFile" hidden>
+    <button class="mfind" id="mFind" title="Rechercher" aria-label="Rechercher"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg></button>
     <button class="mmenu" id="mMenuBtn" title="Options">⋮</button>
+    <label class="s-cherche mq" id="mQw"><input id="mQ" type="search" placeholder="Rechercher" aria-label="Rechercher" autocomplete="off" enterkeyhint="search"><span class="s-n"></span></label>
+    <button class="mqx" id="mQx" type="button" aria-label="Fermer la recherche">Fermer</button>
   </div>
   <div id="mFilters"></div>
   <nav id="mRadar" aria-label="Échéances" hidden></nav>
@@ -8385,7 +8624,9 @@ window.compagnonBack = () => {
     d.close();
     return true;
   }
-  return !!(A.retour && A.retour());
+  if (A.retour && A.retour()) return true;
+  /* recherche ouverte (1.9) : après ce que l'outil referme lui-même (fiche, menu) */
+  return fermerRecherche();
 };
 /* socle/js/21-boite.js : boîte d'échange entre les outils de la suite (socle 1.6, 24/10/2026).
 
@@ -8474,10 +8715,247 @@ function initBoite() {
   addEventListener('focus', () => relever());
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && relever());
 }
+/* socle/js/22-recherche.js : recherche commune aux outils (1.9.0).
+   - plier(texte) : sans accents ni majuscules, « œ » → « oe », apostrophes et espaces unifiées ;
+   - mots(requete) : les mots pliés de la requête ;
+   - correspond(textes, requete) : chaque mot se trouve quelque part (dans n'importe quel ordre) ;
+   - surligner(element, requete) : encadre les correspondances de <mark class="trouve"> dans le texte affiché ;
+     effacerSurlignage(element) les retire ;
+   - champRecherche(champ, options) : Ctrl+K (PC) pour y aller, Échap vide puis quitte, bouton retour (Compagnon). */
+
+const PLI_SPECIAL = {
+  œ: 'oe',
+  Œ: 'oe',
+  æ: 'ae',
+  Æ: 'ae',
+  ß: 'ss',
+  '’': "'",
+  '‘': "'",
+  ʼ: "'",
+  '`': "'",
+  ' ': ' ',
+  ' ': ' ',
+  ' ': ' ',
+  ' ': ' ',
+  '\n': ' ',
+  '\t': ' ',
+  '–': '-',
+  '—': '-'
+};
+function pliCar(c) {
+  const s = PLI_SPECIAL[c];
+  if (s !== undefined) return s;
+  return c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+/** Texte plié, et pour chaque caractère plié la position du caractère d'origine (surlignage). */
+function plierAvecPlaces(s) {
+  s = String(s == null ? '' : s);
+  let out = '';
+  const places = [];
+  for (let i = 0; i < s.length; i++) {
+    let c = s[i];
+    /* paire de substitution (émoji…) : gardée telle quelle */
+    if (c >= '\ud800' && c <= '\udbff' && i + 1 < s.length) {
+      out += c + s[i + 1];
+      places.push(i, i + 1);
+      i++;
+      continue;
+    }
+    const p = pliCar(c);
+    for (let k = 0; k < p.length; k++) places.push(i);
+    out += p;
+  }
+  places.push(s.length);
+  return { texte: out, places };
+}
+function plier(s) {
+  return plierAvecPlaces(s).texte;
+}
+function mots(requete) {
+  return plier(requete)
+    .split(' ')
+    .map(m => m.trim())
+    .filter(Boolean);
+}
+/** textes : une chaîne ou une liste (valeurs vides ignorées). Requête vide : tout correspond. */
+function correspond(textes, requete) {
+  const M = Array.isArray(requete) ? requete : mots(requete);
+  if (!M.length) return true;
+  const t = plier((Array.isArray(textes) ? textes : [textes]).filter(x => x != null && x !== '').join(' \u0001 '));
+  return M.every(m => t.includes(m));
+}
+
+/* ---------- surlignage ---------- */
+function effacerSurlignage(el) {
+  if (!el) return;
+  const marks = el.querySelectorAll('mark.trouve');
+  const parents = new Set();
+  marks.forEach(m => {
+    parents.add(m.parentNode);
+    m.replaceWith(document.createTextNode(m.textContent));
+  });
+  parents.forEach(p => p && p.normalize());
+}
+/** Encadre les correspondances ; renvoie le nombre de marques posées. Rien dans un champ, ni dans ce qu'on écrit. */
+function surligner(el, requete) {
+  if (!el) return 0;
+  effacerSurlignage(el);
+  const M = Array.isArray(requete) ? requete : mots(requete);
+  if (!M.length) return 0;
+  const actif = document.activeElement;
+  const noeuds = [];
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      const p = n.parentElement;
+      if (!p || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      if (p.closest('input, textarea, select, script, style, mark.trouve, [data-sans-surlignage]'))
+        return NodeFilter.FILTER_REJECT;
+      const ed = p.closest('[contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]');
+      if (ed && actif && (ed === actif || ed.contains(actif))) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  while (w.nextNode()) noeuds.push(w.currentNode);
+  let n = 0;
+  for (const tn of noeuds) {
+    const src = tn.nodeValue;
+    const { texte, places } = plierAvecPlaces(src);
+    const iv = [];
+    for (const m of M) {
+      let k = texte.indexOf(m);
+      while (k >= 0) {
+        iv.push([places[k], places[k + m.length - 1] + 1]);
+        k = texte.indexOf(m, k + 1);
+      }
+    }
+    if (!iv.length) continue;
+    iv.sort((a, b) => a[0] - b[0]);
+    const fus = [iv[0].slice()];
+    for (const [a, b] of iv.slice(1)) {
+      const d = fus[fus.length - 1];
+      if (a <= d[1]) d[1] = Math.max(d[1], b);
+      else fus.push([a, b]);
+    }
+    const frag = document.createDocumentFragment();
+    let pos = 0;
+    for (const [a, b] of fus) {
+      if (a > pos) frag.append(src.slice(pos, a));
+      const mk = document.createElement('mark');
+      mk.className = 'trouve';
+      mk.textContent = src.slice(a, b);
+      frag.append(mk);
+      n++;
+      pos = b;
+    }
+    if (pos < src.length) frag.append(src.slice(pos));
+    tn.replaceWith(frag);
+  }
+  return n;
+}
+
+/* ---------- champ de recherche ---------- */
+const recherches = [];
+/**
+ * champ : l'<input>. options (toutes facultatives) :
+ *   siChange(requete) : à chaque frappe, et quand le champ est vidé ;
+ *   surEntree(requete) : Entrée dans le champ (aller au premier résultat) ;
+ *   ctrlK : false pour ne pas prendre Ctrl+K (par défaut : pris, sauf dans le Compagnon) ;
+ *   ouvert() : vrai si la recherche est ouverte au téléphone même vide (en-tête devenu champ) ;
+ *   fermer() : referme ce qui a été ouvert (après vidage), au bouton retour ou à Échap sur un champ vide.
+ * Renvoie { vider(), aller(), compte(n), get requete() }.
+ */
+function champRecherche(champ, o = {}) {
+  const R = { champ, o };
+  const lab = champ.closest('.s-cherche');
+  /* croix pour vider à la souris ou au doigt (celle du navigateur, bleue et collée au compteur, est masquée) */
+  let x = null;
+  if (lab) {
+    x = document.createElement('button');
+    x.type = 'button';
+    x.className = 's-x';
+    x.tabIndex = -1;
+    x.setAttribute('aria-label', 'Vider la recherche');
+    x.title = 'Vider (Échap)';
+    x.textContent = '×';
+    x.addEventListener('pointerdown', e => e.preventDefault()); /* le champ garde la main */
+    x.addEventListener('click', () => {
+      R.vider();
+      champ.focus();
+    });
+    lab.append(x);
+  }
+  const prevenir = () => {
+    if (lab) lab.classList.toggle('s-plein', !!champ.value);
+    if (o.siChange) o.siChange(champ.value);
+  };
+  champ.addEventListener('input', prevenir);
+  champ.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (champ.value) {
+        champ.value = '';
+        prevenir();
+      } else {
+        if (o.fermer) o.fermer();
+        champ.blur();
+      }
+    } else if (e.key === 'Enter' && !e.isComposing) {
+      e.preventDefault();
+      if (o.surEntree) o.surEntree(champ.value);
+    }
+  });
+  /* un champ de type search a sa propre croix : elle vide sans événement « input » dans certains navigateurs */
+  champ.addEventListener('search', () => {
+    if (!champ.value) prevenir();
+  });
+  R.vider = () => {
+    if (!champ.value) return false;
+    champ.value = '';
+    prevenir();
+    return true;
+  };
+  R.aller = () => {
+    champ.focus();
+    champ.select();
+  };
+  R.compte = n => {
+    const el = lab && lab.querySelector('.s-n');
+    if (el) el.textContent = champ.value.trim() && n != null ? String(n) : '';
+    if (lab) lab.classList.toggle('s-rien', !!champ.value.trim() && n === 0);
+  };
+  Object.defineProperty(R, 'requete', { get: () => champ.value });
+  recherches.push(R);
+  return R;
+}
+document.addEventListener(
+  'keydown',
+  e => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'k') return;
+    const R = recherches.find(r => r.o.ctrlK !== false && r.champ.isConnected && !AND);
+    if (!R) return;
+    e.preventDefault();
+    e.stopPropagation();
+    R.aller();
+  },
+  true
+);
+/** Bouton retour : vide ou referme la recherche ouverte. Vrai si quelque chose a été fait. */
+function fermerRecherche() {
+  for (const R of recherches) {
+    const ouvert = R.o.ouvert && R.o.ouvert();
+    if (!R.champ.value && !ouvert) continue;
+    R.vider();
+    if (R.o.fermer) R.o.fermer();
+    R.champ.blur();
+    return true;
+  }
+  return false;
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.8.0',
+  version: '1.9.0',
   demarrer,
   /* fichier */
   modifie,
@@ -8541,6 +9019,14 @@ return {
   envoyer,
   enAttenteDans,
   relever,
+  /* recherche (1.9) */
+  plier,
+  mots,
+  correspond,
+  surligner,
+  effacerSurlignage,
+  champRecherche,
+  fermerRecherche,
   /* interface */
   toast,
   occupe,
@@ -10314,7 +10800,7 @@ function render() {
       continue;
     }
     if (it.level === 0) {
-      skip = filter && !matchFilter(items.indexOf(it));
+      skip = !matchFilter(items.indexOf(it));
       if (skip) {
         card = null;
         continue;
@@ -10598,13 +11084,17 @@ function renderEnd(list) {
     .querySelectorAll('.card>.insec')
     .forEach(b => b.parentNode.append(b)); /* nom de la rubrique en bas de la tâche */
   list.querySelectorAll('.section').forEach(sec => {
-    if ((filter || sec.classList.contains('urglane') || sec.classList.contains('dband')) && !sec.querySelector('.card, .jsep'))
+    if (
+      (filter || rechActive() || sec.classList.contains('urglane') || sec.classList.contains('dband')) &&
+      !sec.querySelector('.card, .jsep')
+    )
       sec.style.display = 'none';
   });
-  document.body.classList.toggle('filtering', !!filter);
+  document.body.classList.toggle('filtering', !!filter || rechActive());
   document.body.classList.toggle('dateview', dateView());
   renderFilters();
   renderInbox();
+  if (rechActive()) rechFin(list);
   $('#histBtn').querySelector('span').textContent = 'Historique (' + done.length + ')';
   if ($('#hist').classList.contains('open')) renderHist();
 }
@@ -11012,9 +11502,14 @@ function renderInbox() {
     add();
     return;
   }
+  const vues = sortedNotes().filter(noteVisible); /* recherche (3.7) */
+  if (!vues.length) {
+    box.hidden = true;
+    return;
+  }
   const wrap = document.createElement('div');
   wrap.className = 'inotes';
-  for (const n of sortedNotes()) {
+  for (const n of vues) {
     const c = document.createElement('div');
     c.className = 'inote';
     c.draggable = true;
@@ -12013,7 +12508,8 @@ $('#hfiltre').addEventListener('click', e => {
   renderHist();
 });
 function renderHist() {
-  const q = $('#hq').value.trim().toLowerCase(),
+  const q = $('#hq').value.trim(),
+    qm = socle.mots(q) /* 3.7 : sans accents ni majuscules, tous les mots, comme la recherche */,
     box = $('#hlist');
   box.innerHTML = '';
   let d = null;
@@ -12028,8 +12524,7 @@ function renderHist() {
     box.append(p);
   }
   for (const e of T ? [...trash].sort((a, b) => b.date.localeCompare(a.date)) : sortedDone()) {
-    const all = (e.items.map(x => x.text).join(' ') + ' ' + e.section + ' ' + e.path.join(' ')).toLowerCase();
-    if (q && !all.includes(q)) continue;
+    if (qm.length && !socle.correspond(histTextes(e), qm)) continue;
     if (histFiltre !== 'tout' && (e.section === NOTESEC) !== (histFiltre === 'notes')) continue; /* 3.6 */
     if (e.date !== d) {
       d = e.date;
@@ -12039,6 +12534,7 @@ function renderHist() {
     }
     const div = document.createElement('div');
     div.className = 'hentry';
+    div.dataset.id = e.id;
     div.style.setProperty('--c', cols[e.section] || COLORS.gris);
     const body = document.createElement('div');
     body.className = 'body';
@@ -12104,6 +12600,7 @@ function renderHist() {
     div.append(body, r, x);
     box.append(div);
   }
+  socle.surligner(box, qm);
   if (box.children.length <= (T ? 1 : 0))
     box.insertAdjacentHTML(
       'beforeend',
@@ -13437,7 +13934,7 @@ function inUrgLane(it) {
   return urgTop() && it.kind === 't' && it.level === 0 && it.state !== 'fait' && inPrioRow(it);
 }
 function matchFilter(i) {
-  return !filter || cardMatch(i, filter);
+  return (!filter || cardMatch(i, filter)) && rechVisible(i); /* recherche : 05b-recherche.js (3.7) */
 }
 function renderFilters() {
   const box = $('#filters');
@@ -15028,6 +15525,230 @@ function checkAnim(c) {
 list.addEventListener('mousedown', e => {
   if (e.button === 0 && e.target.closest && e.target.closest('.card > .insec')) e.preventDefault();
 });
+/* ---------- recherche partout (3.7, socle 1.9 ; décision 5.1 du 31/10) ----------
+   Un champ qui filtre à chaque frappe les notes, les tâches (titre, sous-tâches, commentaires, libellés des liens,
+   personne attendue) et l'historique. Tous les mots sont requis, sans accents ni majuscules (socle.correspond).
+   - PC : champ dans l'en-tête (Ctrl+K), bande « Dans l'historique » en bas du tableau ;
+   - téléphone : loupe dans l'en-tête, qui devient le champ ; l'historique s'ouvre s'il a des résultats.
+   Ce qui correspond est calculé à chaque frappe, pas à chaque rendu : une tâche qu'on modifie pendant la recherche
+   ne disparaît pas sous la main, et ce qui est créé ou arrive d'ailleurs pendant la recherche reste visible. */
+const rech = {
+  q: '',
+  mots: [],
+  ok: null /* identifiants des tâches qui correspondent (Set), null = pas de recherche */,
+  connus: null /* identifiants qui existaient à la dernière frappe */,
+  notes: null,
+  notesConnues: null,
+  fermes: {} /* téléphone : sections repliées pendant cette recherche */,
+  champ: null /* PC */,
+  mChamp: null /* téléphone */
+};
+function rechActive() {
+  return !!rech.ok;
+}
+/* textes d'une tâche et de ses sous-tâches */
+function blocTextes(i) {
+  const out = [],
+    e = blockEnd(i);
+  for (let k = i; k < e; k++) {
+    const x = items[k];
+    if (x.kind !== 't') continue;
+    out.push(x.text, x.note);
+    if (x.links) for (const l of x.links) out.push(l.label);
+    if (k === i && x.level === 0 && x.state === 'attente' && x.waitFor) out.push(x.waitFor);
+  }
+  return out;
+}
+function noteTextes(n) {
+  return [n.text, ...(n.links || []).map(l => l.label)];
+}
+function histTextes(e) {
+  const out = [e.section === NOTESEC ? '' : e.section, ...e.path];
+  for (const x of e.items) {
+    out.push(x.text, x.note);
+    if (x.links) for (const l of x.links) out.push(l.label);
+  }
+  return out;
+}
+function rechCalcul() {
+  rech.mots = socle.mots(rech.q);
+  rech.fermes = {};
+  if (!rech.mots.length) {
+    rech.ok = rech.connus = rech.notes = rech.notesConnues = null;
+    return;
+  }
+  rech.ok = new Set();
+  rech.connus = new Set();
+  items.forEach((it, i) => {
+    rech.connus.add(it.id);
+    if (it.kind === 't' && socle.correspond(blocTextes(i), rech.mots)) rech.ok.add(it.id);
+  });
+  rech.notes = new Set(notes.filter(n => socle.correspond(noteTextes(n), rech.mots)).map(n => n.id));
+  rech.notesConnues = new Set(notes.map(n => n.id));
+}
+function rechVisible(i) {
+  if (!rech.ok) return true;
+  const id = items[i] && items[i].id;
+  return rech.ok.has(id) || !rech.connus.has(id);
+}
+function noteVisible(n) {
+  return !rech.notes || rech.notes.has(n.id) || !rech.notesConnues.has(n.id);
+}
+function histTrouves() {
+  return rech.ok ? sortedDone().filter(e => socle.correspond(histTextes(e), rech.mots)) : [];
+}
+function rechChange(q) {
+  rech.q = q;
+  rechCalcul();
+  if (MOBILE) mRender();
+  else render();
+}
+function rechSurligner() {
+  if (!rech.ok) return;
+  if (MOBILE) socle.surligner($('#mList'), rech.mots);
+  else {
+    socle.surligner($('#list'), rech.mots);
+    socle.surligner($('#inbox'), rech.mots);
+  }
+}
+/* une marque dans le titre qu'on va modifier gênerait le curseur : retirée avant (clic) ou dès l'entrée (clavier) */
+function rechSansMarque(e) {
+  const t = e.target.closest && e.target.closest('[contenteditable]');
+  if (t && t.querySelector('mark.trouve')) socle.effacerSurlignage(t);
+}
+document.addEventListener('pointerdown', rechSansMarque, true);
+document.addEventListener('focusin', rechSansMarque, true);
+
+/* PC, fin du rendu pendant une recherche : bande de l'historique, « rien ne correspond », surlignage, compteur */
+function rechFin(list) {
+  renderRechHist(list);
+  const n = list.querySelectorAll('.card[data-id]').length + $('#inbox').querySelectorAll('.inote').length;
+  if (!n && !list.querySelector('.rechhist')) {
+    const p = document.createElement('p');
+    p.className = 'rechrien';
+    p.textContent = 'Rien ne correspond à «\u00a0' + rech.q.trim() + '\u00a0».';
+    list.append(p);
+  }
+  rechSurligner();
+  rech.champ.compte(n);
+}
+/* PC : Entrée va au premier résultat et l'étend (une note : elle s'illumine) */
+function rechPremier() {
+  const c = $('#list .card[data-id]'),
+    n = $('#inbox .inote[data-id]');
+  if (!c && !n) return;
+  rech.champ.champ.blur();
+  if (c) {
+    c.scrollIntoView({ block: 'center', behavior: socle.TACTILE ? 'auto' : 'smooth' });
+    if (!c.classList.contains('etendue')) voletLibre(c);
+    flash(c.dataset.id);
+  } else {
+    n.scrollIntoView({ block: 'center' });
+    flashNote(n.dataset.id);
+  }
+}
+/* PC : bande « Dans l'historique » en bas du tableau ; un clic ouvre le panneau Historique sur l'entrée */
+function renderRechHist(list) {
+  const H = histTrouves();
+  if (!H.length) return;
+  const sec = document.createElement('section');
+  sec.className = 'rechhist';
+  const hd = document.createElement('div');
+  hd.className = 'lanehd';
+  hd.textContent = 'Dans l’historique';
+  const n = document.createElement('span');
+  n.className = 'dn';
+  n.textContent = H.length;
+  hd.append(n);
+  sec.append(hd);
+  const ul = document.createElement('div');
+  ul.className = 'rhl';
+  const cols = sectionColors();
+  for (const e of H.slice(0, 30)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rhe';
+    b.dataset.id = e.id;
+    b.style.setProperty('--c', e.section === NOTESEC ? 'var(--note-dot, #b9a35a)' : cols[e.section] || COLORS.gris);
+    const d = document.createElement('span');
+    d.className = 'rhd';
+    d.textContent = shortDate(e.date);
+    const s = document.createElement('span');
+    s.className = 'rhs';
+    s.textContent = e.section === NOTESEC ? 'Note' : e.section || 'Hors rubrique';
+    const t = document.createElement('span');
+    t.className = 'rht';
+    t.textContent = e.items[0] ? e.items[0].text.split('\n')[0] : '';
+    b.append(d, s, t);
+    /* ce qui correspond ailleurs que dans le titre (sous-tâche, commentaire) : la première ligne concernée */
+    if (!socle.correspond([e.section, ...e.path, e.items[0] && e.items[0].text], rech.mots)) {
+      const l = e.items
+        .flatMap(x => [x.text, ...(x.note || '').split('\n')])
+        .slice(1)
+        .find(x => rech.mots.some(m => socle.plier(x).includes(m)));
+      if (l) {
+        const p = document.createElement('span');
+        p.className = 'rhp';
+        p.textContent = l;
+        b.append(p);
+      }
+    }
+    b.onclick = () => rechVersHist(e.id);
+    ul.append(b);
+  }
+  sec.append(ul);
+  if (H.length > 30) {
+    const plus = document.createElement('button');
+    plus.type = 'button';
+    plus.className = 'rhplus';
+    plus.textContent = 'et ' + (H.length - 30) + ' autres : les voir dans l’historique';
+    plus.onclick = () => rechVersHist(null);
+    sec.append(plus);
+  }
+  list.append(sec);
+}
+function rechVersHist(id) {
+  const h = $('#hist');
+  histTrash = false;
+  histFiltre = 'tout';
+  document.querySelectorAll('#hfiltre button').forEach(x => x.classList.toggle('on', x.dataset.v === 'tout'));
+  $('#hq').value = rech.q;
+  h.classList.add('open');
+  renderHist();
+  if (!id) return;
+  const el = document.querySelector('#hlist .hentry[data-id="' + id + '"]');
+  if (!el) return;
+  el.scrollIntoView({ block: 'center' });
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
+
+/* téléphone : la loupe change l'en-tête en champ */
+function mRechOuvrir() {
+  const m = $('#m');
+  if (m.classList.contains('cherche')) return rech.mChamp.aller();
+  m.classList.add('cherche');
+  $('#mQ').focus(); /* dans le geste lui-même : sinon Android n'ouvre pas le clavier */
+}
+function mRechFermer() {
+  $('#m').classList.remove('cherche');
+  rech.mChamp.vider();
+}
+
+rech.champ = socle.champRecherche($('#cherche'), { siChange: rechChange, surEntree: rechPremier });
+rech.mChamp = socle.champRecherche($('#mQ'), {
+  siChange: rechChange,
+  surEntree: () => $('#mQ').blur() /* Entrée range le clavier : les résultats sont là */,
+  ctrlK: false,
+  ouvert: () => $('#m').classList.contains('cherche'),
+  fermer: mRechFermer
+});
+$('#mFind').onclick = mRechOuvrir;
+$('#mQx').onclick = () => {
+  mRechFermer();
+  $('#mQ').blur();
+};
 /* ---------- menu volant (PC) : en attrapant une note ou une tâche et en quittant sa zone (bandeau des notes, rubrique
    de la tâche), la page se grise et les rubriques flottent en arc ; survoler une rubrique déploie ses tâches.
    Lâcher : sur une rubrique (nouvelle tâche, ou tâche rangée), sur une tâche (note : commentaire ou sous-tâche ;
@@ -16692,15 +17413,16 @@ function mRender() {
     );
   }
   /* tout sur un seul écran : notes, puis rubriques (à faire, puis faites en grisé), puis « En attente » */
-  if (notes.length && !filter) {
+  const nv = sortedNotes().filter(noteVisible); /* recherche (3.7) */
+  if (nv.length && !filter) {
     list.append(
       mSection(
         '#notes',
         'Notes',
-        notes.length,
+        nv.length,
         'var(--note-dot)',
         box => {
-          for (const n of sortedNotes()) {
+          for (const n of nv) {
             const c = document.createElement('div');
             c.className = 'mnotec';
             c.dataset.id = n.id;
@@ -16811,12 +17533,7 @@ function mRender() {
         )
       );
     }
-    if (!sh && !(notes.length && !filter)) {
-      const e = document.createElement('div');
-      e.className = 'mempty';
-      e.textContent = filter ? 'Aucune tâche pour ce filtre.' : 'Rien pour l’instant.';
-      list.append(e);
-    }
+    if (!sh && !(nv.length && !filter)) mVide(list);
     mRenderTail(list);
     return;
   }
@@ -16893,13 +17610,20 @@ function mRender() {
       )
     );
   }
-  if (!shown && !(notes.length && !filter)) {
-    const e = document.createElement('div');
-    e.className = 'mempty';
-    e.textContent = filter ? 'Aucune tâche pour ce filtre.' : 'Rien pour l’instant.';
-    list.append(e);
-  }
+  if (!shown && !(nv.length && !filter)) mVide(list);
   mRenderTail(list);
+}
+/* rien à montrer : pendant une recherche, seulement si l'historique n'a rien non plus */
+function mVide(list) {
+  if (rechActive() && histTrouves().length) return;
+  const e = document.createElement('div');
+  e.className = 'mempty';
+  e.textContent = rechActive()
+    ? 'Rien ne correspond à «\u00a0' + rech.q.trim() + '\u00a0».'
+    : filter
+      ? 'Aucune tâche pour ce filtre.'
+      : 'Rien pour l’instant.';
+  list.append(e);
 }
 function mRenderTail(list) {
   renderRadar();
@@ -16907,18 +17631,23 @@ function mRenderTail(list) {
     poserEncarts(); /* après la fin du rendu */
     ajusterLiens(list);
   });
-  /* historique : replié par défaut, en bas */
-  if (done.length && !filter) {
+  /* historique : replié par défaut, en bas ; pendant une recherche, ouvert s'il a des résultats (3.7) */
+  const nh = rechActive() ? histTrouves().length : filter ? 0 : done.length;
+  if (nh) {
     if (mState.closed['#hist'] === undefined) mState.closed['#hist'] = true;
-    list.append(mSection('#hist', 'Historique', done.length, '#8a8f98', box => mHistFill(box, false), 'mhistsec'));
+    list.append(mSection('#hist', 'Historique', nh, '#8a8f98', box => mHistFill(box, false), 'mhistsec'));
   }
-  if (trash.length && !filter) {
+  if (trash.length && !filter && !rechActive()) {
     if (mState.closed['#trash'] === undefined) mState.closed['#trash'] = true;
     list.append(
       mSection('#trash', 'Corbeille', trash.length, '#b9b4aa', box => mHistFill(box, true), 'mhistsec mtrash')
     );
   }
   if (AND && $('#mAct').open) mFillAct();
+  if (rechActive()) {
+    rechSurligner();
+    rech.mChamp.compte(list.querySelectorAll('.mcard, .mnotec').length);
+  }
 }
 /* historique au téléphone : recherche, entrées par jour (les plus récentes d'abord), toucher pour le détail et « Remettre » */
 const mHS = { max: 30, q: '', open: null },
@@ -16926,6 +17655,19 @@ const mHS = { max: 30, q: '', open: null },
 function mHistFill(box, tr) {
   const H = tr ? mTS : mHS;
   box.innerHTML = '';
+  if (tr) mHistChamp(box, H, tr);
+  const qm = tr ? socle.mots(H.q) : rech.mots,
+    cols = sectionColors();
+  const src = tr
+    ? [...trash].sort((a, b) => b.date.localeCompare(a.date))
+    : mArchLoaded
+      ? [...sortedDone(), ...mArchLoaded]
+      : sortedDone();
+  const all = src.filter(e => !qm.length || socle.correspond(histTextes(e), qm));
+  mHistListe(box, H, tr, all);
+}
+/* champ de la corbeille (l'historique, lui, suit la recherche de l'en-tête depuis la 3.7) */
+function mHistChamp(box, H, tr) {
   const q = document.createElement('input');
   q.type = 'search';
   q.className = 'mhq';
@@ -16943,20 +17685,9 @@ function mHistFill(box, tr) {
     } catch (e) {}
   };
   box.append(q);
-  const ql = H.q.trim().toLowerCase(),
-    cols = sectionColors();
-  const src = tr
-    ? [...trash].sort((a, b) => b.date.localeCompare(a.date))
-    : mArchLoaded
-      ? [...sortedDone(), ...mArchLoaded]
-      : sortedDone();
-  const all = src.filter(
-    e =>
-      !ql ||
-      (e.items.map(x => x.text + ' ' + (x.note || '')).join(' ') + ' ' + e.section + ' ' + e.path.join(' '))
-        .toLowerCase()
-        .includes(ql)
-  );
+}
+function mHistListe(box, H, tr, all) {
+  const cols = sectionColors();
   let d = null;
   for (const e of all.slice(0, H.max)) {
     if (e.date !== d) {
@@ -17055,7 +17786,7 @@ function mHistFill(box, tr) {
   if (!all.length) {
     const p = document.createElement('div');
     p.className = 'mhday';
-    p.textContent = ql ? 'Aucun résultat' : tr ? 'La corbeille est vide' : 'Rien pour l’instant';
+    p.textContent = (tr ? H.q.trim() : rech.ok) ? 'Aucun résultat' : tr ? 'La corbeille est vide' : 'Rien pour l’instant';
     box.append(p);
   }
   if (!tr && AND && socle.voisinPossible() && !mArchLoaded && +todayISO().slice(0, 4) - 2 >= 2026) {
@@ -17121,6 +17852,19 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-10-31 13:00',
+    type: 'web',
+    v: '3.7',
+    t: 'Recherche partout',
+    items: [
+      'Rechercher : un champ en haut à gauche (Ctrl+K au PC), une loupe en haut au téléphone. La liste se filtre à chaque lettre tapée : notes, tâches (sous-tâches, commentaires et liens compris) et historique.',
+      'Les accents et les majuscules ne comptent pas ; tous les mots tapés doivent s’y trouver, dans n’importe quel ordre. Ce qui correspond est surligné.',
+      'Au PC, l’historique qui correspond s’affiche en bas du tableau ; un clic ouvre l’Historique sur la tâche. Entrée va au premier résultat ; Échap vide le champ et rend tout.',
+      'Au téléphone, l’en-tête devient le champ ; l’historique s’ouvre s’il a des résultats. « Fermer » ou le bouton retour rendent tout.',
+      'Une tâche modifiée pendant la recherche reste affichée jusqu’à la lettre suivante, même si elle ne correspond plus.'
+    ]
+  },
   {
     d: '2026-10-31 12:00',
     type: 'web',
@@ -18628,7 +19372,9 @@ async function loadArchives() {
 /* une section repliable : titre, compteur, alerte éventuelle */
 function mSection(key, title, count, color, fill, cls, alert) {
   const sec = document.createElement('section');
-  sec.className = 'msec' + (cls ? ' ' + cls : '') + (mState.closed[key] ? ' closed' : '');
+  /* pendant une recherche (3.7), tout est ouvert ; ce qu'on y replie ne vaut que pour cette recherche */
+  const ferme = rechActive() ? !!rech.fermes[key] : mState.closed[key];
+  sec.className = 'msec' + (cls ? ' ' + cls : '') + (ferme ? ' closed' : '');
   sec.dataset.key = key;
   sec.style.setProperty('--c', color);
   const hw = document.createElement('div');
@@ -18640,10 +19386,13 @@ function mSection(key, title, count, color, fill, cls, alert) {
   hb.querySelector('.nm').textContent = title;
   hb.querySelector('.n').textContent = count;
   hb.querySelector('.al').textContent = alert || '';
-  hb.querySelector('.car').textContent = mState.closed[key] ? '▸' : '';
+  hb.querySelector('.car').textContent = ferme ? '▸' : '';
   hb.onclick = () => {
-    mState.closed[key] = !mState.closed[key];
-    mstore.set(MKEY + '-ui', mState);
+    if (rechActive()) rech.fermes[key] = !ferme;
+    else {
+      mState.closed[key] = !mState.closed[key];
+      mstore.set(MKEY + '-ui', mState);
+    }
     mRender();
   };
   hw.append(hb);
