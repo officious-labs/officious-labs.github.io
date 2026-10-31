@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261031104837">
+<meta name="officious-page" content="20261031123809">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -472,6 +472,80 @@ mark.trouve {
 }
 @media (prefers-reduced-motion: reduce) {
   .s-cherche input {
+    transition: none;
+  }
+}
+
+/* interrupteur (1.10) : « Rester synchronisé » hors des heures de travail */
+.s-inter {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.6rem 0 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--s-filet);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.s-inter span {
+  flex: 1;
+  font-weight: 600;
+}
+.s-inter small {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--s-gris);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+.s-dialogue .s-inter input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.s-inter i {
+  position: relative;
+  flex: none;
+  width: 2.6rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--s-gris) 35%, transparent);
+  transition: background 0.18s ease-out;
+}
+.s-inter i::after {
+  content: '';
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: transform 0.22s cubic-bezier(0.3, 1.4, 0.6, 1); /* petit rebond à l'arrivée */
+}
+.s-inter input:checked + i {
+  background: var(--s-ocre);
+}
+.s-inter input:checked + i::after {
+  transform: translateX(1.1rem);
+}
+.s-inter input:focus-visible + i {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 2px;
+}
+/* ligne d'état quand la synchro reste ouverte hors des heures : ocre, et elle se touche */
+:root {
+  --s-ocre: #a8650a;
+}
+.libre {
+  color: var(--s-ocre) !important;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s-inter i,
+  .s-inter i::after {
     transition: none;
   }
 }
@@ -2363,6 +2437,46 @@ dialog.completer {
     display: none;
   }
 }
+/* menu : « Synchroniser hors des heures » (socle 1.10), avec son interrupteur */
+.menu [data-act='horsheures'] {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.menu [data-act='horsheures'][hidden] {
+  display: none;
+}
+.menu .inter {
+  position: relative;
+  flex: none;
+  margin-left: auto;
+  width: 2.2rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gris) 35%, transparent);
+  transition: background 0.18s ease-out;
+}
+.menu .inter::after {
+  content: '';
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: transform 0.22s cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+.menu [aria-checked='true'] .inter {
+  background: var(--s-ocre);
+}
+.menu [aria-checked='true'] .inter::after {
+  transform: translateX(0.95rem);
+}
+#etat.pause {
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -2392,6 +2506,7 @@ dialog.completer {
     <button data-act="exporter" role="menuitem">Télécharger une copie</button>
     <button data-act="retrouver" role="menuitem">Retrouver une manifestation disparue…</button>
     <button data-act="etapes" role="menuitem">Modèles de rétroplanning…</button>
+    <button data-act="horsheures" role="menuitemcheckbox" aria-checked="false" hidden title="Pour toute la suite, jusqu’à ce que tu l’arrêtes, au plus tard à la reprise suivante (9 h)">Synchroniser hors des heures<span class="inter" aria-hidden="true"></span></button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
     <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
     <button id="mMaj" role="menuitem" hidden>Mettre à jour l’appli</button>
@@ -2745,7 +2860,10 @@ function sansCode(e) {
 /* socle/js/12-heures.js : heures de travail. Le Compagnon ne contacte OneDrive qu'aux heures de bureau, jours ouvrés
    (de 9 h à 18 h 30, ni week-end, ni jour férié, ni vacances de Noël, ni du 14 juillet au 15 août). Hors de ces heures,
    les modifications restent dans la copie de secours et partent au premier retour dans l'appli en heures de travail.
-   Repris de Tâches (08-telephone.js). « Envoyer quand même » ouvre OneDrive pour deux minutes. */
+   Repris de Tâches (08-telephone.js). « Envoyer cette fois » ouvre OneDrive pour deux minutes.
+   Synchro hors des heures (1.10) : un interrupteur commun à toute la suite (clé officious-hors-heures, sans préfixe
+   d'outil) garde OneDrive ouvert jusqu'à ce qu'on l'arrête, ou au plus tard jusqu'à la reprise suivante (9 h le
+   prochain jour ouvré), choix de François : une soirée ou un week-end, jamais oublié pour des semaines. */
 
 const TRAVAIL_DE = 9 * 60,
   TRAVAIL_A = 18 * 60 + 30;
@@ -2800,23 +2918,68 @@ function jourChome(d) {
   }
   return '';
 }
-function heuresTravail(now) {
-  if (window.__toujours) return true;
-  if (Date.now() < ouvertureForcee) return true;
+function heuresBureau(now) {
   now = now || maintenant();
   const t = now.getHours() * 60 + now.getMinutes();
   return !jourChome(now) && t >= TRAVAIL_DE && t < TRAVAIL_A;
+}
+function heuresTravail(now) {
+  if (window.__toujours) return true;
+  if (Date.now() < ouvertureForcee) return true;
+  if (!now && synchroLibre()) return true;
+  return heuresBureau(now);
+}
+/* ---- synchro hors des heures : commune à toute la suite ---- */
+const CLE_LIBRE = 'officious-hors-heures';
+function libreJusqua() {
+  try {
+    return +localStorage.getItem(CLE_LIBRE) || 0;
+  } catch (e) {
+    return 0;
+  }
+}
+function synchroLibre() {
+  const j = libreJusqua();
+  if (j && maintenant().getTime() >= j) {
+    try {
+      localStorage.removeItem(CLE_LIBRE); /* reprise passée : il s'éteint de lui-même */
+    } catch (e) {}
+    journal('synchro hors des heures : fin, reprise des heures de bureau');
+    return false;
+  }
+  return !!j;
+}
+/** Hors des heures de bureau, mais l'interrupteur tient OneDrive ouvert (pour l'afficher). */
+function libreActif() {
+  return !!AND && !tel.local && !heuresBureau() && synchroLibre();
+}
+function reglerSynchroLibre(on) {
+  try {
+    if (on) localStorage.setItem(CLE_LIBRE, String(reprise().getTime()));
+    else localStorage.removeItem(CLE_LIBRE);
+  } catch (e) {}
+  journal('synchro hors des heures : ' + (on ? 'activée jusqu’à ' + texteReprise() : 'arrêtée'));
+  etat();
+  /* tout de suite, sans message (celui de l'interrupteur suffit) : ce qui attend part, sinon on relit */
+  if (on && AND && C.backend) (C.dirty ? enregistrer() : chargerTel(true)).catch(() => {});
 }
 /** Vrai seulement dans le Compagnon, avec un fichier de OneDrive : au PC, c'est OneDrive du poste qui synchronise, à
     son rythme ; un fichier du téléphone se lit et s'écrit à toute heure. */
 function horsHeures() {
   return !!AND && !tel.local && !heuresTravail();
 }
-function texteReprise() {
+/** Début des prochaines heures de bureau (9 h le prochain jour ouvré, aujourd'hui s'il est plus tôt). */
+function reprise() {
   const now = maintenant(),
     d = new Date(now);
   if (now.getHours() * 60 + now.getMinutes() >= TRAVAIL_DE || jourChome(d)) d.setDate(d.getDate() + 1);
   for (let k = 0; k < 60 && jourChome(d); k++) d.setDate(d.getDate() + 1);
+  d.setHours(9, 0, 0, 0);
+  return d;
+}
+function texteReprise() {
+  const now = maintenant(),
+    d = reprise();
   const a = new Date(now.getFullYear(), now.getMonth(), now.getDate()),
     b = new Date(d.getFullYear(), d.getMonth(), d.getDate()),
     n = Math.round((b - a) / 864e5);
@@ -2903,10 +3066,11 @@ function creerInterface() {
     </dialog>`
   );
   ajoute(
-    `<dialog id="s-forcer" class="s-dialogue" aria-label="Envoyer quand même">
-      <h2>Envoyer quand même ?</h2>
+    `<dialog id="s-forcer" class="s-dialogue" aria-label="Hors des heures de travail">
+      <h2>Hors des heures de travail</h2>
       <p id="s-forcerTxt"></p>
-      <form method="dialog" class="s-pied"><button value="non" class="s-primaire">Attendre</button> <button id="s-forcerOk" value="oui">Envoyer maintenant</button></form>
+      <label class="s-inter"><span>Rester synchronisé<small id="s-libreTxt"></small></span><input type="checkbox" id="s-libre" role="switch"><i aria-hidden="true"></i></label>
+      <form method="dialog" class="s-pied"><button value="non" class="s-primaire" id="s-forcerNon">Attendre</button> <button id="s-forcerOk" value="oui">Envoyer cette fois</button></form>
     </dialog>`
   );
   ajoute(
@@ -2928,8 +3092,13 @@ function creerInterface() {
     d.addEventListener('click', e => e.target === d && d.close()); /* toucher le fond referme */
   initEnLigne();
   $s('#s-forcerOk').onclick = () => envoyerQuandMeme();
+  $s('#s-libre').onchange = e => basculerLibre(e.target.checked);
   const e = A.etatEl ? $s(A.etatEl) : null;
-  if (e) e.addEventListener('click', () => !AND && fichierPc.handle && !fichierPc.perm && reprendrePc());
+  if (e)
+    e.addEventListener('click', () => {
+      if (!AND && fichierPc.handle && !fichierPc.perm) reprendrePc();
+      else if (AND && (horsHeures() || libreActif())) demanderEnvoi(); /* en pause ou synchro hors des heures : régler */
+    });
   if (AND && A.liste) initTirer();
 }
 
@@ -3086,6 +3255,8 @@ function texteEtat() {
     if (!b) return C.ouvert ? 'Pas encore de fichier · gardé dans l’appli' : 'Aucun fichier choisi';
     if (horsHeures()) return (C.dirty ? 'Modifications en attente · ' : '') + texteHorsHeures();
     if (C.saveErr) return '⚠ ' + C.saveErr;
+    if (libreActif())
+      return (C.dirty ? 'Enregistrement… · ' : '') + 'Synchro hors des heures, jusqu’à ' + texteReprise();
     return (
       (C.dirty ? 'Enregistrement… ' : 'Enregistré · ') +
       (b.direct ? 'en ligne' : tel.nom + (tel.local ? ' (téléphone)' : ''))
@@ -3108,6 +3279,7 @@ function etat() {
     e.textContent = texteEtat();
     e.classList.toggle('erreur', !!C.saveErr);
     e.classList.toggle('pause', horsHeures());
+    e.classList.toggle('libre', libreActif());
   }
   verifierVersionPc();
   if (A && A.surEtat) A.surEtat();
@@ -4144,7 +4316,7 @@ async function actualiser() {
   if (horsHeures()) {
     toast(
       texteHorsHeures() + (C.dirty ? ' · tes modifications sont gardées sur le téléphone' : ''),
-      'Envoyer quand même…',
+      'Synchroniser…',
       demanderEnvoi,
       7000
     );
@@ -4167,9 +4339,21 @@ async function actualiser() {
   return C.saveErr ? 'err' : 'ok';
 }
 
-/* ---- « envoyer quand même », hors des heures de travail ---- */
+/* ---- hors des heures de travail : envoyer cette fois, ou rester synchronisé (1.10) ---- */
 function demanderEnvoi() {
-  const now = maintenant();
+  const now = maintenant(),
+    libre = synchroLibre();
+  $s('#s-libre').checked = libre;
+  $s('#s-libreTxt').textContent =
+    'Tous les outils de la suite, jusqu’à ce que tu l’arrêtes, au plus tard ' + texteReprise();
+  $s('#s-forcerOk').hidden = libre;
+  $s('#s-forcerNon').textContent = libre ? 'Fermer' : 'Attendre';
+  if (libre) {
+    $s('#s-forcerTxt').textContent =
+      'La synchronisation reste ouverte hors des heures de travail : tout part et tout se relit comme au bureau.';
+    $s('#s-forcer').showModal();
+    return;
+  }
   $s('#s-forcerTxt').textContent =
     'Il est ' +
     now.getHours() +
@@ -4183,6 +4367,17 @@ function demanderEnvoi() {
     texteReprise().replace(/à 9/, 'à partir de 9') +
     ', dès que tu ouvriras l’appli. Rien ne presse.';
   $s('#s-forcer').showModal();
+}
+/* l'interrupteur de la fenêtre : il bascule, puis la fenêtre se referme et un message dit ce qui vaut désormais */
+function basculerLibre(on) {
+  reglerSynchroLibre(on);
+  setTimeout(() => $s('#s-forcer').open && $s('#s-forcer').close(), 250);
+  vibrer('tick');
+  toast(
+    on
+      ? 'Synchronisé hors des heures, pour toute la suite, jusqu’à ce que tu l’arrêtes (au plus tard ' + texteReprise() + ')'
+      : 'Synchro hors des heures arrêtée · retour au silence jusqu’à ' + texteReprise()
+  );
 }
 async function envoyerQuandMeme() {
   journal('envoyer quand même');
@@ -4849,7 +5044,7 @@ function fermerRecherche() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.9.0',
+  version: '1.10.0',
   demarrer,
   /* fichier */
   modifie,
@@ -4878,6 +5073,13 @@ return {
   texteHorsHeures,
   texteReprise,
   demanderEnvoi,
+  /* synchro hors des heures, commune à la suite (1.10) */
+  get synchroLibre() {
+    return synchroLibre();
+  },
+  libreActif,
+  reglerSynchroLibre,
+  basculerSynchroLibre: basculerLibre /* avec le message qui dit ce qui vaut désormais */,
   get enDirect() {
     return AND && C.backend === spBackend;
   },
@@ -8697,6 +8899,14 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-10-31 13:30',
+    v: '0.67',
+    items: [
+      'Au téléphone, menu ⋯ : « Synchroniser hors des heures ». Allumé, Saison enregistre et relit comme au bureau, jusqu’à ce que tu l’arrêtes, ou au plus tard à la reprise (9 h le prochain jour ouvré). Il vaut pour toute la suite.',
+      'La ligne d’état le dit en ocre ; la toucher permet de l’arrêter. En pause, la toucher propose d’envoyer cette fois ou de rester synchronisé.'
+    ]
+  },
+  {
     d: '2026-10-31 13:00',
     v: '0.66',
     items: [
@@ -9199,6 +9409,7 @@ function initBoutons() {
     $('[data-act=ouvrir]').textContent = 'Choisir un autre fichier…';
     $('[data-act=actualiser]').hidden = false;
     $('[data-act=outils]').hidden = false;
+    $('[data-act=horsheures]').hidden = false;
   } else if (!hasFS) {
     $('#vOuvrir').textContent = 'Ouvrir une copie de planning.md';
     $('[data-act=ouvrir]').textContent = 'Ouvrir une copie…';
@@ -9209,12 +9420,22 @@ function initBoutons() {
   const menu = $('#menu');
   $('#bMenu').onclick = ev => {
     ev.stopPropagation();
+    $('[data-act=horsheures]').setAttribute('aria-checked', String(socle.synchroLibre));
     menu.hidden = !menu.hidden;
   };
   document.addEventListener('click', () => (menu.hidden = true));
   menu.addEventListener('click', ev => {
     const a = ev.target.closest('[data-act]');
     if (!a) return;
+    /* synchro hors des heures (socle 1.10) : l'interrupteur glisse, puis le menu se referme */
+    if (a.dataset.act === 'horsheures') {
+      ev.stopPropagation();
+      const on = !socle.synchroLibre;
+      a.setAttribute('aria-checked', String(on));
+      socle.basculerSynchroLibre(on);
+      setTimeout(() => (menu.hidden = true), 300);
+      return;
+    }
     menu.hidden = true;
     ({
       ouvrir: () => socle.ouvrir(),
