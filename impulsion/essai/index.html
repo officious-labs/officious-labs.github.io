@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impulsion essai</title>
+<style>
+  :root { --encre: #1c1c1e; --gris: #6b6b70; --fond: #f4f4f6; --carte: #fff; --accent: #3b6fb6; }
+  @media (prefers-color-scheme: dark) {
+    :root { --encre: #f2f2f4; --gris: #a1a1a8; --fond: #121214; --carte: #1e1e22; --accent: #7aa5e6; }
+  }
+  body { margin: 0; background: var(--fond); color: var(--encre); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 32rem; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.8rem; font-weight: 600; margin: 0 0 4px; }
+  .gris { color: var(--gris); }
+  .carte { background: var(--carte); border-radius: 16px; padding: 16px; margin-top: 16px; }
+  a.bouton { display: block; text-align: center; background: var(--accent); color: #fff; text-decoration: none;
+             font-size: 1.2rem; border-radius: 20px; padding: 20px 16px; margin-top: 16px; }
+  ol { padding-left: 1.2rem; margin: 8px 0 0; }
+  li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Impulsion essai</h1>
+  <p class="gris">Appli d’essai du téléphone (étape 0.4) — version 0.4.15, fabriquée le 03/11/2026.</p>
+  <a class="bouton" href="https://github.com/officious-labs/officious-labs.github.io/releases/download/impulsion-essai-15/impulsion-essai-15.apk">Télécharger l’APK</a>
+  <div class="carte">
+    <strong>Première installation</strong>
+    <ol>
+      <li>Toucher « Télécharger l’APK », puis ouvrir le fichier téléchargé.</li>
+      <li>Autoriser Chrome à installer des applis si Android le demande.</li>
+      <li>Si Play Protect avertit : « Plus de détails » › « Installer quand même ».</li>
+    </ol>
+  </div>
+  <div class="carte">
+    <strong>Ensuite</strong>
+    <p>L’appli cherche elle-même une version plus récente à chaque ouverture : carte « Mise à jour », bouton « Installer la version… ». Plus besoin de revenir ici.</p>
+  </div>
+</main>
+</body>
+</html>
