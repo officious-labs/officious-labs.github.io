@@ -1,1 +1,1 @@
-{"version": 30, "nom": "0.6.30", "apk": "https://github.com/officious-labs/officious-labs.github.io/releases/download/impulsion-v0.6.30/impulsion-0.6.30.apk", "notes": "Merge pull request #11 from officious-labs/claude/exciting-cray-8bsrag"}
+{"version": 33, "nom": "0.6.33", "apk": "https://github.com/officious-labs/officious-labs.github.io/releases/download/impulsion-v0.6.33/impulsion-0.6.33.apk", "notes": "Tests : une dictée transcrite a un texte (sans texte, elle n’est plus rangée)"}
