@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261107141629">
+<meta name="officious-page" content="20261107144621">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -9480,7 +9480,7 @@ function fermerCouche() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.11.2',
+  version: '1.12.0',
   demarrer,
   /* fichier */
   modifie,
@@ -18499,10 +18499,21 @@ $('#mTabs').addEventListener('click', e => {
   buzz('tick');
 });
 /* ---------- notes de version ----------
-   Une entrée par publication qui change quelque chose de visible. type 'web' (« Application web Chromium » = cette page, arrive toute seule ; v = numéro suivant)
+   Une entrée par publication qui change quelque chose de visible. type 'web' (« Application web Chromium » = cette page, arrive toute seule ; v = « majeure.mineure.livraison », la livraison
+   donnée par python3 socle/outils/version.py --suivante, depuis la 3.11)
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-07 15:45',
+    type: 'web',
+    v: '3.11.1',
+    t: 'Numéros de version',
+    items: [
+      'Nouveaux numéros de version, comme dans les applis Android : majeure.mineure suivie du numéro de livraison. Celle-ci est la 1re livraison comptée : 3.11.1. Une retouche ne change que le dernier numéro (3.11.2), une nouvelle fonction le deuxième (3.12.3) ; le dernier ne revient jamais en arrière.',
+      'Le Compagnon Android suit le même schéma : 3.0 suivi de son numéro de fabrication. Tâches l’affiche ainsi dès que le Compagnon est à jour, et « fabrication … » d’ici là.'
+    ]
+  },
   {
     d: '2026-11-07 15:30',
     type: 'web',
@@ -19614,7 +19625,8 @@ function compV(b) {
 }
 const WEB_V = NOUVEAUTES.find(
   e => e.type === 'web'
-).v; /* « 2.4.2 » : majeure (grand tournant).mineure (nouvelle fonction).retouche ; la plus récente en tête de liste */
+).v; /* « 3.11.1 » : majeure (grand tournant).mineure (nouvelle fonction).livraison (compteur FABRICATION, depuis la 3.11 ;
+   avant : retouche) ; la plus récente en tête de liste */
 function vcmp(a, b) {
   const x = String(a || '0')
       .split('.')
@@ -19746,7 +19758,7 @@ function openNews() {
   $('#nwver').textContent =
     'Sur cet appareil\u00a0: Application web Chromium v' +
     WEB_V +
-    (mAndV ? ', Compagnon Officine fabrication ' + mAndV : '') +
+    (mAndV ? ', Compagnon Officine ' + compNom(mAndV, mAndNom) : '') +
     '.';
   mstore.set('taches-nouveautes-vues', NOUVEAUTES[0].d);
   newsDot();
@@ -19950,8 +19962,8 @@ function vcHide() {
 /* nouvelle version installée : une vraie fenêtre (fond grisé, au centre), toutes les notes de la version, bouton OK.
    La carte (vcRender) ne sert plus qu'à annoncer un dépôt pour le PC fait plus tard, sans nouvelle version. */
 /* même fenêtre après une mise à jour du Compagnon Android (fabrication installée plus récente qu'au dernier lancement) */
-function vcOpenComp(prev, cur) {
-  vc.comp = { prev: +prev, cur: +cur };
+function vcOpenComp(prev, cur, prevNom, curNom) {
+  vc.comp = { prev: +prev, cur: +cur, prevNom: prevNom || '', curNom: curNom || '' };
   if (vc.modal) return vmRender();
   vc.web = false;
   vc.copy = null;
@@ -20000,8 +20012,8 @@ function vmRender() {
   }
   if (cp0) {
     /* 3.6 : le Compagnon Officine se compte par fabrications ; les notes « appli » (ancien Compagnon) n'en parlent pas */
-    h.append(el('div', 'vmv', 'Compagnon Officine · fabrication ' + cp0.cur));
-    if (cp0.prev) h.append(el('div', 'vmp', 'précédente\u00a0: fabrication ' + cp0.prev));
+    h.append(el('div', 'vmv', 'Compagnon Officine · ' + compNom(cp0.cur, cp0.curNom)));
+    if (cp0.prev) h.append(el('div', 'vmp', 'précédente\u00a0: ' + compNom(cp0.prev, cp0.prevNom)));
   }
   const b = el('div', 'vmb'),
     u = newsUnseen().filter(e => e.type !== 'appli');
@@ -22391,7 +22403,12 @@ async function mPick() {
 }
 /* versions : l'application web du téléphone et celle déposée dans OneDrive pour le PC peuvent différer */
 let mVerTxt = '',
-  mAndV = 0; /* fabrication du Compagnon installée (notes de version) */
+  mAndV = 0, /* fabrication du Compagnon installée (notes de version) */
+  mAndNom = ''; /* son numéro complet (ex. 3.0.50, depuis la 3.11) ; vide avec un Compagnon plus ancien */
+/* « 3.0.50 » si le Compagnon le donne, sinon « fabrication 50 » */
+function compNom(fab, nom) {
+  return nom && /\./.test(nom) ? nom : 'fabrication ' + fab;
+}
 function mVerLines() {
   return ['Application web : v' + WEB_V + (socle.enDirect ? '' : ' (copie pour le PC : avec l’adresse en ligne)'), mVerTxt || '']
     .filter(Boolean)
@@ -22408,16 +22425,23 @@ async function mCheckUpdate(force) {
     return;
   }
   mAndV = a;
-  const prev = mstore.get('taches-officious-version');
+  try {
+    mAndNom = String((await andCall('versionNom')) || '');
+  } catch (e) {
+    mAndNom = '';
+  }
+  const prev = mstore.get('taches-officious-version'),
+    prevNom = mstore.get('taches-officious-nom') || '';
   mstore.set('taches-officious-version', a);
-  if (prev && a > prev) vcOpenComp(prev, a);
+  mstore.set('taches-officious-nom', mAndNom);
+  if (prev && a > prev) vcOpenComp(prev, a, prevNom, mAndNom);
   const b = socle.appliPubliee || 0,
     btn = $('#mUpd');
   btn.hidden = !(b > a);
-  btn.title = b > a ? 'Compagnon Officine : fabrication ' + b + ' disponible (installée : ' + a + ')' : '';
+  btn.title = b > a ? 'Compagnon Officine : fabrication ' + b + ' disponible (installée : ' + compNom(a, mAndNom) + ')' : '';
   $('#mVer').hidden = true;
-  mVerTxt = 'Compagnon Officine : fabrication ' + a + (b > a ? ' (' + b + ' disponible)' : '');
-  if (force) toast(b > a ? 'Compagnon : fabrication ' + b + ' disponible' : 'Le Compagnon est à jour (fabrication ' + a + ')');
+  mVerTxt = 'Compagnon Officine : ' + compNom(a, mAndNom) + (b > a ? ' (fabrication ' + b + ' disponible)' : '');
+  if (force) toast(b > a ? 'Compagnon : fabrication ' + b + ' disponible' : 'Le Compagnon est à jour (' + compNom(a, mAndNom) + ')');
 }
 async function mUpdate() {
   const btn = $('#mUpd');
