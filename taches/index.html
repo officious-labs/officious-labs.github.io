@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261107135918">
+<meta name="officious-page" content="20261107140554">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -6488,6 +6488,49 @@ body:has(#fly) #rubBar button[data-sec] {
 }
 @media (prefers-reduced-motion: reduce) {
   .rtit .iradar .echo {
+    animation: none;
+  }
+}
+
+/* 3.10.1 : au PC, le radar ne tourne plus en permanence (les animations permanentes font perdre leur contour aux
+   curseurs d'Edge, cf. 2.8). Immobile, faisceau sur l'écho allumé ; un tour à l'apparition et au survol (.tour,
+   retirée à la fin du tour). Le téléphone garde sa rotation continue. */
+body:not(.mobile) .rtit .iradar .faisceau {
+  animation: none;
+  transform: rotate(240deg);
+}
+body:not(.mobile) .rtit .iradar .echo {
+  animation: none;
+  opacity: 1;
+}
+body:not(.mobile) .rtit.tour .iradar .faisceau {
+  animation: balayageTour 3s ease-in-out;
+}
+body:not(.mobile) .rtit.tour .iradar .echo {
+  animation: echoTour 3s ease-in-out;
+}
+@keyframes balayageTour {
+  from {
+    transform: rotate(240deg);
+  }
+  to {
+    transform: rotate(600deg);
+  }
+}
+@keyframes echoTour {
+  0% {
+    opacity: 1;
+  }
+  99% {
+    opacity: 0.05;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:not(.mobile) .rtit.tour .iradar .faisceau,
+  body:not(.mobile) .rtit.tour .iradar .echo {
     animation: none;
   }
 }
@@ -18420,6 +18463,14 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-11-07 15:10',
+    type: 'web',
+    v: '3.10.1',
+    items: [
+      'PC\u00a0: le radar ne tourne plus en permanence\u202f; il fait un tour à l’ouverture et quand la souris passe dessus. Son animation continue faisait perdre leur contour noir aux curseurs d’Edge, y compris au-dessus de Saison ouvert à côté. Le téléphone garde son radar qui tourne.'
+    ]
+  },
+  {
     d: '2026-11-07 15:00',
     type: 'web',
     v: '3.10',
@@ -22964,7 +23015,7 @@ function renderRadar() {
   el.hidden = seedShown || (MOBILE ? !L.length : false);
   if (!el.hidden) {
     const h = [];
-    h.push('<span class="rtit" title="Échéances à moins de ' + RADAR_JOURS + ' jours (rubrique « ' + RUB_ECH + ' »)">' + ICONE_RADAR + '</span>');
+    h.push('<span class="rtit' + (MOBILE ? '' : ' tour') + '" title="Échéances à moins de ' + RADAR_JOURS + ' jours (rubrique « ' + RUB_ECH + ' »)">' + ICONE_RADAR + '</span>');
     for (const it of vus) {
       const e = prochaineEtape(it);
       h.push(
@@ -22996,6 +23047,20 @@ function renderRadar() {
     }
   }
   document.documentElement.style.setProperty('--rh', (el.hidden ? 0 : el.offsetHeight) + 'px');
+}
+/* PC (3.10.1) : radar immobile ; un tour à l'apparition (classe .tour dans le rendu) et à chaque survol */
+function radarTour(e) {
+  const r = e.target.closest && e.target.closest('.rtit');
+  if (!r) return;
+  if (e.type === 'animationend') r.classList.remove('tour');
+  else if (!r.contains(e.relatedTarget)) r.classList.add('tour'); /* en entrant, pas à chaque mouvement dedans */
+}
+if (!MOBILE) {
+  const r = $('#radar');
+  if (r) {
+    r.addEventListener('mouseover', radarTour);
+    r.addEventListener('animationend', radarTour);
+  }
 }
 function ajouterJalon() {
   snapshot();
