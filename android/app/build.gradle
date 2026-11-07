@@ -5,7 +5,7 @@ plugins { id 'com.android.application' }
 def cle = System.getenv('KEYSTORE_FILE')
 
 // Numéro de version (07/11/2026, schéma d'Impulsion) : « 3.0 » (fichier VERSION, tenu à la main) suivi du numéro de
-// fabrication d'Actions, par exemple 3.0.13. La fabrication sert aussi de versionCode (mise à jour) : elle ne fait que croître.
+// fabrication d'Actions, par exemple 3.0.50. La fabrication sert aussi de versionCode (mise à jour) : elle ne fait que croître.
 def fabrication = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
 def base = rootProject.file('VERSION').text.trim()
 

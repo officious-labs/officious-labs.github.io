@@ -435,7 +435,7 @@ public abstract class MainActivity extends Activity {
                 case "version":
                     repondre(id, true, String.valueOf(versionInstallee()));
                     break;
-                case "versionNom":   // numéro lisible, ex. 3.0.13 (la fabrication seule reste dans « version »)
+                case "versionNom":   // numéro lisible, ex. 3.0.50 (la fabrication seule reste dans « version »)
                     repondre(id, true, nomVersionInstallee());
                     break;
                 case "checkUpdate":
