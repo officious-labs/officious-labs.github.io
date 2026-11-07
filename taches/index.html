@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261107175454">
+<meta name="officious-page" content="20261107221612">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -223,6 +223,164 @@
   max-width: calc(100vw - 2rem);
   border-radius: 10px;
   box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
+}
+/* 1.16 : encre sombre, contour arc-en-ciel qui tourne (repris de Tâches), pour toute la suite */
+#s-version:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem 0.45rem 1.05rem;
+  border-radius: 999px;
+  border: 2.5px solid transparent;
+  color: #fff;
+  font-size: 0.9rem;
+  background:
+    linear-gradient(#232733, #232733) padding-box,
+    conic-gradient(from var(--s-arc, 0deg), #e8463c, #f2a33a, #f3d43f, #5cc46a, #3aa7e0, #7a5ce0, #d65cc0, #e8463c)
+      border-box;
+  animation: s-arc-tourne 3.5s linear infinite;
+}
+#s-version button {
+  border: none;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+  font-weight: 600;
+}
+@property --s-arc {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes s-arc-tourne {
+  to {
+    --s-arc: 360deg;
+  }
+}
+/* fenêtre « Nouvelle version installée » (1.16) : contour à la couleur de l'outil, arc-en-ciel quand la copie pour le
+   PC est dans OneDrive (ou, au PC, dès qu'elle est arrivée), petit feu d'artifice */
+.s-dialogue.s-maj {
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: 82vh;
+  padding: 0;
+  border: 3.5px solid var(--s-accent);
+  border-radius: 16px;
+  overflow: visible;
+}
+.s-dialogue.s-maj.fete {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--s-fond), var(--s-fond)) padding-box,
+    conic-gradient(from var(--s-arc, 0deg), #e8463c, #f2a33a, #f3d43f, #5cc46a, #3aa7e0, #7a5ce0, #d65cc0, #e8463c)
+      border-box;
+  animation: s-arc-tourne 3.5s linear infinite;
+}
+.s-maj form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(82vh - 6px);
+}
+.s-majh {
+  padding: 1rem 1.15rem 0.6rem;
+  border-bottom: 1px solid var(--s-filet);
+}
+.s-majh h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--s-accent);
+}
+.s-majv {
+  margin-top: 0.15rem;
+  font-weight: 600;
+}
+.s-majp {
+  font-size: 0.82rem;
+  color: var(--s-gris);
+}
+.s-majb {
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0.3rem 1.15rem 0.6rem;
+}
+.s-majb h3 {
+  margin: 0.7rem 0 0.25rem;
+  font-size: 0.92rem;
+  color: var(--s-accent);
+}
+.s-majb ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.s-majb li {
+  margin: 0.2rem 0;
+}
+.s-majf {
+  align-items: center;
+  margin: 0;
+  padding: 0.7rem 1.15rem 0.9rem;
+  border-top: 1px solid var(--s-filet);
+}
+.s-majc {
+  flex: 1;
+  font-size: 0.84rem;
+  color: var(--s-gris);
+}
+.s-majc.ok {
+  color: var(--s-accent);
+  font-weight: 600;
+}
+.s-majf .s-primaire {
+  padding: 0.5rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.s-etincelle {
+  position: absolute;
+  left: 1.6rem;
+  bottom: 1.5rem;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px;
+  border-radius: 50%;
+  background: hsl(var(--r), 90%, 60%);
+  opacity: 0;
+  animation: s-etincelle 0.9s var(--d) ease-out forwards;
+  pointer-events: none;
+}
+.s-etincelle:nth-child(3n) {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+}
+@keyframes s-etincelle {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--r)) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--r)) translateY(-44px) scale(0.4);
+  }
+}
+#s-toast.s-fete {
+  border: 2.5px solid transparent;
+  background:
+    linear-gradient(#1f2933, #1f2933) padding-box,
+    conic-gradient(from var(--s-arc, 0deg), #e8463c, #f2a33a, #f3d43f, #5cc46a, #3aa7e0, #7a5ce0, #d65cc0, #e8463c)
+      border-box;
+  animation: s-arc-tourne 3.5s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  #s-version,
+  .s-maj.fete,
+  #s-toast.s-fete {
+    animation: none;
+  }
+  .s-etincelle {
+    display: none;
+  }
 }
 body:has(#s-version:not([hidden])) #s-toast {
   bottom: 5rem; /* le message passe au-dessus du bandeau */
@@ -6844,6 +7002,34 @@ header .s-cherche input:not(:placeholder-shown) {
 #mCtx button.danger {
   color: #c4524a;
 }
+/* 3.12 : sous-menus (Échéance…, Rubrique…) */
+#mCtx {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#mCtx button.ctxs::after {
+  content: '›';
+  float: right;
+  margin-left: 1rem;
+  color: var(--muted);
+}
+#mCtx button.ctxh {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  border-bottom: 1px solid var(--line);
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 0.15rem;
+}
+#mCtx button.ici {
+  font-weight: 650;
+  color: var(--accent);
+}
+#mCtx button.ici::after {
+  content: '✓';
+  float: right;
+  margin-left: 1rem;
+}
 @keyframes mCtxIn {
   from {
     opacity: 0;
@@ -6920,6 +7106,63 @@ header .s-cherche input:not(:placeholder-shown) {
   body:not(.mobile) header .s-cherche input:not(:placeholder-shown) {
     width: 13rem;
   }
+}
+
+/* 3.12 : note mise en forme au téléphone (le même éditeur qu'au PC, voir 11c-note-riche.js) */
+#mNote #nEd {
+  flex: 1;
+  min-height: 6rem;
+  overflow-y: auto;
+  box-sizing: border-box;
+  margin: 0.3rem 0;
+  padding: 0.5rem 2.6rem 0.5rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 1.02rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: var(--s-cur-text);
+}
+#mNote #nEd[hidden] {
+  display: none;
+}
+#mNote #nEd:focus {
+  border-color: var(--accent);
+}
+#nEd > div:only-child:not(.b):has(> br:only-child) {
+  position: relative;
+}
+#nEd > div:only-child:not(.b):has(> br:only-child)::before {
+  content: 'Ce qu’on vient de te dire…';
+  position: absolute;
+  color: var(--muted);
+  pointer-events: none;
+}
+#nEd > div {
+  min-height: 1.5em;
+}
+#nEd > div.b {
+  position: relative;
+  padding-left: calc(1.1em + var(--lv, 0) * 1.2em);
+}
+#nEd > div.b::before {
+  content: '•';
+  position: absolute;
+  left: calc(0.25em + var(--lv, 0) * 1.2em);
+  color: var(--accent);
+}
+#nEd > div.b.l1::before,
+#nEd > div.b.l3::before {
+  content: '◦';
+}
+#mNote #nText[hidden] {
+  display: none;
 }
 </style>
 </head>
@@ -7058,6 +7301,7 @@ header .s-cherche input:not(:placeholder-shown) {
       <button type="button" class="mitem" id="oExport">Copier la liste des tâches<small>pour un e-mail : rubriques, échéances, sous-tâches, commentaires</small></button>
       <button type="button" class="mitem mnews" id="oNews">Notes de version</button>
       <details class="madv" id="oAdv"><summary>Plus d’options</summary>
+        <label class="mswitch"><span>Notes mises en forme<small>gras, italique et puces affichés pendant qu’on écrit ; éteins-le si le clavier se comporte mal</small></span><input type="checkbox" id="oRiche" role="switch"><i></i></label>
         <button type="button" class="mitem" id="oUpdate">Vérifier la mise à jour du Compagnon</button>
         <button type="button" class="mitem" id="oSp">Accès direct à OneDrive</button>
         <button type="button" class="mitem" id="oFile">Choisir un autre fichier</button>
@@ -7072,7 +7316,7 @@ header .s-cherche input:not(:placeholder-shown) {
       <p class="ameta" id="nMeta"></p>
       <div class="ntool"><button type="button" id="nBold" class="ico" title="Gras" aria-label="Gras"><b>B</b></button><button type="button" id="nItal" class="ico" title="Italique" aria-label="Italique"><i>I</i></button><button type="button" id="nBullet" class="ico" title="Liste à puces" aria-label="Liste à puces"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg></button><span class="sp"></span><button type="button" id="nPaste" class="ico npaste" title="Coller le presse-papiers" aria-label="Coller le presse-papiers"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg><span>Coller</span></button></div>
       <input id="nTitle" class="ntitre" placeholder="Titre" aria-label="Titre de la note" enterkeyhint="next" autocomplete="off">
-      <div id="nLinks"></div><div class="nwrap"><textarea id="nText" rows="6" placeholder="Ce qu’on vient de te dire…"></textarea><button type="button" id="nCopy" class="ico ccopy" title="Copier la note" aria-label="Copier la note"><span class="i1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg></span><span class="i2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button></div>
+      <div id="nLinks"></div><div class="nwrap"><textarea id="nText" rows="6" placeholder="Ce qu’on vient de te dire…"></textarea><div id="nEd" class="ned" contenteditable="true" spellcheck="true" data-placeholder="Ce qu’on vient de te dire…" role="textbox" aria-multiline="true" aria-label="Texte de la note" hidden></div><button type="button" id="nCopy" class="ico ccopy" title="Copier la note" aria-label="Copier la note"><span class="i1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg></span><span class="i2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button></div>
       <div class="nbar"><button type="button" id="nDel" class="ico adel" title="Supprimer la note" aria-label="Supprimer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg></button><button type="button" id="nArch" class="ico" title="Archiver la note" aria-label="Archiver la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.2"/><path d="M5 9v10h14V9M10 13h4"/></svg></button><button type="button" id="nCancel" class="ico" title="Annuler" aria-label="Annuler"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="sp"></span><span class="ntabs"><button type="button" class="ico" data-p="task" title="En faire une tâche" aria-label="En faire une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></svg></button><button type="button" class="ico" data-p="attach" title="Ajouter à une tâche" aria-label="Ajouter à une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button></span><button type="submit" class="ico ok" id="nOk" title="Enregistrer la note" aria-label="Enregistrer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
       <div id="nTriage">
                 <div class="npanel" id="nTask" hidden>
@@ -7508,6 +7752,7 @@ function toast(msg, action, fn, ms) {
   const t = $s('#s-toast');
   if (!t) return;
   t.textContent = msg;
+  t.classList.remove('s-fete');
   t.classList.toggle('action', !!action);
   if (action) {
     const b = document.createElement('button');
@@ -8646,8 +8891,11 @@ function apresLecture() {
     .catch(() => {})
     .then(() => deposerPage())
     .then(
-      r => A.surDepot && A.surDepot(r),
-      () => A.surDepot && A.surDepot(false)
+      r =>
+        deposerAutres(r === 'deposee')
+          .catch(() => [])
+          .then(autres => surDepot(r, autres)),
+      () => surDepot(false, [])
     )
     .then(() => A.apresLecture && A.apresLecture())
     .catch(() => {});
@@ -8896,17 +9144,10 @@ async function verifierPage(force) {
   }
 }
 
-/** Compagnon : dépose la page affichée dans le dossier OneDrive du fichier, pour le PC. */
-async function deposerPage() {
-  if (!AND || horsHeures() || C.backend !== spBackend) return false;
-  const moi = monTampon(),
-    url = voisin(A.page);
-  if (!moi || !url) return false;
-  if (mem.get('page-deposee') === moi && reglage('version') >= moi) return false;
-  const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
-  if (!r.ok) return false;
-  const html = await r.text();
-  if (tamponDe(html) !== moi) return false; /* la page en ligne a déjà changé : on recharge d'abord */
+/** Écrit une page dans un dossier OneDrive si celle qui s'y trouve est plus ancienne (jamais de retour en arrière).
+    Renvoie 'deposee', true (déjà à jour) ou false (le dossier a plus récent). */
+async function deposerUne(url, html, titre) {
+  const moi = tamponDe(html);
   let cur = null,
     etag = '';
   try {
@@ -8918,21 +9159,88 @@ async function deposerPage() {
   }
   const la = tamponDe(cur);
   if (la > moi) return false; /* le dossier a déjà plus récent */
-  if (la < moi) {
-    await occupe('Copie de ' + A.titre + ' pour le PC…', () =>
-      cur == null
-        ? spCall('spCreate', JSON.stringify({ url, text: html }))
-        : spCall('spWrite', JSON.stringify({ url, text: html, etag }))
-    );
-    journal('page déposée', { tampon: moi });
-    if (!A.surDepot) toast('Nouvelle version de ' + A.titre + ' déposée pour le PC'); /* sinon l'outil le dit */
-  }
+  if (la === moi) return true;
+  await occupe('Copie de ' + titre + ' pour le PC…', () =>
+    cur == null
+      ? spCall('spCreate', JSON.stringify({ url, text: html }))
+      : spCall('spWrite', JSON.stringify({ url, text: html, etag }))
+  );
+  return 'deposee';
+}
+
+/** Compagnon : dépose la page affichée dans le dossier OneDrive du fichier, pour le PC. */
+async function deposerPage() {
+  if (!AND || horsHeures() || C.backend !== spBackend) return false;
+  const moi = monTampon(),
+    url = voisin(A.page);
+  if (!moi || !url) return false;
+  noterPage(url);
+  if (mem.get('page-deposee') === moi && reglage('version') >= moi) return true;
+  const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) return false;
+  const html = await r.text();
+  if (tamponDe(html) !== moi) return false; /* la page en ligne a déjà changé : on recharge d'abord */
+  const d = await deposerUne(url, html, A.titre);
+  if (d === false) return false;
+  if (d === 'deposee') journal('page déposée', { tampon: moi });
   mem.set('page-deposee', moi);
   if (reglage('version') < moi) {
     fixeReglage('version', moi);
     modifie();
   }
-  return la < moi ? 'deposee' : true;
+  return d;
+}
+
+/* ---- les autres outils de la suite en même temps (1.16, demande de François du 07/11/2026) ----
+   Chaque outil ouvert au téléphone en accès direct note, dans une clé commune à la suite, l'adresse de sa page publiée
+   et celle de sa copie pour le PC (à côté de son fichier). Quand un outil dépose sa page, il dépose aussi celles des
+   autres outils connus, si la version publiée est plus récente que celle de leur dossier. Le réglage « version » de
+   leur fichier n'est pas touché (un outil n'écrit jamais dans le fichier d'un autre) : il se met à jour à leur
+   prochaine ouverture au téléphone. */
+const CLE_PAGES = 'officious-pages';
+function pagesConnues() {
+  try {
+    return JSON.parse(localStorage.getItem(CLE_PAGES)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+function noterPage(url) {
+  const L = pagesConnues(),
+    e = { titre: A.titre, chemin: location.pathname, url };
+  if (JSON.stringify(L[C.appli]) === JSON.stringify(e)) return;
+  L[C.appli] = e;
+  try {
+    localStorage.setItem(CLE_PAGES, JSON.stringify(L));
+  } catch (x) {}
+}
+/** Dépose les pages des autres outils connus ; renvoie les titres de ceux dont la copie vient d'être déposée.
+    Au plus une fois par heure, sauf juste après le dépôt de la page de cet outil (force). */
+async function deposerAutres(force) {
+  if (!AND || horsHeures() || C.backend !== spBackend) return [];
+  if (!force && Date.now() - (mem.get('autres-at') || 0) < 3600e3) return [];
+  mem.set('autres-at', Date.now());
+  const faits = [];
+  for (const [appli, e] of Object.entries(pagesConnues())) {
+    if (appli === C.appli || !e || !e.url || !e.chemin) continue;
+    try {
+      const r = await fetch(e.chemin + '?v=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) continue;
+      const html = await r.text();
+      if (!tamponDe(html)) continue;
+      if ((await deposerUne(e.url, html, e.titre)) === 'deposee') {
+        journal('page déposée', { outil: appli, tampon: tamponDe(html) });
+        faits.push(e.titre);
+      }
+    } catch (x) {
+      journal('page non déposée', { outil: appli, erreur: sansCode(x) });
+    }
+  }
+  return faits;
+}
+/** « Saison », « Saison et Tâches », « Saison, Tâches et X » */
+function listeTitres(L) {
+  return L.length < 2 ? L.join('') : L.slice(0, -1).join(', ') + ' et ' + L[L.length - 1];
 }
 
 /** PC : une version plus récente de la page attend dans le dossier (déposée par le Compagnon). */
@@ -8985,6 +9293,124 @@ async function mettreAJourAppli() {
   }
 }
 
+/* ---- fenêtre « Nouvelle version installée » (1.16) ----
+   Reprise de Tâches 3.x pour toute la suite (demande de François du 07/11/2026) : au centre, fond grisé, la version
+   installée et la précédente, les notes de version pas encore vues, et ce que devient la copie pour le PC ; contour
+   arc-en-ciel qui tourne et petit feu d'artifice quand la copie est dans OneDrive. Au PC, qui reçoit cette copie,
+   la fenêtre est fêtée dès l'ouverture. Un outil qui a sa propre fenêtre la garde (A.apresMiseAJour, A.surDepot). */
+const maj = { copie: null, depot: null, autres: [] };
+/** La note de version la plus récente (la liste peut ne pas être triée). */
+function noteRecente() {
+  return (A.nouveautes || []).reduce((m, n) => (!m || n.d > m.d ? n : m), null);
+}
+/** La version d'avant : la plus récente des notes déjà vues. */
+function versionVue() {
+  const vu = mem.get('nouveautes-vues', '');
+  const n = (A.nouveautes || []).filter(x => x.d <= vu).reduce((m, x) => (!m || x.d > m.d ? x : m), null);
+  return n ? n.v : '';
+}
+function copiePrete(r) {
+  return r === 'deposee' || r === true;
+}
+function etincelles(el) {
+  for (let k = 0; k < 14; k++) {
+    const s = document.createElement('i');
+    s.className = 's-etincelle';
+    s.style.setProperty('--r', k * (360 / 14) + (k % 2) * 9 + 'deg');
+    s.style.setProperty('--d', (k % 3) * 60 + 'ms');
+    el.append(s);
+    setTimeout(() => s.remove(), 1400);
+  }
+  if (AND) vibrer('double');
+}
+function fenetreVersion() {
+  const n = noteRecente(),
+    prec = versionVue(),
+    nonVues = nouveautesNonVues().sort((a, b) => (a.d < b.d ? 1 : -1));
+  if (AND) maj.copie = C.backend !== spBackend ? null : horsHeures() ? 'pause' : copiePrete(maj.depot) ? 'ok' : 'attente';
+  else maj.copie = 'pc';
+  let d = $s('#s-maj');
+  if (!d) {
+    d = document.createElement('dialog');
+    d.id = 's-maj';
+    d.className = 's-dialogue s-maj';
+    d.setAttribute('aria-label', 'Nouvelle version installée');
+    document.body.append(d);
+  }
+  const el = (tag, k, t) => {
+    const e = document.createElement(tag);
+    if (k) e.className = k;
+    if (t != null) e.textContent = t;
+    return e;
+  };
+  const f = el('form');
+  f.method = 'dialog';
+  const h = el('div', 's-majh');
+  h.append(el('h2', null, 'Nouvelle version installée'));
+  if (n) h.append(el('div', 's-majv', A.titre + ' ' + n.v));
+  if (prec && n && prec !== n.v) h.append(el('div', 's-majp', 'précédente\u00a0: ' + prec));
+  const b = el('div', 's-majb');
+  for (const x of nonVues) {
+    const s = el('section');
+    s.append(el('h3', null, x.v + (x.t ? ' · ' + x.t : '')));
+    const ul = el('ul');
+    for (const i of x.items) ul.append(el('li', null, i));
+    s.append(ul);
+    b.append(s);
+  }
+  if (!nonVues.length) b.append(el('p', 's-aide', 'Petites corrections et améliorations.'));
+  const pied = el('div', 's-pied s-majf');
+  pied.append(el('div', 's-majc'));
+  const ok = el('button', 's-primaire', 'OK');
+  ok.value = 'ok';
+  pied.append(ok);
+  f.append(h, b, pied);
+  d.replaceChildren(f);
+  peindreCopie();
+  if (A.nouveautes && A.nouveautes.length) mem.set('nouveautes-vues', nouveauteRecente());
+  if (!d.open) d.showModal();
+  if (d.classList.contains('fete')) etincelles(d);
+  return d;
+}
+function peindreCopie() {
+  const d = $s('#s-maj');
+  if (!d) return;
+  const c = $s('.s-majc', d),
+    avec = maj.autres.length ? ', avec ' + listeTitres(maj.autres) : '';
+  c.textContent =
+    {
+      attente: '◌ Copie pour le PC\u00a0: dépôt dans OneDrive…',
+      ok: '✓ Déposée dans OneDrive pour le PC' + avec,
+      pause: 'Copie pour le PC\u00a0: dépôt ' + texteReprise(),
+      pc: '✓ Arrivée au PC par OneDrive'
+    }[maj.copie] || '';
+  c.classList.toggle('ok', maj.copie === 'ok' || maj.copie === 'pc');
+  d.classList.toggle('fete', maj.copie === 'ok' || maj.copie === 'pc');
+}
+/** Résultat du dépôt pour le PC ('deposee', true, false) et titres des autres outils déposés en même temps. */
+function surDepot(r, autres) {
+  autres = autres || [];
+  if (A.surDepot) return A.surDepot(r, autres);
+  maj.depot = r;
+  maj.autres = autres;
+  const d = $s('#s-maj');
+  if (d && d.open && AND) {
+    const avant = maj.copie;
+    if (copiePrete(r)) maj.copie = 'ok';
+    else if (maj.copie === 'attente') maj.copie = null;
+    peindreCopie();
+    if (maj.copie === 'ok' && avant !== 'ok') etincelles(d);
+    return;
+  }
+  const L = (r === 'deposee' ? [A.titre] : []).concat(autres);
+  if (L.length) {
+    toast('✓ Nouvelle version de ' + listeTitres(L) + ' déposée dans OneDrive pour le PC', null, null, 5000);
+    const t = $s('#s-toast');
+    t.classList.add('s-fete');
+    etincelles(t);
+  }
+}
+
 /* ---- notes de version ---- */
 /** La date la plus récente des notes de version (la liste peut ne pas être triée : 1.8). */
 function nouveauteRecente() {
@@ -9019,8 +9445,7 @@ function annoncerNouveautes() {
   const L = A.nouveautes || [];
   if (!L.length) return;
   if (!mem.get('nouveautes-vues', '')) return mem.set('nouveautes-vues', nouveauteRecente());
-  const n = nouveautesNonVues().sort((a, b) => (a.d < b.d ? 1 : -1));
-  if (n.length) toast('Nouveautés de ' + A.titre + ' ' + n[0].v, 'Voir', () => montrerNouveautes(n), 8000);
+  if (nouveautesNonVues().length) fenetreVersion(); /* 1.16 : la fenêtre de nouvelle version, au PC comme au téléphone */
 }
 /* socle/js/20-demarrage.js : démarrage, relectures, cycle de vie du Compagnon. */
 
@@ -9040,8 +9465,9 @@ function annoncerNouveautes() {
  *   elements(texte) → Map(clé → libellé) : les éléments d'un fichier, lus sur le texte brut, y compris les lignes que
  *   parse ne comprendrait pas ; le socle refuse d'écrire si l'un d'eux disparaîtrait sans suppression (1.4),
  *   apresLecture() après chaque lecture en accès direct (doublons ramassés, page déposée),
- *   apresMiseAJour(tamponPrecedent) au lieu du message « X est à jour » ; surDepot(r) après le dépôt de la page
- *   pour le PC ('deposee', true ou false) ; fermeParRetour(dialog) avant qu'une fenêtre se ferme par le bouton retour,
+ *   apresMiseAJour(tamponPrecedent) au lieu de la fenêtre « Nouvelle version installée » (1.16) ; surDepot(r, autres)
+ *   après le dépôt de la page pour le PC ('deposee', true ou false ; autres : titres des autres outils déposés en même
+ *   temps, 1.16) ; fermeParRetour(dialog) avant qu'une fenêtre se ferme par le bouton retour,
  *   recevoir(message) : un message d'un autre outil de la suite ({id, de, type, donnees, le}) ; renvoyer false s'il
  *   ne peut pas encore être appliqué (il reste dans la boîte) ; voir 21-boite.js (1.6),
  *   surTexte(t), surFichier({name, size, type}) : raccourci « Nouvelle note » ('' ), texte ou fichier partagés vers
@@ -9065,7 +9491,7 @@ async function demarrer(adaptateur) {
       const avant = mem.get('page-maj');
       mem.set('page-maj', null);
       if (A.apresMiseAJour) A.apresMiseAJour(avant);
-      else toast(A.titre + ' est à jour');
+      else fenetreVersion();
     }
     verifierPage();
     verifierAppli();
@@ -9539,7 +9965,7 @@ function fermerCouche() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.15.2',
+  version: '1.16.0',
   demarrer,
   /* fichier */
   modifie,
@@ -17321,7 +17747,7 @@ function changed() {
 }
 function editing() {
   const a = document.activeElement;
-  return !!(a && a.matches && a.matches('.txt,.cmt,input,textarea'));
+  return !!(a && a.matches && a.matches('.txt,.cmt,input,textarea,#nEd'));
 }
 function applyModel(r) {
   const a = activeInfo();
@@ -18563,6 +18989,18 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-07 23:17',
+    type: 'web',
+    v: '3.12.7',
+    t: 'Rubrique au doigt, notes mises en forme',
+    items: [
+      'Téléphone\u00a0: l’appui long sur une tâche propose «\u00a0Échéance…\u00a0» et «\u00a0Rubrique…\u00a0», qui s’ouvrent dans le menu même (avant, «\u00a0Échéance, rubrique…\u00a0» ouvrait la tâche). Rubrique\u00a0: la sienne est cochée, toucher une autre y envoie la tâche, toucher le message pour annuler. La fiche d’une tâche permet aussi de changer de rubrique.',
+      'Téléphone\u00a0: une note s’écrit mise en forme, comme au PC\u00a0: gras et italique affichés, astérisques visibles seulement autour du curseur, puces et sous-puces. Si le clavier se comporte mal\u00a0: ⋮ › Plus d’options › «\u00a0Notes mises en forme\u00a0», à éteindre, pour revenir au champ simple.',
+      'PC\u00a0: après une mise à jour, la fenêtre «\u00a0Nouvelle version installée\u00a0» du téléphone, avec son arc-en-ciel et son feu d’artifice.',
+      'Téléphone\u00a0: quand Tâches dépose sa nouvelle version pour le PC, il dépose aussi celle de Saison (et inversement)\u00a0; la fenêtre le dit.'
+    ]
+  },
   {
     d: '2026-11-07 18:55',
     type: 'web',
@@ -20036,7 +20474,7 @@ function vcRender() {
     c.append(el('vcn', first, 'div'), el('vcm', many ? 'toucher pour tout voir' : 'toucher pour le détail', 'div'));
   const cp = {
     wait: '◌ Copie pour le PC\u00a0: dépôt dans OneDrive…',
-    ok: '✓ Déposée dans OneDrive pour le PC',
+    ok: '✓ Déposée dans OneDrive pour le PC' + (vc.autres && vc.autres.length ? ', avec ' + vc.autres.join(' et ') : ''),
     pause: 'Copie pour le PC\u00a0: dépôt ' + nextWorkTxt()
   }[vc.copy];
   if (cp) {
@@ -20070,6 +20508,26 @@ function vcOpenComp(prev, cur, prevNom, curNom) {
   vc.web = false;
   vc.copy = null;
   vcShowModal();
+}
+/* 3.12 : PC, première ouverture d'une nouvelle version : la même fenêtre, arc-en-ciel et feu d'artifice tout de suite */
+function vcOpenPc() {
+  const vu = newsSeen(),
+    avant = NOUVEAUTES.find(e => e.type === 'web' && e.d <= vu);
+  vc.prev = avant ? avant.v : '';
+  vc.web = true;
+  vc.copy = 'pc';
+  vcShowModal();
+  vcSparks(document.getElementById('vmod'));
+}
+function vcSparks(d) {
+  for (let k = 0; k < 12; k++) {
+    const s = document.createElement('i');
+    s.className = 'spark';
+    s.style.setProperty('--r', k * 30 + (k % 2) * 10 + 'deg');
+    s.style.setProperty('--d', (k % 3) * 50 + 'ms');
+    d.append(s);
+    setTimeout(() => s.remove(), 1400);
+  }
 }
 function vcOpen(prev) {
   vc.prev = prev || '';
@@ -20137,12 +20595,13 @@ function vmRender() {
   if (!u.length) b.append(el('p', 'vme', 'Petites corrections et améliorations.'));
   const cp = {
     wait: '◌ Copie pour le PC\u00a0: dépôt dans OneDrive…',
-    ok: '✓ Déposée dans OneDrive pour le PC',
-    pause: 'Copie pour le PC\u00a0: dépôt ' + nextWorkTxt()
+    ok: '✓ Déposée dans OneDrive pour le PC' + (vc.autres && vc.autres.length ? ', avec ' + vc.autres.join(' et ') : ''),
+    pause: 'Copie pour le PC\u00a0: dépôt ' + nextWorkTxt(),
+    pc: '✓ Arrivée au PC par OneDrive'
   }[vc.copy];
   const ft = el('div', 'vmf');
   if (cp) {
-    const c = el('div', 'vmc' + (vc.copy === 'ok' ? ' ok' : ''), cp);
+    const c = el('div', 'vmc' + (vc.copy === 'ok' || vc.copy === 'pc' ? ' ok' : ''), cp);
     if (vc.copy === 'pause') c.insertAdjacentHTML('afterbegin', PAUSE_SVG + ' ');
     ft.append(c);
   }
@@ -20151,10 +20610,11 @@ function vmRender() {
   ft.append(ok);
   f.append(h, b, ft);
   d.replaceChildren(f);
-  d.classList.toggle('fete', vc.copy === 'ok');
+  d.classList.toggle('fete', vc.copy === 'ok' || vc.copy === 'pc');
 }
 /* résultat du dépôt de taches.html : met la carte à jour, ou l'ouvre si le dépôt arrive plus tard (premier usage dans les heures) */
-function vcCopy(r) {
+function vcCopy(r, autres) {
+  vc.autres = autres || []; /* socle 1.16 : les pages des autres outils déposées en même temps */
   if (vc.modal) {
     /* fenêtre de nouvelle version ouverte : la ligne de copie s'y met à jour, et l'arc-en-ciel l'entoure au dépôt */
     if (r === 'deposee') vc.copy = 'ok';
@@ -20171,6 +20631,11 @@ function vcCopy(r) {
       }
       buzz([12, 50, 12, 50, 30]);
     }
+    return;
+  }
+  if (r !== 'deposee' && vc.autres.length) {
+    /* seule la page d'un autre outil vient de partir */
+    toast('✓ Nouvelle version de ' + vc.autres.join(' et ') + ' déposée dans OneDrive pour le PC', 5000);
     return;
   }
   if (r === 'deposee') {
@@ -21077,8 +21542,9 @@ function mFillAct() {
   const hasSubs = blockEnd(i) > i + 1;
   d.classList.toggle('vcmt', !neuf || mNewOpen.cmt || !!it.note);
   d.classList.toggle('vsub', !neuf || mNewOpen.sub || hasSubs);
-  $('#aSecRow').hidden = !neuf;
-  if (neuf) {
+  /* 3.12 : la rubrique se change aussi dans la fiche d'une tâche existante (seulement une tâche, pas une sous-tâche) */
+  $('#aSecRow').hidden = ro || it.level > 0;
+  if (!$('#aSecRow').hidden && document.activeElement !== $('#aSec')) {
     const sel = $('#aSec'),
       h = headingOf(i);
     sel.innerHTML = '';
@@ -21502,8 +21968,15 @@ function mInitAct() {
   $('#aSec').onchange = () => {
     const i = idx(mActId);
     if (i < 0) return;
-    const v = $('#aSec').value,
-      blk = items.splice(i, blockEnd(i) - i);
+    const v = $('#aSec').value;
+    if (mActId !== mDraftId) {
+      /* 3.12 : tâche existante : déplacée à la fin de la rubrique choisie, annulable ; la liste derrière ne change pas de rubrique */
+      const o = $('#aSec').selectedOptions[0];
+      mMoveBlock(mActId, { sec: v }, v ? 'Déplacée vers « ' + o.textContent + ' »' : 'Sortie de sa rubrique');
+      mFillAct();
+      return;
+    }
+    const blk = items.splice(i, blockEnd(i) - i);
     items.splice(laneEndOf(v || null), 0, ...blk);
     mState.sec = v;
     mstore.set(MKEY + '-ui', mState);
@@ -21654,6 +22127,7 @@ function mOpenNote(id, text) {
   mNoteTitreTouche = false;
   mNoteCorps0 = parts.corps.replace(/^\s+|\s+$/g, '');
   $('#nText').value = parts.corps;
+  mEdCharger(); /* 3.12 : note mise en forme */
   $('#nTitle').value = parts.titre;
   mNoteMajTitre();
   mNoteLinks(n);
@@ -21685,13 +22159,9 @@ function mOpenNote(id, text) {
       );
     }
   }
-  const t = $('#nText');
   if (n) {
     if (document.activeElement) document.activeElement.blur();
-  } else {
-    t.focus();
-    t.setSelectionRange(t.value.length, t.value.length);
-  }
+  } else mNoteFocus(true);
 }
 /* liens reliés à la note, avec une croix pour en retirer un */
 function mNoteLinks(n) {
@@ -21736,6 +22206,11 @@ async function mPaste(ta) {
   txt = txt.replace(/\r\n?/g, '\n').replace(/\s+$/, '');
   if (!txt) {
     toast('Le presse-papiers est vide');
+    return;
+  }
+  if (!ta) {
+    mEdColler(txt); /* 3.12 : note mise en forme */
+    buzz('tick');
     return;
   }
   const s = ta.selectionStart ?? ta.value.length,
@@ -21945,7 +22420,7 @@ function mNoteToTask() {
   const { n, v } = src,
     sp = noteSplit(v);
   if (!sp.title) {
-    $('#nText').focus();
+    mNoteFocus(true);
     return;
   }
   const st = $('#nState .on').dataset.k,
@@ -22026,27 +22501,26 @@ function mInitNotes() {
   $('#nTitle').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const t = $('#nText');
-      t.focus();
-      t.setSelectionRange(0, 0);
+      mNoteFocus(false);
     }
   });
   $('#nDueOn').onchange = () => {
     mDueOff = $('#nDueOn').checked ? '' : $('#nDue').dataset.d;
   };
-  for (const [id, f] of [
-    ['#nBullet', ta => toggleBullet(ta)],
-    ['#nBold', ta => wrapSel(ta, '**')],
-    ['#nItal', ta => wrapSel(ta, '*')]
+  for (const [id, f, k] of [
+    ['#nBullet', ta => toggleBullet(ta), 'l'],
+    ['#nBold', ta => wrapSel(ta, '**'), 'b'],
+    ['#nItal', ta => wrapSel(ta, '*'), 'i']
   ]) {
     const b = $(id);
     b.onpointerdown = e => e.preventDefault();
     b.onmousedown = e => e.preventDefault();
-    b.onclick = () => f($('#nText'));
+    b.onclick = () => (mNoteRiche() ? mEdFmt(k) : f($('#nText')));
   } /* le clavier reste ouvert */
+  mInitNoteRiche();
   $('#nPaste').onpointerdown = e => e.preventDefault();
   $('#nPaste').onmousedown = e => e.preventDefault();
-  $('#nPaste').onclick = () => mPaste($('#nText'));
+  $('#nPaste').onclick = () => mPaste(mNoteRiche() ? null : $('#nText'));
   listKeys($('#nText'));
   listKeys($('#aNote'));
   listKeys($('#mMore'));
@@ -22231,7 +22705,10 @@ function mCtxEntrees(c) {
           else x.important = true;
         })
     ],
-    ['Échéance, rubrique…', () => mOpenAct(id)],
+    /* 3.12 (François, 07/11 : « je m'attends à pouvoir changer de rubrique […] à la place, ça ouvre la tâche ») :
+       deux entrées qui ouvrent leur choix dans le menu même, au lieu de la fiche */
+    ['Échéance…', null, false, () => mCtxEcheances(id)],
+    ['Rubrique…', null, false, () => mCtxRubriques(id)],
     [
       'Supprimer',
       () => {
@@ -22257,31 +22734,116 @@ function mCtxOuvrir(c) {
   const el = document.createElement('div');
   el.id = 'mCtx';
   el.setAttribute('role', 'menu');
-  for (const [l, f, danger] of mCtxEntrees(c)) {
+  document.body.append(el);
+  c.classList.add('ctxsel');
+  mCtx = { c, el };
+  mCtxRemplir(mCtxEntrees(c));
+  socle.couche(el, () => mCtxFermer());
+}
+/* entrées : [libellé, action, rouge, sous-menu] ; une entrée à sous-menu remplace le contenu du menu (« ‹ » pour revenir) */
+function mCtxRemplir(entrees, titre) {
+  const { c, el } = mCtx;
+  el.replaceChildren();
+  el.classList.toggle('sous', !!titre);
+  if (titre) {
+    const h = document.createElement('button');
+    h.type = 'button';
+    h.className = 'ctxh';
+    h.textContent = '‹ ' + titre;
+    h.onclick = e => {
+      e.stopPropagation();
+      buzz('tick');
+      mCtxRemplir(mCtxEntrees(c));
+    };
+    el.append(h);
+  }
+  for (const [l, f, danger, sous, coche] of entrees) {
     const b = document.createElement('button');
     b.type = 'button';
     b.setAttribute('role', 'menuitem');
     b.textContent = l;
     if (danger) b.className = 'danger';
+    if (sous) b.classList.add('ctxs');
+    if (coche) {
+      b.classList.add('ici');
+      b.setAttribute('aria-current', 'true');
+    }
     b.onclick = e => {
       e.stopPropagation();
+      if (sous) {
+        buzz('tick');
+        return mCtxRemplir(sous(), l.replace(/…$/, ''));
+      }
       mCtxFermer();
-      f();
+      if (f) f();
     };
     el.append(b);
   }
-  document.body.append(el);
   /* sous la carte s'il y a la place, sinon au-dessus ; jamais hors de l'écran */
   const r = c.getBoundingClientRect(),
-    h = el.offsetHeight,
+    h = Math.min(el.offsetHeight, innerHeight - 16),
     w = el.offsetWidth;
-  const top = r.bottom + 6 + h < innerHeight - 8 ? r.bottom + 6 : Math.max(8, r.top - 6 - h);
+  el.style.maxHeight = innerHeight - 16 + 'px';
+  const top = r.bottom + 6 + h < innerHeight - 8 ? r.bottom + 6 : Math.max(8, Math.min(r.top - 6, innerHeight - 8) - h);
   el.style.top = top + 'px';
   el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + 12)) + 'px';
   el.style.transformOrigin = (top > r.top ? 'top' : 'bottom') + ' left';
-  c.classList.add('ctxsel');
-  mCtx = { c, el };
-  socle.couche(el, () => mCtxFermer());
+}
+/* sous-menu « Rubrique » : la rubrique actuelle cochée ; toucher une autre y envoie la tâche (à la fin), annulable */
+function mCtxRubriques(id) {
+  const i = idx(id),
+    h = i >= 0 ? headingOf(i) : null,
+    ici = h ? h.id : '';
+  const L = [['Hors rubrique', '']].concat(items.filter(x => x.kind === 'h').map(x => [x.text, x.id]));
+  return L.map(([t, hid]) => [
+    t,
+    hid === ici ? null : () => mMoveBlock(id, { sec: hid }, hid ? 'Déplacée vers « ' + t + ' »' : 'Sortie de sa rubrique'),
+    false,
+    null,
+    hid === ici
+  ]);
+}
+/* sous-menu « Échéance » : les mêmes raccourcis que la fiche, une autre date (calendrier d'Android), la retirer */
+function mCtxEcheances(id) {
+  const it = items[idx(id)];
+  if (!it) return [];
+  const fixe = (d, l) => mEdit(id, x => (x.due = d), 'Échéance\u00a0: ' + l);
+  const L = mQuickDates().map(([l, d]) => [l.charAt(0).toUpperCase() + l.slice(1), () => fixe(d, l), false, null, it.due === d]);
+  L.push(['Dans une semaine', () => fixe(addDays(todayISO(), 7), 'dans une semaine'), false, null, it.due === addDays(todayISO(), 7)]);
+  L.push([
+    'Autre date…',
+    () => {
+      const inp = document.createElement('input');
+      inp.type = 'date';
+      inp.className = 'dhid';
+      inp.value = it.due || '';
+      document.body.append(inp);
+      inp.onchange = () => {
+        if (inp.value) fixe(inp.value, shortDate(inp.value));
+        inp.remove();
+      };
+      inp.addEventListener('blur', () => setTimeout(() => inp.remove(), 1000));
+      try {
+        inp.showPicker();
+      } catch (e) {
+        inp.focus();
+        inp.click();
+      }
+    }
+  ]);
+  if (it.due)
+    L.push([
+      'Retirer l’échéance',
+      () =>
+        mEdit(
+          id,
+          x => {
+            delete x.due;
+          },
+          'Échéance retirée'
+        )
+    ]);
+  return L;
 }
 function mCtxFermer() {
   if (!mCtx) return;
@@ -22290,6 +22852,151 @@ function mCtxFermer() {
   c.classList.remove('ctxsel');
   el.remove();
   socle.finCouche();
+}
+/* ---------- note mise en forme au téléphone (3.12, séance de mise à jour du 07/11 ; feuille de route n° 15) ----------
+   Le même éditeur qu'au PC (03-pc-affichage.js : edLineHtml, edSync, edFmt…) : gras et italique affichés, astérisques
+   visibles seulement autour du curseur, puces et sous-puces. Il double le champ #nText, qui reste la source pour tout
+   le reste (enregistrer, copier, en faire une tâche, titre automatique) : chaque frappe y recopie le texte.
+   Repli : ⋮ › Plus d'options › « Notes mises en forme » éteint, le champ simple d'avant (si le clavier se comporte mal). */
+let mEdHist = null;
+function mNoteRiche() {
+  return !(mState && mState.noteSimple);
+}
+/** Recopie l'éditeur dans #nText (texte du fichier : « - » des puces, astérisques), puis prévient les écouteurs. */
+function mEdVersTexte() {
+  const ed = $('#nEd'),
+    t = $('#nText');
+  const v = [...ed.children]
+    .map(d => ((d.classList.contains('b') ? '  '.repeat(edLv(d)) + '- ' : '') + d.textContent).replace(/ /g, ' ').replace(/\s+$/, ''))
+    .join('\n')
+    .replace(/^\s+|\s+$/g, '');
+  if (t.value === v) return;
+  t.value = v;
+  t.dispatchEvent(new Event('input', { bubbles: true }));
+}
+/** Ouvre l'éditeur sur le texte de #nText (à l'ouverture de la note), ou revient au champ simple. */
+function mEdCharger() {
+  const ed = $('#nEd'),
+    t = $('#nText'),
+    on = mNoteRiche();
+  ed.hidden = !on;
+  t.hidden = on;
+  if (!on) return;
+  ed.innerHTML = noteToEd(t.value) || '<div><br></div>';
+  [...ed.children].forEach(L => (L._src = L.textContent));
+  mEdHist = edHistory(ed);
+}
+/** Le curseur dans la note : dans l'éditeur ou dans le champ simple ; fin : au bout du texte, sinon au début. */
+function mNoteFocus(fin) {
+  if (!mNoteRiche()) {
+    const t = $('#nText'),
+      p = fin ? t.value.length : 0;
+    t.focus();
+    t.setSelectionRange(p, p);
+    return;
+  }
+  const ed = $('#nEd');
+  ed.focus();
+  const L = fin ? ed.lastElementChild : ed.firstElementChild;
+  if (L) edPlace(ed, { i: [...ed.children].indexOf(L), o: fin ? L.textContent.length : 0 });
+}
+/** Gras, italique, liste depuis la barre de la note. */
+function mEdFmt(k) {
+  const ed = $('#nEd');
+  if (!edSel(ed)) mNoteFocus(true);
+  mEdHist.push(true);
+  if (k === 'l') edToggleList(ed);
+  else edFmt(ed, k);
+  mEdVersTexte();
+}
+/** Coller (bouton de la barre) : du texte brut, ligne par ligne, là où est le curseur. */
+function mEdColler(txt) {
+  const ed = $('#nEd');
+  if (!edSel(ed)) mNoteFocus(true);
+  mEdHist.push(true);
+  txt.split('\n').forEach((l, k) => {
+    if (k) document.execCommand('insertParagraph');
+    if (l) document.execCommand('insertText', false, l);
+  });
+  edNorm(ed);
+  edSync(ed);
+  mEdVersTexte();
+}
+function mInitNoteRiche() {
+  const ed = $('#nEd');
+  ed.addEventListener('compositionstart', () => (ed._comp = true));
+  ed.addEventListener('compositionend', () => {
+    ed._comp = false;
+    edNorm(ed);
+    edSync(ed);
+    mEdVersTexte();
+  });
+  ed.addEventListener('beforeinput', e => {
+    if (e.inputType === 'historyUndo' || e.inputType === 'historyRedo') {
+      e.preventDefault();
+      mEdHist[e.inputType === 'historyUndo' ? 'undo' : 'redo']();
+      mEdVersTexte();
+      return;
+    }
+    if (/^format/.test(e.inputType)) return e.preventDefault();
+    /* Entrée sur une puce vide : un cran plus haut, puis fin de la liste (comme au PC). Par beforeinput : les claviers
+       d'Android n'envoient pas toujours la touche Entrée. Retour arrière au début d'une puce : pareil. */
+    const line = edLine(ed);
+    if (line && line.classList.contains('b')) {
+      if ((e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') && !line.textContent.trim()) {
+        e.preventDefault();
+        mEdHist.push(true);
+        edSetLv(line, edLv(line) - 1);
+        mEdVersTexte();
+        return;
+      }
+      if (e.inputType === 'deleteContentBackward') {
+        const s = getSelection(),
+          r = s.rangeCount && s.getRangeAt(0);
+        if (r && r.collapsed) {
+          const pre = document.createRange();
+          pre.selectNodeContents(line);
+          pre.setEnd(r.startContainer, r.startOffset);
+          if (!pre.toString().length) {
+            e.preventDefault();
+            mEdHist.push(true);
+            edSetLv(line, edLv(line) - 1);
+            mEdVersTexte();
+            return;
+          }
+        }
+      }
+    }
+    if (e.inputType === 'insertLineBreak') {
+      /* pas de saut de ligne à l'intérieur d'une ligne : une nouvelle ligne, comme Entrée */
+      e.preventDefault();
+      document.execCommand('insertParagraph');
+      return;
+    }
+    mEdHist.push(false, e.inputType);
+  });
+  ed.addEventListener('input', e => {
+    /* pendant une saisie composée (presque tout le temps avec un clavier d'Android) : le texte est recopié, la mise
+       en forme attend la fin du mot */
+    if (!(e.isComposing || ed._comp)) {
+      edNorm(ed);
+      edSync(ed);
+    }
+    mEdVersTexte();
+  });
+  ed.addEventListener('paste', e => {
+    e.preventDefault();
+    const tx = ((e.clipboardData && e.clipboardData.getData('text/plain')) || '').replace(/\r\n?/g, '\n');
+    if (tx) mEdColler(tx);
+  });
+  document.addEventListener('selectionchange', () => {
+    if (ed.hidden || !$('#mNote').open || ed._comp) return;
+    requestAnimationFrame(() => edAct(ed));
+  });
+  $('#oRiche').onchange = () => {
+    mState.noteSimple = !$('#oRiche').checked;
+    mstore.set(MKEY + '-ui', mState);
+  };
 }
 /* ---------- fichier partagé vers l'appli : nouvelle tâche, ou pièce jointe d'une tâche existante ---------- */
 let mAttInfo = null,
@@ -22612,6 +23319,7 @@ function initMobile() {
         : 'toute la suite, jusqu’à ce que tu l’arrêtes, au plus tard ' + socle.texteReprise();
     }
     $('#oFilters').checked = !!mState.filters;
+    $('#oRiche').checked = mNoteRiche();
     $('#oUrgTop').checked = urgTop();
     $('#oDate').checked = dateView();
     mViewSeg();
@@ -23853,7 +24561,7 @@ async function demarrerTaches() {
         .then(() => archiveOld())
         .catch(e => toast('Archivage annuel reporté : ' + e.message.replace(/^\w+:/, ''))),
     apresMiseAJour: avant => setTimeout(() => vcOpen(''), 600),
-    surDepot: r => vcCopy(r),
+    surDepot: (r, autres) => vcCopy(r, autres),
     surAppli: () => mCheckUpdate(),
     recevoir: recevoirSaison,
     surTexte: t => mNouvelleNote(t),
@@ -23863,6 +24571,11 @@ async function demarrerTaches() {
     liste: '#mList'
   });
   if (MOBILE) mRender();
+  /* 3.12 : au PC aussi, la fenêtre « Nouvelle version installée », fêtée dès l'ouverture (la copie est arrivée) */
+  if (!MOBILE) {
+    /* la toute première fois (rien de marqué vu sur ce PC) : pas de fenêtre, seulement la pastille de « Notes de version » */
+    if (mstore.get('taches-nouveautes-vues') && newsUnseen().some(e => e.type === 'web')) setTimeout(vcOpenPc, 400);
+  }
   if (!MOBILE) {
     if (!hasFS) showBanner('nofs');
     else if (!socle.nomFichier) showBanner('choose');
