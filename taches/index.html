@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261107140554">
+<meta name="officious-page" content="20261107141629">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -6820,6 +6820,47 @@ header .s-cherche input:not(:placeholder-shown) {
 #mAct.s-plein[open],
 #mAtt.s-plein[open] {
   padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+}
+
+/* 3.10.2 (François : PC en portrait, 1 080 px de large) : en-tête sur une ligne sous 1 280 px. Libellés courts de
+   l'affichage, recherche plus étroite, boutons sans retour à la ligne, et « Enregistré » garde sa place. */
+.hlong {
+  font-style: normal;
+}
+@media (max-width: 1279px) {
+  body:not(.mobile) header {
+    gap: 0.3rem;
+    padding: 0.45rem 0.7rem;
+  }
+  body:not(.mobile) header > button,
+  body:not(.mobile) header .hmenu-w,
+  body:not(.mobile) #filters > * {
+    white-space: nowrap;
+    flex: none;
+  }
+  /* beaucoup de filtres (personnes attendues) : ils passent à la ligne, les boutons de droite restent à l'écran */
+  body:not(.mobile) #filters {
+    flex: 0 1 auto;
+    min-width: 0;
+    row-gap: 0.25rem;
+  }
+  body:not(.mobile) .hlong {
+    display: none;
+  }
+  body:not(.mobile) #status {
+    min-width: 5.5rem;
+    margin-left: 0.3rem;
+  }
+  body:not(.mobile) header .s-cherche {
+    margin-left: 0.4rem;
+  }
+  body:not(.mobile) header .s-cherche input {
+    width: 11.8rem;
+  }
+  body:not(.mobile) header .s-cherche input:focus,
+  body:not(.mobile) header .s-cherche input:not(:placeholder-shown) {
+    width: 13rem;
+  }
 }
 </style>
 </head>
@@ -14520,7 +14561,7 @@ function renderFilters() {
     u.className = 'useg';
     u.title = 'Affichage : priorités en haut, ou chaque tâche dans sa rubrique, ou par échéance';
     u.innerHTML =
-      '<span>!</span><button type="button" data-v="1">priorités en haut</button><button type="button" data-v="0">dans leur rubrique</button><button type="button" data-v="d">📅 par échéance</button>';
+      '<span>!</span><button type="button" data-v="1">priorités<i class="hlong"> en haut</i></button><button type="button" data-v="0"><i class="hlong">dans leur </i>rubrique</button><button type="button" data-v="d">📅<i class="hlong"> par</i> échéance</button>';
     const cur = dateView() ? 'd' : urgTop() ? '1' : '0';
     u.querySelectorAll('button').forEach(b => {
       b.classList.toggle('on', b.dataset.v === cur);
@@ -18462,6 +18503,15 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-07 15:30',
+    type: 'web',
+    v: '3.10.2',
+    items: [
+      'Au PC, sur un écran en portrait (1 080 px de large) : l’en-tête tient sur une ligne. Les choix d’affichage prennent des libellés courts (« priorités », « rubrique », « échéance »), « Enregistré » reste lisible, et Historique, ⚙, Notes de version restent entiers.',
+      'S’il y a beaucoup de filtres (personnes attendues), ce sont eux qui passent à la ligne : les boutons de droite ne sortent plus de l’écran.'
+    ]
+  },
   {
     d: '2026-11-07 15:10',
     type: 'web',
