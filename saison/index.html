@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261107220022">
+<meta name="officious-page" content="20261107232227">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3039,6 +3039,9 @@ const C = {
   forcer: false /* « Écrire quand même » : passe outre une fois les gardes contre la perte (16-synchro.js) */,
   nouveau: false /* fichier qu'on vient de créer : sa lecture vide est normale */
 };
+/* synchro du matin (1.17, 24-matin.js) : mode : la page a été ouverte par le Compagnon dans sa vue invisible ;
+   b : bilan en cours (rempli par chargerTel, syncSave, relever, le dépôt des pages) */
+const matin = { mode: false, actif: false, b: null, promesse: null, fini: false, bilan: null };
 const hasFS = typeof window.showOpenFilePicker === 'function';
 const $s = (s, r = document) => r.querySelector(s);
 
@@ -3111,7 +3114,8 @@ function fixeReglage(cleR, val) {
 }
 /* socle/js/11-pont.js : le pont avec le Compagnon Android.
    Contrat : window.Compagnon.request(id, méthode, argument) ; réponse par window.compagnonReply(id, ok, valeur).
-   Les erreurs portent un code en tête : connexion:, introuvable:, conflit:, http:, adresse:, reseau:, horsplage:. */
+   Les erreurs portent un code en tête : connexion:, introuvable:, conflit:, http:, adresse:, reseau:, horsplage:,
+   ecran: (vue invisible de la synchro du matin : méthode qui demande un écran, que la page n'appelle pas ; 1.17). */
 
 const AND = window.Compagnon || null;
 const TACTILE = !!AND || matchMedia('(pointer: coarse)').matches;
@@ -3423,6 +3427,7 @@ function creerInterface() {
 
 /* ---- message ---- */
 function toast(msg, action, fn, ms) {
+  if (matin.mode || matin.actif) return; /* synchro du matin : aucun message (1.17) */
   const t = $s('#s-toast');
   if (!t) return;
   t.textContent = msg;
@@ -3515,6 +3520,7 @@ async function occupe(label, fn) {
 
 /* ---- vibrations : par le Compagnon (la WebView ignore navigator.vibrate), sinon le navigateur ---- */
 function vibrer(k) {
+  if (matin.mode || matin.actif) return;
   const web = () => {
     try {
       navigator.vibrate && navigator.vibrate(k === 'tick' ? 8 : k === 'click' ? 15 : [12, 40, 12]);
@@ -3874,7 +3880,8 @@ async function spCall(m, arg) {
   try {
     return await andCall(m, arg);
   } catch (e) {
-    if (!/^connexion:/.test(e.message) || document.hidden) throw e;
+    /* synchro du matin (1.17) : pas de fenêtre de connexion dans la vue invisible ; ce sera à la prochaine ouverture */
+    if (!/^connexion:/.test(e.message) || document.hidden || matin.mode || matin.actif) throw e;
     toast('Connexion à OneDrive…');
     await andCall('spLogin', racineOneDrive(adresseEnLigne()));
     return await andCall(m, arg);
@@ -4079,6 +4086,18 @@ function elementsPerdus(cur, out, base, mien) {
   return [...lu].filter(([k]) => !ecrit.has(k) && !(b.has(k) && !m.has(k))).map(([, lib]) => lib);
 }
 
+/** Nombre d'éléments (A.elements) ajoutés, retirés ou changés entre deux textes ; 0 si l'outil ne les donne pas.
+    Sert au résumé de la synchro du matin (1.17). */
+function ecarts(a, b) {
+  if (!A.elements) return 0;
+  const x = elementsDe(a),
+    y = elementsDe(b);
+  let n = 0;
+  for (const [k, v] of x) if (y.get(k) !== v) n++;
+  for (const k of y.keys()) if (!x.has(k)) n++;
+  return n;
+}
+
 /** Enregistre : relit le fichier, fusionne s'il a changé ailleurs, puis écrit. */
 async function syncSave() {
   if (!C.backend || horsHeures()) return etat();
@@ -4090,6 +4109,7 @@ async function syncSave() {
   occDebut('Synchronisation avec OneDrive…');
   try {
     let cur = await C.backend.read();
+    if (matin.b) matin.b.lu = true;
     const echo = staleEcho(cur);
     journal('lecture avant écriture', {
       fichier: hash8(cur),
@@ -4110,6 +4130,11 @@ async function syncSave() {
       /* sans base (premier chargement, fichier changé…), on garde tout ce que le fichier contient : fusion à partir de rien */
       journal('fusion', { depuis: anc ? 'ancêtre ' + hash8(anc) : C.baseText != null ? 'base' : 'rien' });
       const r = fusionner(A.parse(base != null ? base : ''), A.etat(), A.parse(cur));
+      if (matin.b) {
+        matin.b.fusion = true;
+        matin.b.conflits += r.conflits || 0;
+        if (base != null) matin.b.recues += ecarts(base, cur);
+      }
       A.appliquer(r);
       toast(
         r.conflits
@@ -4146,6 +4171,10 @@ async function syncSave() {
     }
     journal(out !== cur ? 'écriture' : 'rien à écrire', { écrit: hash8(out) });
     if (out !== cur) {
+      if (matin.b) {
+        matin.b.ecrit = true;
+        matin.b.envoyees += ecarts(cur, out);
+      }
       try {
         await C.backend.write(out);
       } catch (e) {
@@ -4173,6 +4202,7 @@ async function syncSave() {
           ? 'rien n’a été écrit (voir le message)'
           : sansCode(err);
     if (err && err.refus) {
+      if (matin.b) matin.b.raison = err.refus;
       journal('refus', { motif: err.refus.slice(0, 60) });
       toast(err.refus.charAt(0).toUpperCase() + err.refus.slice(1), 'Écrire quand même', forcerEcriture, 15000);
     } else if (!/^horsplage:/.test(err && err.message)) {
@@ -4529,7 +4559,9 @@ async function chargerTel(frais = true) {
       const t = await occupe('Synchronisation avec OneDrive…', () =>
         frais && C.backend.fresh ? C.backend.fresh() : C.backend.read()
       );
+      if (matin.b) matin.b.lu = true;
       if (t !== C.baseText && t.trim() && !staleEcho(t)) {
+        if (matin.b && C.baseText != null && !lostAncestor(t)) matin.b.recues += ecarts(C.baseText, t);
         if (lostAncestor(t)) {
           C.dirty = true;
           await syncSave();
@@ -4557,22 +4589,34 @@ async function chargerTel(frais = true) {
     if (!/^horsplage:/.test(e.message)) C.saveErr = sansCode(e);
   }
   etat();
-  if (C.backend === spBackend && !C.saveErr) apresLecture();
+  /* synchro du matin : la suite (doublons, pages, A.apresLecture) est faite et attendue par synchroniserEtRendre */
+  if (C.backend === spBackend && !C.saveErr && !matin.actif) apresLecture().catch(() => {});
 }
-/** Après une lecture réussie en accès direct : ramasser les doublons, déposer la page pour le PC. */
-function apresLecture() {
-  ramasserDoublons()
-    .catch(() => {})
-    .then(() => deposerPage())
-    .then(
-      r =>
-        deposerAutres(r === 'deposee')
-          .catch(() => [])
-          .then(autres => surDepot(r, autres)),
-      () => surDepot(false, [])
-    )
-    .then(() => A.apresLecture && A.apresLecture())
-    .catch(() => {});
+/**
+ * Après une lecture réussie en accès direct : ramasser les doublons, déposer la page pour le PC (et celles des autres
+ * outils), puis A.apresLecture (pièces jointes, archivage de Tâches). La promesse se termine quand tout est fait.
+ * bilan (synchro du matin, 1.17) : les pages des autres outils sont déposées sans la limite d'une fois par heure, et
+ * le résultat va dans le bilan au lieu de surDepot (ni fenêtre ni message).
+ */
+async function apresLecture(bilan) {
+  await ramasserDoublons().catch(() => {});
+  let r = false,
+    autres = [],
+    err = false;
+  try {
+    r = await deposerPage();
+    autres = await deposerAutres(r === 'deposee' || !!bilan).catch(() => []);
+  } catch (e) {
+    err = true;
+    r = false;
+  }
+  if (bilan) {
+    bilan.page = err ? 'erreur' : r === 'deposee' ? 'deposee' : r === true ? 'a-jour' : 'non';
+    bilan.autres = autres;
+  } else surDepot(r, autres);
+  try {
+    if (A.apresLecture) await A.apresLecture();
+  } catch (e) {}
 }
 /** Le fichier choisi est-il sur le téléphone ? (un Compagnon trop ancien ne sait pas le dire : OneDrive) */
 async function majLocal() {
@@ -5146,6 +5190,8 @@ function annoncerNouveautes() {
  *   ne peut pas encore être appliqué (il reste dans la boîte) ; voir 21-boite.js (1.6),
  *   surTexte(t), surFichier({name, size, type}) : raccourci « Nouvelle note » ('' ), texte ou fichier partagés vers
  *   l'outil depuis Android (1.5 ; l'activité de l'outil doit les déclarer dans le Compagnon).
+ * Synchro du matin (1.17, 24-matin.js) : rien de plus à fournir ; A.apresLecture, s'il renvoie une promesse, est
+ *   attendu avant de rendre la main. L'outil peut lire socle.synchroMatin pour ne rien ouvrir lui-même au démarrage.
  */
 async function demarrer(adaptateur) {
   A = adaptateur;
@@ -5156,10 +5202,18 @@ async function demarrer(adaptateur) {
   etat();
   if (AND) {
     document.body.classList.add('s-appli');
+    /* synchro du matin (1.17) : la vue invisible du Compagnon répond « synchro » ; un Compagnon ancien ne connaît pas
+       la méthode (erreur) : mode normal */
+    try {
+      matin.mode = (await andCallRaw('mode')) === 'synchro';
+    } catch (e) {}
     try {
       tel.nom = await andCallRaw('name');
     } catch (e) {}
     if (tel.nom) await majLocal();
+    /* synchroniser et rendre la main : ni fenêtre, ni nouveautés, ni rechargement, ni relectures ensuite ; ce qui doit
+       s'afficher à la prochaine ouverture (page-maj, notes non vues, fenêtre de version) reste pour elle */
+    if (matin.mode) return synchroniserEtRendre();
     await chargerTel();
     if (mem.get('page-maj')) {
       const avant = mem.get('page-maj');
@@ -5194,6 +5248,7 @@ async function demarrer(adaptateur) {
 
 /* ---- cycle de vie du Compagnon ---- */
 window.compagnonResume = () => {
+  if (matin.mode) return; /* vue invisible de la synchro du matin : rien d'autre que la synchro */
   relever();
   verifierPage();
   verifierAppli();
@@ -5636,10 +5691,210 @@ function fermerCouche() {
   if (f) f();
   return true;
 }
+/* socle/js/24-matin.js : synchro du matin par le Compagnon, « synchroniser et rendre la main » (socle 1.17, décision 4
+   du 31/10/2026).
+
+   Les jours ouvrés vers 8 h 55, le Compagnon ouvre chaque outil (sa page publiée habituelle) dans une vue invisible,
+   avec le même pont que d'habitude mais sans activité : ni sélecteur de fichier, ni fenêtre. Le pont répond à la
+   méthode « mode » par "synchro" (dans la vue normale : "" ; un Compagnon ancien ne la connaît pas : mode normal).
+
+   Contrat page ↔ Compagnon :
+   - la page fait tout ce qui suit, puis appelle « synchroFinie » une seule fois, avec le bilan en JSON :
+     {appli, titre, ok, lu, ecrit, fusion, conflits, page ('deposee' | 'a-jour' | 'non' | 'erreur'), autres ([titres]),
+      raison (si ok vaut false, ou s'il n'y avait rien à faire), debut, fin (ISO), resume (une ligne en français)} ;
+   - le Compagnon referme la vue dès qu'il reçoit synchroFinie, ou au plus tard 3 minutes après le plus tardif de ces
+     deux instants : la page chargée, 9 h 00 ce jour-là. La page attend en effet l'ouverture des heures de travail
+     quand elle est dans moins de 15 minutes (réveil à 8 h 55) ; elle vise une synchro finie en moins de 3 minutes
+     après 9 h, et rend de toute façon son bilan au bout de 2 min 45 de travail (« trop longue »).
+
+   Ce que fait la page, par les chemins habituels du téléphone (rien de parallèle) :
+   1. heures de travail (12-heures.js, interrupteur « synchro hors des heures » compris) : ouvertes → tout de suite ;
+      ouverture dans moins de 15 minutes → on l'attend ; sinon (soir, week-end, jour chômé, vacances) rien n'est touché ;
+   2. chargerTel : copie de secours (restaurée par demarrer), relecture, fusion, écriture par syncSave (conflits d'ETag,
+      échos périmés, « rien ne se perd »), rien à écrire → pas d'écriture ;
+   3. relever : la boîte d'échange (passerelles Saison ↔ Tâches). Retenu parce que A.recevoir n'ouvre aucune fenêtre
+      (Tâches : une modification et un message, invisible ici) et que la modification arrive ainsi dans le fichier
+      avant l'ouverture de l'outil au PC ;
+   4. apresLecture : copies en double (une fois par heure, comme d'habitude), page de l'outil pour le PC, pages des
+      autres outils connus (sans la limite d'une fois par heure), A.apresLecture attendu (pièces jointes en attente et
+      archivage dans Tâches) ;
+   5. ce que ces étapes ont modifié (réglage « version », messages, liens des pièces jointes) est écrit à son tour.
+   Rendre la main : aucun message (toast) ni vibration, aucune fenêtre (connexion à OneDrive comprise), pas de
+   rechargement, pas de relectures ensuite ; page-maj, notes de version non vues, fenêtre de version restent pour la
+   prochaine vraie ouverture. Une ligne « Synchro du matin : … » dans le journal de synchronisation. */
+
+const MATIN_ATTENTE = 15 * 60e3; /* attendre l'ouverture des heures de travail si elle est plus proche que cela */
+const MATIN_LIMITE = 165e3; /* bilan rendu au bout de 2 min 45 de travail, avant les 3 minutes du Compagnon */
+
+const dormir = ms => new Promise(r => setTimeout(r, ms));
+
+/** Attend la fin des écritures en cours, puis écrit ce qui reste à écrire (quelques passes au plus). */
+async function viderEcritures() {
+  for (let k = 0; k < 5; k++) {
+    clearTimeout(modifie.t);
+    while (C.saving) await dormir(50);
+    if (!C.dirty || C.saveErr) return;
+    await syncSave();
+  }
+}
+
+/** Attend que OneDrive soit ouvert (horloge vérifiée toutes les 2 s au plus) ; false si l'attente dépasse. */
+async function attendreOuverture(ms) {
+  const fin = Date.now() + ms + 60e3;
+  while (horsHeures()) {
+    if (Date.now() > fin) return false;
+    await dormir(Math.min(2000, Math.max(200, reprise() - maintenant())));
+  }
+  return true;
+}
+
+function pluriel(n, mot) {
+  return n + NBSP + mot + (n > 1 ? 's' : '');
+}
+/** Une ligne lisible : « Tâches : 2 modifications envoyées, page déposée pour le PC ». */
+function resumeMatin(b, n) {
+  if (!b.ok) return b.titre + NBSP + ': ' + b.raison;
+  const L = [];
+  if (b.ecrit)
+    L.push(n.envoyees ? pluriel(n.envoyees, 'modification') + ' envoyée' + (n.envoyees > 1 ? 's' : '') : 'écrit');
+  if (n.recues)
+    L.push(
+      pluriel(n.recues, 'modification') +
+        ' d’ailleurs ' +
+        (b.fusion ? 'fusionnée' : 'relue') +
+        (n.recues > 1 ? 's' : '')
+    );
+  else if (b.fusion) L.push('fusionné');
+  if (b.conflits) L.push(pluriel(b.conflits, 'conflit') + ' (version du téléphone gardée)');
+  if (n.messages) L.push(pluriel(n.messages, 'message') + ' d’un autre outil');
+  if (!L.length) L.push('déjà à jour');
+  const pages = (b.page === 'deposee' ? [b.titre] : []).concat(b.autres);
+  if (pages.length)
+    L.push(
+      b.page === 'deposee' && !b.autres.length
+        ? 'page déposée pour le PC'
+        : (pages.length > 1 ? 'pages de ' : 'page de ') +
+            listeTitres(pages) +
+            ' déposée' +
+            (pages.length > 1 ? 's' : '') +
+            ' pour le PC'
+    );
+  return b.titre + NBSP + ': ' + L.join(', ');
+}
+
+/** Rend le bilan au Compagnon, une seule fois. */
+function finirMatin(b, n) {
+  if (matin.fini) return;
+  matin.fini = true;
+  matin.b = null;
+  b.fin = maintenant().toISOString();
+  b.resume = resumeMatin(b, n);
+  journal('Synchro du matin : ' + b.resume.replace(/^[^:]*:\s*/, ''), b.ok ? null : { ok: 'non' });
+  const out = {};
+  for (const k of [
+    'appli',
+    'titre',
+    'ok',
+    'lu',
+    'ecrit',
+    'fusion',
+    'conflits',
+    'page',
+    'autres',
+    'raison',
+    'debut',
+    'fin',
+    'resume'
+  ])
+    out[k] = b[k];
+  matin.bilan = out;
+  if (matin.mode) andCallRaw('synchroFinie', JSON.stringify(out)).catch(() => {});
+  else matin.actif = false; /* appel à la main (vue normale) : la page reprend sa vie ordinaire */
+}
+
+/**
+ * Synchroniser et rendre la main. Appelée par demarrer quand le Compagnon répond « synchro » à « mode » ; exposée
+ * aussi (socle.synchroniserEtRendre) pour les tests et un appel à la main. Renvoie le bilan ; dans la vue invisible, un
+ * second appel renvoie le même (synchroFinie n'est appelé qu'une fois).
+ */
+function synchroniserEtRendre() {
+  if (!matin.promesse)
+    matin.promesse = faireMatin().then(() => {
+      if (!matin.mode) matin.promesse = null; /* appel à la main : le suivant refait une synchro */
+      return matin.bilan;
+    });
+  return matin.promesse;
+}
+async function faireMatin() {
+  const b = {
+    appli: C.appli,
+    titre: A.titre,
+    ok: false,
+    lu: false,
+    ecrit: false,
+    fusion: false,
+    conflits: 0,
+    page: 'non',
+    autres: [],
+    raison: '',
+    debut: maintenant().toISOString(),
+    fin: '',
+    resume: '',
+    /* compteurs du résumé (hors du bilan) */
+    envoyees: 0,
+    recues: 0,
+    messages: 0
+  };
+  const n = b; /* compteurs et bilan dans le même objet (rempli par syncSave, chargerTel) ; seul le contrat part */
+  matin.fini = false;
+  matin.actif = true;
+  let garde = 0;
+  try {
+    if (!AND) throw new Error('pas de Compagnon');
+    if (!backendTel()) throw new Error('aucun fichier choisi\u00a0: ouvre l’outil une fois');
+    if (horsHeures()) {
+      const ms = reprise() - maintenant(),
+        r = jourChome(maintenant());
+      if (ms > MATIN_ATTENTE)
+        throw new Error('hors des heures de travail' + (r ? ' (' + r + ')' : '') + ', reprise ' + texteReprise());
+      journal('Synchro du matin : attente de l’ouverture, ' + texteReprise());
+      if (!(await attendreOuverture(ms))) throw new Error('hors des heures de travail, reprise ' + texteReprise());
+    }
+    b.debut = maintenant().toISOString();
+    garde = setTimeout(() => {
+      b.ok = false;
+      b.raison = 'synchronisation trop longue, arrêtée au bout de 2' + NBSP + 'min' + NBSP + '45';
+      finirMatin(b, n);
+    }, MATIN_LIMITE);
+    matin.b = b;
+    C.saveErr = null;
+    await chargerTel(true);
+    if (C.saveErr && /connexion/.test(C.saveErr))
+      throw new Error(
+        'connexion à OneDrive à refaire\u00a0: ouvre l’outil une fois'
+      ); /* pas de fenêtre de connexion ici */
+    if (C.saveErr) throw new Error(b.raison || C.saveErr);
+    if (!C.backend) throw new Error('aucun fichier choisi\u00a0: ouvre l’outil une fois');
+    b.messages = relever();
+    if (C.backend === spBackend) await apresLecture(b);
+    await viderEcritures();
+    if (C.saveErr) throw new Error(b.raison || C.saveErr);
+    if (C.dirty) throw new Error('modifications pas encore écrites');
+    b.ok = true;
+    if (!b.ecrit && !b.recues && !b.fusion && !b.messages && b.page !== 'deposee' && !b.autres.length)
+      b.raison = 'rien à synchroniser';
+  } catch (e) {
+    b.ok = false;
+    b.raison = sansCode(e);
+  } finally {
+    clearTimeout(garde);
+    finirMatin(b, n);
+  }
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.16.0',
+  version: '1.17.0',
   demarrer,
   /* fichier */
   modifie,
@@ -5730,6 +5985,11 @@ return {
   etat,
   journalTexte,
   montrerNouveautes,
+  /* synchro du matin par le Compagnon (1.17) */
+  synchroniserEtRendre,
+  get synchroMatin() {
+    return matin.mode;
+  },
   mettreAJourAppli,
   get appliPubliee() {
     return appliPubliee;
@@ -9644,6 +9904,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-08 00:21',
+    v: '0.74.8',
+    t: 'Synchro du matin',
+    items: [
+      'Les jours ouvrés vers 9\u00a0h, le Compagnon synchronise Saison tout seul, sans que tu l’ouvres\u00a0: il relit le planning, fusionne, écrit et dépose la page pour le PC. Une notification «\u00a0Synchro du matin\u00a0» en donne le bilan.',
+      'Cela demande le nouveau Compagnon (3.0.52 ou plus).'
+    ]
+  },
   {
     d: '2026-11-07 23:10',
     v: '0.73.7',
