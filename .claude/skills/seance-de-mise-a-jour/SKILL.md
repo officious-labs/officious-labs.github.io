@@ -11,5 +11,5 @@ L'essentiel, si le fichier est introuvable :
 
 1. Dépôts : les outils concernés, `officious-labs/socle`, `officious-labs/officious-labs.github.io` (publication). `pip install playwright==1.63.0` si besoin. `git fetch` et regarder les autres branches : une autre séance a pu publier entre-temps.
 2. Lire toute la liste, la trier (clair, question, bogue, format de fichier, socle, Compagnon, coûteux et ambigu), puis coder sans demander de validation ; les hypothèses vont au journal et au bilan.
-3. Par outil : une version, un test neuf `tests/test_<version>.py`, des captures à 1 280 px et 390 px, `NOUVEAUTES`, journal, feuille de route, `livrer.sh` (tests complets, jamais `SANS_TESTS`, jamais `--force`).
+3. Par outil : une version, un test neuf `tests/test_<version>.py`, des captures à 1 080 px (PC en portrait), 1 280 px et 390 px, `NOUVEAUTES`, journal, feuille de route, `livrer.sh` (tests complets, jamais `SANS_TESTS`, jamais `--force`).
 4. Finir par un bilan point par point, les hypothèses, quoi essayer, et le prompt de la séance suivante s'il en faut une.
