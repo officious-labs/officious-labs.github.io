@@ -15,11 +15,12 @@ Pages publiées de la suite Officine (une par outil, déposées par `livrer.sh` 
 - Les outils sont des pages HTML autonomes, assemblées : `python3 socle/outils/construire.py`. On ne modifie jamais le fichier assemblé à la main.
 - **Socle** (dépôt `officious-labs/socle`) : versions figées sur des branches `vX.Y.Z`, embarquées dans chaque outil par `python3 socle/outils/socle.py vX.Y.Z [--depuis ../socle]`. On ne touche jamais au dossier `socle/` d'un outil : la correction se fait dans le socle, puis on monte de version.
 - **Tests** : `python3 socle/outils/tester.py` (Playwright, en parallèle). Tout doit passer avant de livrer. Quelques tests sont capricieux sous charge (`test_volant`, `test_aller_retour`, `test_ergonomie`) : relancer seul avant de conclure.
-- **Livrer** : `sh socle/outils/livrer.sh "Outil X.Y : …"` (assemble, teste, commit, push, publie dans `officious-labs.github.io/<appli>/index.html`). Avec la variable `SIGNE` pour les lignes d'attribution.
+- **Livrer** : `sh socle/outils/livrer.sh "Outil X.Y.N : …"` (assemble, teste, commit, push, publie dans `officious-labs.github.io/<appli>/index.html`). Avec la variable `SIGNE` pour les lignes d'attribution.
+- **Numéro de version** : majeure.mineure.fabrication, comme Impulsion (décision du 07/11/2026). Pour une page, la fabrication est le numéro de livraison (`FABRICATION`, prochain : `python3 socle/outils/version.py --suivante`, vérifié par `livrer.sh`) ; pour le Compagnon, le numéro de fabrication d'Actions (`android/VERSION` « 3.0 »). Détail : `LISEZMOI.md` du socle.
 - Chaque version : une entrée dans `NOUVEAUTES` (dates **strictement décroissantes**, sinon les notes reviennent à chaque ouverture), une entrée dans `docs/journal.md` (décisions et pourquoi), la feuille de route à jour.
 - **Noms interdits** dans les pages publiées et les commits : la liste `interdits` de `appli.json`. Aucun vrai prénom dans un commit ni une page publiée.
 - **Accord explicite de François** avant tout `push --force`, réécriture d'historique ou déplacement d'une branche `vX.Y.Z`.
-- **Compagnon Android** (`officious-labs.github.io/android/`) : toute modification du code déclenche une fabrication (numérotée 12, 13…, c'est aussi le numéro de version affiché). Un `.md` n'en déclenche pas.
+- **Compagnon Android** (`officious-labs.github.io/android/`) : toute modification du code déclenche une fabrication (numérotée 50, 51…, affichée 3.0.50, 3.0.51…). Un `.md` n'en déclenche pas.
 - Ce que François voit : la page **publiée** (`officious-labs.github.io/<appli>/index.html`), jamais la copie de travail.
 - Contraintes de François : OneDrive seulement pendant ses heures de travail (9 h – 18 h 30, jours ouvrés) ; son PC de bureau ne parle pas à GitHub.
 - **Interface** : `socle/docs/charte-interface.md` (onze principes, game feel). Décisions en attente ou validées : `socle/docs/propositions-2026-10-31.md`.
