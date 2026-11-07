@@ -24,3 +24,4 @@ Pages publiées de la suite Officine (une par outil, déposées par `livrer.sh` 
 - Contraintes de François : OneDrive seulement pendant ses heures de travail (9 h – 18 h 30, jours ouvrés) ; son PC de bureau ne parle pas à GitHub.
 - **Interface** : `socle/docs/charte-interface.md` (onze principes, game feel). Décisions en attente ou validées : `socle/docs/propositions-2026-10-31.md`.
 - Les docs vivent seulement dans les dépôts (`docs/`) : plus de copie dans le Projet claude.ai (décision de François, 31/10/2026).
+- **Séance de mise à jour** : quand François dit « séance de mise à jour » (ou approchant) avec une liste de points, suivre `docs/seance-de-mise-a-jour.md` du socle (compétence `seance-de-mise-a-jour`).
