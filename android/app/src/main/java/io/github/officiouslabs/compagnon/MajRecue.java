@@ -19,6 +19,7 @@ public class MajRecue extends BroadcastReceiver {
     @Override
     public void onReceive(Context ctx, Intent recu) {
         if (!Intent.ACTION_MY_PACKAGE_REPLACED.equals(recu.getAction())) return;
+        Reveil.armer(ctx); // synchro du matin : une mise à jour efface les alarmes
 
         // rouvre le dernier outil utilisé
         String dernier = ctx.getSharedPreferences("compagnon", Context.MODE_PRIVATE).getString("dernier", "saison");

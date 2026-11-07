@@ -16,54 +16,42 @@ import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.provider.Settings;
-import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import org.json.JSONObject;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Compagnon Officine : une seule appli pour toute la suite, une icône (une activité) par outil.
  * Chaque activité affiche la page publiée de son outil (https://officious-labs.github.io/<outil>/) et lui prête l'accès
  * à son fichier par le pont « Compagnon ». Dérivé de la coquille de Tâches (15/10/2026), via celle de Saison.
  *
- * Contrat du pont : request(id, méthode, argument) ; la réponse revient par window.compagnonReply(id, ok, valeur).
- * Méthodes : name, local, pick, create, print, read, write, spLogin, spRead, spWrite, spCreate, spList, spRecycle, copy, paste, haptic,
- * outils, afficherOutil, version, checkUpdate, update, saveAs ; pièces jointes (reprises du Compagnon de Tâches, 24/10/2026) :
- * saveAttachment, saveAttachmentAs, sendToOneDrive, keepFile, dropKept, spUpload, openAttachment, discardFile.
- * Les erreurs portent un code en tête (connexion:, introuvable:, conflit:, http:, reseau:).
+ * Contrat du pont : voir Pont.java (07/11/2026 : le pont est commun avec la vue invisible de la synchro du matin) ; cette
+ * activité ne fait que les méthodes qui demandent l'écran (demande) : pick, create, spLogin, paste, copy, haptic, print,
+ * saveAs ; pièces jointes (reprises du Compagnon de Tâches, 24/10/2026) : saveAttachment, saveAttachmentAs,
+ * sendToOneDrive, keepFile, openAttachment, discardFile ; update.
  * Vers la page : compagnonResume, compagnonPause, compagnonBack ; compagnonTexte(texte) (raccourci « Nouvelle note » ou
  * texte partagé, '' pour une note vide) et compagnonFichier({name, size, type}) (fichier partagé), pour les outils dont
  * l'activité reçoit le menu Partager (déclaré dans AndroidManifest.xml).
  * Un champ <input type="file"> de la page ouvre le sélecteur d'Android (onShowFileChooser).
  */
-public abstract class MainActivity extends Activity {
+public abstract class MainActivity extends Activity implements Pont.Ecran {
     /** Nom de l'outil de cette activité : chemin de sa page, préfixe de ses réglages. */
     protected abstract String appli();
 
-    static final String HOTE = "officious-labs.github.io";
-    private static final String DEPOT = "https://github.com/officious-labs/officious-labs.github.io/releases/download/android/";
     private static final String FIN_INSTALLATION = "io.github.officiouslabs.compagnon.INSTALLATION";
-    private String CHEMIN, DEPART, PAGE;
     private static final int CHOISIR = 1, CREER = 2, CHOISIR_DOSSIER = 4, ENREGISTRER_SOUS = 5, CONNEXION = 6,
             FICHIER_PAGE = 8, ENREGISTRER_COPIE = 9;
     /** Action du raccourci « Nouvelle note » (appui long sur l'icône). */
@@ -80,44 +68,45 @@ public abstract class MainActivity extends Activity {
     private ValueCallback<Uri[]> fichierPage = null;
 
     private WebView web;
+    private Pont pont;
     private SharedPreferences prefs;
-    private final ExecutorService io = Executors.newSingleThreadExecutor();
-    private final ExecutorService reseau = Executors.newSingleThreadExecutor();
-    private volatile boolean pageAutorisee = false;
+    private ExecutorService io, reseau;
+    /** Outils dont l'activité est à l'écran (la synchro du matin les laisse faire, voir SynchroMatin). */
+    static final java.util.Set<String> A_L_ECRAN = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
     private int choixEnCours = -1, connexionEnCours = -1, majEnCours = -1, majApresPermission = -1;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         prefs = getSharedPreferences("compagnon", MODE_PRIVATE);
-        CHEMIN = "/" + appli() + "/";
-        DEPART = "https://" + HOTE + CHEMIN;
-        PAGE = DEPART + "index.html";
         prefs.edit().putString("dernier", appli()).apply(); // rouvert après une mise à jour
         web = new WebView(this);
-        WebSettings s = web.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setAllowFileAccess(false);
-        s.setAllowContentAccess(false);
-        s.setSupportMultipleWindows(false);
-        s.setCacheMode(WebSettings.LOAD_NO_CACHE);
-        web.addJavascriptInterface(new Pont(), "Compagnon");
+        pont = new Pont(this, appli(), web, this, null);
+        io = pont.io;
+        reseau = pont.reseau;
+        pont.regler();
         web.setWebChromeClient(new Chrome());
         web.setWebViewClient(new Client());
         setContentView(web);
         if (b == null) lireIntention(getIntent()); // pas après une rotation
         try { ((android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE)).cancel(MajRecue.NOTIF); } catch (Exception ignored) { }
         finInstallation(getIntent());
-        web.loadUrl(DEPART);
+        Reveil.armer(this);          // synchro du matin : réarmée à chaque ouverture
+        demanderNotifications();
+        web.loadUrl(pont.depart());
+    }
+
+    /** Synchro du matin : son bilan est une notification ; demandé une fois (Android 13 et plus), sans rien bloquer si refusé. */
+    private void demanderNotifications() {
+        if (Build.VERSION.SDK_INT < 33 || prefs.getBoolean("notifDemandee", false)) return;
+        if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") == android.content.pm.PackageManager.PERMISSION_GRANTED) return;
+        prefs.edit().putBoolean("notifDemandee", true).apply();
+        requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 10);
     }
 
     // ---------- navigation : seule notre page reste dans l'appli ----------
 
-    /** Pages de la suite : elles restent dans l'appli et ont accès au pont ; tout le reste part vers une autre appli. */
-    private static boolean notre(Uri u) {
-        return u != null && "https".equals(u.getScheme()) && HOTE.equals(u.getHost());
-    }
+    private static boolean notre(Uri u) { return Pont.notre(u); }
 
     private class Client extends WebViewClient {
         @Override
@@ -130,7 +119,7 @@ public abstract class MainActivity extends Activity {
 
         @Override
         public void onPageStarted(WebView v, String url, android.graphics.Bitmap f) {
-            pageAutorisee = notre(Uri.parse(url));
+            pont.autorisee = notre(Uri.parse(url));
             pageChargee = false;
         }
 
@@ -142,18 +131,7 @@ public abstract class MainActivity extends Activity {
 
         /** La page elle-même : version en ligne si possible (gardée en copie), sinon dernière copie, sinon celle embarquée. */
         @Override
-        public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
-            Uri u = r.getUrl();
-            if (!r.isForMainFrame() || !notre(u) || !"GET".equals(r.getMethod())) return null;
-            String p = u.getPath();
-            if (!CHEMIN.equals(p) && !(CHEMIN + "index.html").equals(p)) return null;
-            byte[] page = pageEnLigne();
-            if (page == null) page = copie();
-            if (page == null) return null;
-            WebResourceResponse rep = new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream(page));
-            rep.setResponseHeaders(Collections.singletonMap("Cache-Control", "no-store"));
-            return rep;
-        }
+        public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) { return pont.servir(r); }
     }
 
     /** Un champ « fichier » de la page : le sélecteur d'Android (sans cela, rien ne s'ouvre, constaté le 18/10). */
@@ -185,323 +163,121 @@ public abstract class MainActivity extends Activity {
         }
     }
 
-    private boolean pageValide(byte[] b) {
-        if (b == null || b.length < 1000) return false;
-        String t = new String(b, StandardCharsets.UTF_8);
-        return t.contains("compagnonReply") && t.contains("</html>")
-                && t.contains("<meta name=\"officious-appli\" content=\"" + appli() + "\">");
-    }
+    // ---------- pont JavaScript : le commun est dans Pont.java, ici ce qui demande l'écran ----------
 
-    private byte[] pageEnLigne() {
-        try {
-            HttpURLConnection c = (HttpURLConnection) new URL(PAGE).openConnection();
-            c.setConnectTimeout(4000);
-            c.setReadTimeout(8000);
-            c.setUseCaches(false);
-            c.setRequestProperty("Cache-Control", "no-cache");
-            if (c.getResponseCode() != 200) return null;
-            byte[] b;
-            try (InputStream in = c.getInputStream()) { b = tout(in); }
-            if (!pageValide(b)) return null;
-            try (OutputStream o = new FileOutputStream(new File(getFilesDir(), appli() + ".html"))) { o.write(b); }
-            return b;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private byte[] copie() {
-        try (InputStream in = new java.io.FileInputStream(new File(getFilesDir(), appli() + ".html"))) {
-            byte[] b = tout(in);
-            if (pageValide(b)) return b;
-        } catch (Exception ignored) { }
-        try (InputStream in = getAssets().open(appli() + ".html")) {
-            return tout(in);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static byte[] tout(InputStream in) throws java.io.IOException {
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
-        byte[] buf = new byte[16384];
-        int n;
-        while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
-        return bo.toByteArray();
-    }
-
-    // ---------- pont JavaScript ----------
-
-    private class Pont {
-        @JavascriptInterface
-        public void request(final int id, final String methode, final String arg) {
-            if (!pageAutorisee) { repondre(id, false, "page non autorisée"); return; }
-            switch (methode) {
-                case "name":
-                    io.execute(() -> repondre(id, true, fichier() == null ? "" : prefs.getString("nom:" + appli(), "")));
-                    break;
-                case "local":
-                    // "1" si le fichier choisi est sur le téléphone (pas dans OneDrive) : il se lit et s'écrit à toute heure
-                    io.execute(() -> { Uri u = fichier(); repondre(id, true, u != null && !surOneDrive(u) ? "1" : ""); });
-                    break;
-                case "pick":
-                    runOnUiThread(() -> choisir(id));
-                    break;
-                case "create":
-                    runOnUiThread(() -> creer(id, arg));
-                    break;
-                case "read":
-                    io.execute(() -> {
-                        try {
-                            Uri u = exige();
-                            // « frais » : demander d'abord à OneDrive sa dernière version (au démarrage, en actualisant)
-                            if ("frais".equals(arg)) { try { getContentResolver().refresh(u, null, null); } catch (Exception ignored) { } }
-                            repondre(id, true, lire(u));
-                        }
-                        catch (Exception e) { repondre(id, false, message(e)); }
-                    });
-                    break;
-                case "write":
-                    io.execute(() -> {
-                        try { repondre(id, true, ecrire(exige(), arg) ? "" : "non vérifié"); }
-                        catch (Exception e) { repondre(id, false, message(e)); }
-                    });
-                    break;
-                case "spLogin":
-                    runOnUiThread(() -> {
-                        if (connexionEnCours != -1) repondre(connexionEnCours, false, "annulé");
-                        connexionEnCours = id;
-                        Intent i = new Intent(MainActivity.this, ConnexionActivity.class);
-                        i.putExtra(ConnexionActivity.URL, arg);
-                        startActivityForResult(i, CONNEXION);
-                    });
-                    break;
-                case "spRead":
-                    reseau.execute(() -> {
-                        try { repondre(id, true, OneDriveWeb.lire(MainActivity.this, arg).toString()); }
-                        catch (OneDriveWeb.Exc e) { repondre(id, false, e.code + ":" + e.getMessage()); }
-                        catch (Exception e) { repondre(id, false, "reseau:" + message(e)); }
-                    });
-                    break;
-                case "spWrite":
-                    reseau.execute(() -> {
-                        try {
-                            JSONObject o = new JSONObject(arg);
-                            OneDriveWeb.ecrire(MainActivity.this, o.getString("url"), o.getString("text"), o.optString("etag"));
-                            repondre(id, true, OneDriveWeb.lire(MainActivity.this, o.getString("url")).optString("etag"));
-                        }
-                        catch (OneDriveWeb.Exc e) { repondre(id, false, e.code + ":" + e.getMessage()); }
-                        catch (Exception e) { repondre(id, false, "reseau:" + message(e)); }
-                    });
-                    break;
-                case "spCreate":
-                    // page de l’outil déposée pour le PC, à côté de son fichier, la première fois
-                    reseau.execute(() -> {
-                        try {
-                            JSONObject o = new JSONObject(arg);
-                            OneDriveWeb.creer(MainActivity.this, o.getString("url"), o.getString("text"));
-                            repondre(id, true, "");
-                        }
-                        catch (OneDriveWeb.Exc e) { repondre(id, false, e.code + ":" + e.getMessage()); }
-                        catch (Exception e) { repondre(id, false, "reseau:" + message(e)); }
-                    });
-                    break;
-                case "spList":
-                    reseau.execute(() -> {
-                        try { repondre(id, true, OneDriveWeb.lister(MainActivity.this, arg)); }
-                        catch (OneDriveWeb.Exc e) { repondre(id, false, e.code + ":" + e.getMessage()); }
-                        catch (Exception e) { repondre(id, false, "reseau:" + message(e)); }
-                    });
-                    break;
-                case "spRecycle":
-                    reseau.execute(() -> {
-                        try { OneDriveWeb.corbeille(MainActivity.this, arg); repondre(id, true, ""); }
-                        catch (OneDriveWeb.Exc e) { repondre(id, false, e.code + ":" + e.getMessage()); }
-                        catch (Exception e) { repondre(id, false, "reseau:" + message(e)); }
-                    });
-                    break;
-                case "paste":
-                    runOnUiThread(() -> {
-                        try {
-                            ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                            ClipData c = cm.getPrimaryClip();
-                            CharSequence t = c != null && c.getItemCount() > 0 ? c.getItemAt(0).coerceToText(MainActivity.this) : "";
-                            repondre(id, true, t == null ? "" : t.toString());
-                        } catch (Exception e) { repondre(id, false, message(e)); }
-                    });
-                    break;
-                case "haptic":
-                    // retour haptique : la WebView ignore navigator.vibrate
+    @Override
+    public boolean demande(final int id, final String methode, final String arg) {
+        switch (methode) {
+            case "pick":
+                runOnUiThread(() -> choisir(id));
+                return true;
+            case "create":
+                runOnUiThread(() -> creer(id, arg));
+                return true;
+            case "spLogin":
+                runOnUiThread(() -> {
+                    if (connexionEnCours != -1) repondre(connexionEnCours, false, "annulé");
+                    connexionEnCours = id;
+                    Intent i = new Intent(MainActivity.this, ConnexionActivity.class);
+                    i.putExtra(ConnexionActivity.URL, arg);
+                    startActivityForResult(i, CONNEXION);
+                });
+                return true;
+            case "paste":
+                runOnUiThread(() -> {
                     try {
-                        android.os.Vibrator v = getSystemService(android.os.Vibrator.class);
-                        if (v != null && v.hasVibrator()) {
-                            if (Build.VERSION.SDK_INT >= 29) {
-                                int e = "tick".equals(arg) ? android.os.VibrationEffect.EFFECT_TICK
-                                      : "double".equals(arg) ? android.os.VibrationEffect.EFFECT_DOUBLE_CLICK
-                                      : android.os.VibrationEffect.EFFECT_CLICK;
-                                v.vibrate(android.os.VibrationEffect.createPredefined(e));
-                            } else {
-                                v.vibrate(android.os.VibrationEffect.createOneShot("tick".equals(arg) ? 8 : 20, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
-                            }
+                        ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        ClipData c = cm.getPrimaryClip();
+                        CharSequence t = c != null && c.getItemCount() > 0 ? c.getItemAt(0).coerceToText(MainActivity.this) : "";
+                        repondre(id, true, t == null ? "" : t.toString());
+                    } catch (Exception e) { repondre(id, false, message(e)); }
+                });
+                return true;
+            case "haptic":
+                // retour haptique : la WebView ignore navigator.vibrate
+                try {
+                    android.os.Vibrator v = getSystemService(android.os.Vibrator.class);
+                    if (v != null && v.hasVibrator()) {
+                        if (Build.VERSION.SDK_INT >= 29) {
+                            int e = "tick".equals(arg) ? android.os.VibrationEffect.EFFECT_TICK
+                                  : "double".equals(arg) ? android.os.VibrationEffect.EFFECT_DOUBLE_CLICK
+                                  : android.os.VibrationEffect.EFFECT_CLICK;
+                            v.vibrate(android.os.VibrationEffect.createPredefined(e));
+                        } else {
+                            v.vibrate(android.os.VibrationEffect.createOneShot("tick".equals(arg) ? 8 : 20, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                    }
+                    repondre(id, true, "");
+                } catch (Exception e) { repondre(id, false, message(e)); }
+                return true;
+            case "copy":
+                // presse-papiers : texte brut + mise en forme (le mail « Demandez le programme » se colle tel quel)
+                runOnUiThread(() -> {
+                    try {
+                        JSONObject o = new JSONObject(arg);
+                        ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        cm.setPrimaryClip(ClipData.newHtmlText(appli(), o.optString("text"), o.optString("html")));
+                        repondre(id, true, Build.VERSION.SDK_INT >= 33 ? "systeme" : "");
+                    } catch (Exception e) { repondre(id, false, message(e)); }
+                });
+                return true;
+            case "print":
+                // la WebView ignore window.print() : on passe par l'impression d'Android (imprimante ou PDF)
+                runOnUiThread(() -> {
+                    try {
+                        JSONObject o = new JSONObject(arg == null || arg.isEmpty() ? "{}" : arg);
+                        String nom = o.optString("nom", appli());
+                        android.print.PrintManager pm = (android.print.PrintManager) getSystemService(PRINT_SERVICE);
+                        android.print.PrintAttributes.MediaSize taille = "a3".equals(o.optString("format"))
+                                ? android.print.PrintAttributes.MediaSize.ISO_A3.asLandscape()
+                                : android.print.PrintAttributes.MediaSize.ISO_A4;
+                        android.print.PrintAttributes attr = new android.print.PrintAttributes.Builder()
+                                .setMediaSize(taille)
+                                .setMinMargins(android.print.PrintAttributes.Margins.NO_MARGINS)
+                                .build();
+                        pm.print(nom, web.createPrintDocumentAdapter(nom), attr);
                         repondre(id, true, "");
                     } catch (Exception e) { repondre(id, false, message(e)); }
-                    break;
-                case "outils":
-                    io.execute(() -> {
-                        try { repondre(id, true, Outils.liste(MainActivity.this, appli())); }
-                        catch (Exception e) { repondre(id, false, message(e)); }
-                    });
-                    break;
-                case "afficherOutil":
-                    io.execute(() -> {
-                        try {
-                            JSONObject o = new JSONObject(arg);
-                            Outils.afficher(MainActivity.this, appli(), o.getString("appli"), o.getBoolean("visible"));
-                            repondre(id, true, "");
-                        } catch (Exception e) { repondre(id, false, message(e)); }
-                    });
-                    break;
-                case "copy":
-                    // presse-papiers : texte brut + mise en forme (le mail « Demandez le programme » se colle tel quel)
-                    runOnUiThread(() -> {
-                        try {
-                            JSONObject o = new JSONObject(arg);
-                            ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                            cm.setPrimaryClip(ClipData.newHtmlText(appli(), o.optString("text"), o.optString("html")));
-                            repondre(id, true, Build.VERSION.SDK_INT >= 33 ? "systeme" : "");
-                        } catch (Exception e) { repondre(id, false, message(e)); }
-                    });
-                    break;
-                case "print":
-                    // la WebView ignore window.print() : on passe par l'impression d'Android (imprimante ou PDF)
-                    runOnUiThread(() -> {
-                        try {
-                            JSONObject o = new JSONObject(arg == null || arg.isEmpty() ? "{}" : arg);
-                            String nom = o.optString("nom", appli());
-                            android.print.PrintManager pm = (android.print.PrintManager) getSystemService(PRINT_SERVICE);
-                            android.print.PrintAttributes.MediaSize taille = "a3".equals(o.optString("format"))
-                                    ? android.print.PrintAttributes.MediaSize.ISO_A3.asLandscape()
-                                    : android.print.PrintAttributes.MediaSize.ISO_A4;
-                            android.print.PrintAttributes attr = new android.print.PrintAttributes.Builder()
-                                    .setMediaSize(taille)
-                                    .setMinMargins(android.print.PrintAttributes.Margins.NO_MARGINS)
-                                    .build();
-                            pm.print(nom, web.createPrintDocumentAdapter(nom), attr);
-                            repondre(id, true, "");
-                        } catch (Exception e) { repondre(id, false, message(e)); }
-                    });
-                    break;
-                case "saveAs":
-                    // « Télécharger une copie » : la WebView ignore les téléchargements ; fenêtre « Enregistrer sous » d'Android
-                    runOnUiThread(() -> enregistrerCopie(id, arg));
-                    break;
-                case "saveAttachment":
-                    rangerPieceJointe(id, arg);
-                    break;
-                case "saveAttachmentAs":
-                    rangerSous(id, arg);
-                    break;
-                case "sendToOneDrive":
-                    envoyerOneDrive(id, arg);
-                    break;
-                case "keepFile":
-                    garderFichier(id, arg);
-                    break;
-                case "dropKept":
-                    io.execute(() -> { new File(attente(), propre(arg)).delete(); repondre(id, true, ""); });
-                    break;
-                case "spUpload":
-                    reseau.execute(() -> {
-                        try {
-                            JSONObject o = new JSONObject(arg);
-                            File f = new File(attente(), propre(o.getString("key")));
-                            if (!f.exists()) { repondre(id, false, "perdu:fichier introuvable sur le téléphone"); return; }
-                            String n = OneDriveWeb.deposer(MainActivity.this, o.getString("url"), f);
-                            f.delete();
-                            repondre(id, true, n);
-                        }
-                        catch (OneDriveWeb.Exc e) { repondre(id, false, e.code + ":" + e.getMessage()); }
-                        catch (Exception e) { repondre(id, false, "reseau:" + message(e)); }
-                    });
-                    break;
-                case "openAttachment":
-                    ouvrirPieceJointe(id, arg);
-                    break;
-                case "discardFile":
-                    partage = null; partageNom = null;
-                    repondre(id, true, "");
-                    break;
-                case "version":
-                    repondre(id, true, String.valueOf(versionInstallee()));
-                    break;
-                case "versionNom":   // numéro lisible, ex. 3.0.50 (la fabrication seule reste dans « version »)
-                    repondre(id, true, nomVersionInstallee());
-                    break;
-                case "checkUpdate":
-                    reseau.execute(() -> {
-                        try { repondre(id, true, new String(telecharger(DEPOT + "version.txt", 100), StandardCharsets.UTF_8).trim()); }
-                        catch (Exception e) { repondre(id, false, message(e)); }
-                    });
-                    break;
-                case "update":
-                    runOnUiThread(() -> mettreAJour(id));
-                    break;
-                default:
-                    repondre(id, false, "méthode inconnue : " + methode);
-            }
+                });
+                return true;
+            case "saveAs":
+                // « Télécharger une copie » : la WebView ignore les téléchargements ; fenêtre « Enregistrer sous » d'Android
+                runOnUiThread(() -> enregistrerCopie(id, arg));
+                return true;
+            case "saveAttachment":
+                rangerPieceJointe(id, arg);
+                return true;
+            case "saveAttachmentAs":
+                rangerSous(id, arg);
+                return true;
+            case "sendToOneDrive":
+                envoyerOneDrive(id, arg);
+                return true;
+            case "keepFile":
+                garderFichier(id, arg);
+                return true;
+            case "openAttachment":
+                ouvrirPieceJointe(id, arg);
+                return true;
+            case "discardFile":
+                partage = null; partageNom = null;
+                repondre(id, true, "");
+                return true;
+            case "update":
+                runOnUiThread(() -> mettreAJour(id));
+                return true;
+            default:
+                return false;
         }
     }
 
-    private void repondre(int id, boolean ok, String valeur) {
-        final String js = "window.compagnonReply&&compagnonReply(" + id + "," + ok + "," + JSONObject.quote(valeur == null ? "" : valeur) + ")";
-        runOnUiThread(() -> web.evaluateJavascript(js, null));
-    }
+    private void repondre(int id, boolean ok, String valeur) { pont.repondre(id, ok, valeur); }
 
-    private static String message(Exception e) {
-        String m = e.getMessage();
-        return m == null || m.isEmpty() ? e.getClass().getSimpleName() : m;
-    }
+    private static String message(Exception e) { return Pont.message(e); }
+
+    private static String propre(String nom) { return Pont.propre(nom); }
 
     // ---------- fichier choisi par l'appli OneDrive ----------
-
-    /** Le fichier mémorisé, s'il a encore son autorisation de lecture et d'écriture. */
-    private Uri fichier() {
-        String s = prefs.getString("uri:" + appli(), null);
-        if (s == null) return null;
-        Uri u = Uri.parse(s);
-        for (UriPermission p : getContentResolver().getPersistedUriPermissions())
-            if (p.getUri().equals(u) && p.isReadPermission() && p.isWritePermission()) return u;
-        return null;
-    }
-
-    private Uri exige() throws Exception {
-        Uri u = fichier();
-        if (u == null) throw new Exception("autorisation perdue : choisis à nouveau le fichier");
-        return u;
-    }
-
-    private String lire(Uri u) throws Exception {
-        try (InputStream in = getContentResolver().openInputStream(u)) {
-            if (in == null) throw new Exception("fichier illisible");
-            String t = new String(tout(in), StandardCharsets.UTF_8);
-            return t.startsWith("﻿") ? t.substring(1) : t;
-        }
-    }
-
-    /** Remplace le contenu (mode « wt »), puis relit pour vérifier ; OneDrive peut renvoyer un moment l'ancienne version. */
-    private boolean ecrire(Uri u, String texte) throws Exception {
-        try (OutputStream o = getContentResolver().openOutputStream(u, "wt")) {
-            if (o == null) throw new Exception("écriture impossible");
-            o.write(texte.getBytes(StandardCharsets.UTF_8));
-            o.flush();
-        }
-        for (int essai = 0; essai < 6; essai++) {
-            if (lire(u).equals(texte)) return true;
-            Thread.sleep(500);
-        }
-        return false;
-    }
 
     private void choisir(int id) {
         if (choixEnCours != -1) repondre(choixEnCours, false, "annulé");
@@ -517,12 +293,6 @@ public abstract class MainActivity extends Activity {
             choixEnCours = -1;
             repondre(id, false, "sélecteur de fichiers indisponible");
         }
-    }
-
-    /** Fichier fourni par l'appli OneDrive (son fournisseur de documents), et non par le téléphone. */
-    private static boolean surOneDrive(Uri u) {
-        String a = u.getAuthority() == null ? "" : u.getAuthority().toLowerCase();
-        return a.contains("skydrive") || a.contains("onedrive") || a.contains("microsoft");
     }
 
     /** Nouveau fichier, à l'endroit choisi (Téléchargements, Documents… ou OneDrive), avec le nom proposé. */
@@ -593,37 +363,6 @@ public abstract class MainActivity extends Activity {
 
     // ---------- mise à jour de l'appli depuis la version publiée sur GitHub ----------
 
-    private String nomVersionInstallee() {
-        try {
-            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-        } catch (Exception e) {
-            return String.valueOf(versionInstallee());
-        }
-    }
-
-    private long versionInstallee() {
-        try {
-            android.content.pm.PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
-            return Build.VERSION.SDK_INT >= 28 ? pi.getLongVersionCode() : pi.versionCode;
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    private static byte[] telecharger(String adresse, int max) throws Exception {
-        HttpURLConnection c = (HttpURLConnection) new URL(adresse).openConnection();
-        c.setConnectTimeout(6000);
-        c.setReadTimeout(20000);
-        c.setUseCaches(false);
-        c.setInstanceFollowRedirects(true);
-        if (c.getResponseCode() != 200) throw new Exception("réponse " + c.getResponseCode() + " de GitHub");
-        try (InputStream in = c.getInputStream()) {
-            byte[] b = tout(in);
-            if (b.length > max) throw new Exception("fichier trop gros");
-            return b;
-        }
-    }
-
     /** Avant la première mise à jour : demander le droit d'afficher une notification (Android 13 et plus), puis continuer. */
     private void mettreAJour(int id) {
         if (majEnCours != -1) { repondre(id, false, "mise à jour déjà en cours"); return; }
@@ -654,7 +393,7 @@ public abstract class MainActivity extends Activity {
         majEnCours = id;
         reseau.execute(() -> {
             try {
-                byte[] apk = telecharger(DEPOT + "officious.apk", 30 * 1024 * 1024);
+                byte[] apk = Pont.telecharger(Pont.DEPOT + "officious.apk", 30 * 1024 * 1024);
                 if (apk.length < 4 || apk[0] != 'P' || apk[1] != 'K') throw new Exception("fichier téléchargé invalide");
                 PackageInstaller pi = getPackageManager().getPackageInstaller();
                 PackageInstaller.SessionParams sp = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
@@ -854,11 +593,6 @@ public abstract class MainActivity extends Activity {
         });
     }
 
-    private static String propre(String nom) {
-        String n = nom == null ? "" : nom.replaceAll("[\\\\/:*?\"<>|]", "-").trim();
-        return n.isEmpty() ? "fichier" : n;
-    }
-
     /** Dossier du fichier de l'outil, s'il a été autorisé (première pièce jointe). */
     private Uri dossier() {
         String s = prefs.getString("tree:" + appli(), null);
@@ -916,7 +650,7 @@ public abstract class MainActivity extends Activity {
             runOnUiThread(() -> {
                 Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
                 i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-                Uri f = fichier();
+                Uri f = pont.fichier();
                 if (f != null && Build.VERSION.SDK_INT >= 26) i.putExtra(DocumentsContract.EXTRA_INITIAL_URI, f);
                 try { startActivityForResult(i, CHOISIR_DOSSIER); }
                 catch (Exception e) { pjEnCours = -1; repondre(id, false, "dossier-refuse"); }
@@ -942,13 +676,6 @@ public abstract class MainActivity extends Activity {
         });
     }
 
-    /** Fichiers partagés en attente d'envoi dans OneDrive (gardés jusqu'à l'envoi, même hors des heures de travail). */
-    private File attente() {
-        File d = new File(getFilesDir(), "pj-attente-" + appli());
-        d.mkdirs();
-        return d;
-    }
-
     /** Met de côté le fichier reçu, pour l'envoyer dans « Pièces jointes » par l'accès direct ; renvoie sa clé. */
     private void garderFichier(int id, String nom) {
         if (partage == null) { repondre(id, false, "aucun fichier reçu"); return; }
@@ -956,7 +683,7 @@ public abstract class MainActivity extends Activity {
         io.execute(() -> {
             try {
                 String cle = System.currentTimeMillis() + "-" + propre(nom);
-                File f = new File(attente(), cle);
+                File f = new File(pont.attente(), cle);
                 if (!src.renameTo(f)) {
                     try (InputStream in = new java.io.FileInputStream(src); OutputStream o = new FileOutputStream(f)) {
                         byte[] buf = new byte[65536]; int k;
@@ -1052,11 +779,13 @@ public abstract class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        A_L_ECRAN.add(appli());
         if (web != null) web.evaluateJavascript("window.compagnonResume&&compagnonResume()", null);
     }
 
     @Override
     protected void onPause() {
+        A_L_ECRAN.remove(appli());
         if (web != null) web.evaluateJavascript("window.compagnonPause&&compagnonPause()", null);
         super.onPause();
     }

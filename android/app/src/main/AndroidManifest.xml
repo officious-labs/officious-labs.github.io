@@ -4,6 +4,15 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- synchro du matin (07/11/2026) : réveil exact sans réglage à toucher (USE_EXACT_ALARM dès Android 13,
+         SCHEDULE_EXACT_ALARM accordée d'office avant), réarmé au démarrage du téléphone, service de premier plan court
+         (dataSync) gardé éveillé le temps de la synchro -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- pour confier un fichier à l'appli OneDrive (Android 11 et plus) -->
     <queries><package android:name="com.microsoft.skydrive" /></queries>
     <!-- Une seule appli (« Officine » dans les réglages), une icône par outil : chaque outil a son activité et sa propre
@@ -61,6 +70,13 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+        <!-- synchro du matin : réveil des jours ouvrés (et réarmement au démarrage), vue invisible dans un service -->
+        <receiver android:name=".Reveil" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <service android:name=".SynchroMatin" android:exported="false" android:foregroundServiceType="dataSync" />
         <activity android:name=".ConnexionActivity" android:exported="false" android:label="Connexion à OneDrive" />
     </application>
 </manifest>
