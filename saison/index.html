@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261107175449">
+<meta name="officious-page" content="20261107220022">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -229,6 +229,164 @@
   max-width: calc(100vw - 2rem);
   border-radius: 10px;
   box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
+}
+/* 1.16 : encre sombre, contour arc-en-ciel qui tourne (repris de Tâches), pour toute la suite */
+#s-version:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem 0.45rem 1.05rem;
+  border-radius: 999px;
+  border: 2.5px solid transparent;
+  color: #fff;
+  font-size: 0.9rem;
+  background:
+    linear-gradient(#232733, #232733) padding-box,
+    conic-gradient(from var(--s-arc, 0deg), #e8463c, #f2a33a, #f3d43f, #5cc46a, #3aa7e0, #7a5ce0, #d65cc0, #e8463c)
+      border-box;
+  animation: s-arc-tourne 3.5s linear infinite;
+}
+#s-version button {
+  border: none;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+  font-weight: 600;
+}
+@property --s-arc {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes s-arc-tourne {
+  to {
+    --s-arc: 360deg;
+  }
+}
+/* fenêtre « Nouvelle version installée » (1.16) : contour à la couleur de l'outil, arc-en-ciel quand la copie pour le
+   PC est dans OneDrive (ou, au PC, dès qu'elle est arrivée), petit feu d'artifice */
+.s-dialogue.s-maj {
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: 82vh;
+  padding: 0;
+  border: 3.5px solid var(--s-accent);
+  border-radius: 16px;
+  overflow: visible;
+}
+.s-dialogue.s-maj.fete {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--s-fond), var(--s-fond)) padding-box,
+    conic-gradient(from var(--s-arc, 0deg), #e8463c, #f2a33a, #f3d43f, #5cc46a, #3aa7e0, #7a5ce0, #d65cc0, #e8463c)
+      border-box;
+  animation: s-arc-tourne 3.5s linear infinite;
+}
+.s-maj form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(82vh - 6px);
+}
+.s-majh {
+  padding: 1rem 1.15rem 0.6rem;
+  border-bottom: 1px solid var(--s-filet);
+}
+.s-majh h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--s-accent);
+}
+.s-majv {
+  margin-top: 0.15rem;
+  font-weight: 600;
+}
+.s-majp {
+  font-size: 0.82rem;
+  color: var(--s-gris);
+}
+.s-majb {
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0.3rem 1.15rem 0.6rem;
+}
+.s-majb h3 {
+  margin: 0.7rem 0 0.25rem;
+  font-size: 0.92rem;
+  color: var(--s-accent);
+}
+.s-majb ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.s-majb li {
+  margin: 0.2rem 0;
+}
+.s-majf {
+  align-items: center;
+  margin: 0;
+  padding: 0.7rem 1.15rem 0.9rem;
+  border-top: 1px solid var(--s-filet);
+}
+.s-majc {
+  flex: 1;
+  font-size: 0.84rem;
+  color: var(--s-gris);
+}
+.s-majc.ok {
+  color: var(--s-accent);
+  font-weight: 600;
+}
+.s-majf .s-primaire {
+  padding: 0.5rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.s-etincelle {
+  position: absolute;
+  left: 1.6rem;
+  bottom: 1.5rem;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px;
+  border-radius: 50%;
+  background: hsl(var(--r), 90%, 60%);
+  opacity: 0;
+  animation: s-etincelle 0.9s var(--d) ease-out forwards;
+  pointer-events: none;
+}
+.s-etincelle:nth-child(3n) {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+}
+@keyframes s-etincelle {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--r)) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--r)) translateY(-44px) scale(0.4);
+  }
+}
+#s-toast.s-fete {
+  border: 2.5px solid transparent;
+  background:
+    linear-gradient(#1f2933, #1f2933) padding-box,
+    conic-gradient(from var(--s-arc, 0deg), #e8463c, #f2a33a, #f3d43f, #5cc46a, #3aa7e0, #7a5ce0, #d65cc0, #e8463c)
+      border-box;
+  animation: s-arc-tourne 3.5s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  #s-version,
+  .s-maj.fete,
+  #s-toast.s-fete {
+    animation: none;
+  }
+  .s-etincelle {
+    display: none;
+  }
 }
 body:has(#s-version:not([hidden])) #s-toast {
   bottom: 5rem; /* le message passe au-dessus du bandeau */
@@ -3268,6 +3426,7 @@ function toast(msg, action, fn, ms) {
   const t = $s('#s-toast');
   if (!t) return;
   t.textContent = msg;
+  t.classList.remove('s-fete');
   t.classList.toggle('action', !!action);
   if (action) {
     const b = document.createElement('button');
@@ -4406,8 +4565,11 @@ function apresLecture() {
     .catch(() => {})
     .then(() => deposerPage())
     .then(
-      r => A.surDepot && A.surDepot(r),
-      () => A.surDepot && A.surDepot(false)
+      r =>
+        deposerAutres(r === 'deposee')
+          .catch(() => [])
+          .then(autres => surDepot(r, autres)),
+      () => surDepot(false, [])
     )
     .then(() => A.apresLecture && A.apresLecture())
     .catch(() => {});
@@ -4656,17 +4818,10 @@ async function verifierPage(force) {
   }
 }
 
-/** Compagnon : dépose la page affichée dans le dossier OneDrive du fichier, pour le PC. */
-async function deposerPage() {
-  if (!AND || horsHeures() || C.backend !== spBackend) return false;
-  const moi = monTampon(),
-    url = voisin(A.page);
-  if (!moi || !url) return false;
-  if (mem.get('page-deposee') === moi && reglage('version') >= moi) return false;
-  const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
-  if (!r.ok) return false;
-  const html = await r.text();
-  if (tamponDe(html) !== moi) return false; /* la page en ligne a déjà changé : on recharge d'abord */
+/** Écrit une page dans un dossier OneDrive si celle qui s'y trouve est plus ancienne (jamais de retour en arrière).
+    Renvoie 'deposee', true (déjà à jour) ou false (le dossier a plus récent). */
+async function deposerUne(url, html, titre) {
+  const moi = tamponDe(html);
   let cur = null,
     etag = '';
   try {
@@ -4678,21 +4833,88 @@ async function deposerPage() {
   }
   const la = tamponDe(cur);
   if (la > moi) return false; /* le dossier a déjà plus récent */
-  if (la < moi) {
-    await occupe('Copie de ' + A.titre + ' pour le PC…', () =>
-      cur == null
-        ? spCall('spCreate', JSON.stringify({ url, text: html }))
-        : spCall('spWrite', JSON.stringify({ url, text: html, etag }))
-    );
-    journal('page déposée', { tampon: moi });
-    if (!A.surDepot) toast('Nouvelle version de ' + A.titre + ' déposée pour le PC'); /* sinon l'outil le dit */
-  }
+  if (la === moi) return true;
+  await occupe('Copie de ' + titre + ' pour le PC…', () =>
+    cur == null
+      ? spCall('spCreate', JSON.stringify({ url, text: html }))
+      : spCall('spWrite', JSON.stringify({ url, text: html, etag }))
+  );
+  return 'deposee';
+}
+
+/** Compagnon : dépose la page affichée dans le dossier OneDrive du fichier, pour le PC. */
+async function deposerPage() {
+  if (!AND || horsHeures() || C.backend !== spBackend) return false;
+  const moi = monTampon(),
+    url = voisin(A.page);
+  if (!moi || !url) return false;
+  noterPage(url);
+  if (mem.get('page-deposee') === moi && reglage('version') >= moi) return true;
+  const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) return false;
+  const html = await r.text();
+  if (tamponDe(html) !== moi) return false; /* la page en ligne a déjà changé : on recharge d'abord */
+  const d = await deposerUne(url, html, A.titre);
+  if (d === false) return false;
+  if (d === 'deposee') journal('page déposée', { tampon: moi });
   mem.set('page-deposee', moi);
   if (reglage('version') < moi) {
     fixeReglage('version', moi);
     modifie();
   }
-  return la < moi ? 'deposee' : true;
+  return d;
+}
+
+/* ---- les autres outils de la suite en même temps (1.16, demande de François du 07/11/2026) ----
+   Chaque outil ouvert au téléphone en accès direct note, dans une clé commune à la suite, l'adresse de sa page publiée
+   et celle de sa copie pour le PC (à côté de son fichier). Quand un outil dépose sa page, il dépose aussi celles des
+   autres outils connus, si la version publiée est plus récente que celle de leur dossier. Le réglage « version » de
+   leur fichier n'est pas touché (un outil n'écrit jamais dans le fichier d'un autre) : il se met à jour à leur
+   prochaine ouverture au téléphone. */
+const CLE_PAGES = 'officious-pages';
+function pagesConnues() {
+  try {
+    return JSON.parse(localStorage.getItem(CLE_PAGES)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+function noterPage(url) {
+  const L = pagesConnues(),
+    e = { titre: A.titre, chemin: location.pathname, url };
+  if (JSON.stringify(L[C.appli]) === JSON.stringify(e)) return;
+  L[C.appli] = e;
+  try {
+    localStorage.setItem(CLE_PAGES, JSON.stringify(L));
+  } catch (x) {}
+}
+/** Dépose les pages des autres outils connus ; renvoie les titres de ceux dont la copie vient d'être déposée.
+    Au plus une fois par heure, sauf juste après le dépôt de la page de cet outil (force). */
+async function deposerAutres(force) {
+  if (!AND || horsHeures() || C.backend !== spBackend) return [];
+  if (!force && Date.now() - (mem.get('autres-at') || 0) < 3600e3) return [];
+  mem.set('autres-at', Date.now());
+  const faits = [];
+  for (const [appli, e] of Object.entries(pagesConnues())) {
+    if (appli === C.appli || !e || !e.url || !e.chemin) continue;
+    try {
+      const r = await fetch(e.chemin + '?v=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) continue;
+      const html = await r.text();
+      if (!tamponDe(html)) continue;
+      if ((await deposerUne(e.url, html, e.titre)) === 'deposee') {
+        journal('page déposée', { outil: appli, tampon: tamponDe(html) });
+        faits.push(e.titre);
+      }
+    } catch (x) {
+      journal('page non déposée', { outil: appli, erreur: sansCode(x) });
+    }
+  }
+  return faits;
+}
+/** « Saison », « Saison et Tâches », « Saison, Tâches et X » */
+function listeTitres(L) {
+  return L.length < 2 ? L.join('') : L.slice(0, -1).join(', ') + ' et ' + L[L.length - 1];
 }
 
 /** PC : une version plus récente de la page attend dans le dossier (déposée par le Compagnon). */
@@ -4745,6 +4967,124 @@ async function mettreAJourAppli() {
   }
 }
 
+/* ---- fenêtre « Nouvelle version installée » (1.16) ----
+   Reprise de Tâches 3.x pour toute la suite (demande de François du 07/11/2026) : au centre, fond grisé, la version
+   installée et la précédente, les notes de version pas encore vues, et ce que devient la copie pour le PC ; contour
+   arc-en-ciel qui tourne et petit feu d'artifice quand la copie est dans OneDrive. Au PC, qui reçoit cette copie,
+   la fenêtre est fêtée dès l'ouverture. Un outil qui a sa propre fenêtre la garde (A.apresMiseAJour, A.surDepot). */
+const maj = { copie: null, depot: null, autres: [] };
+/** La note de version la plus récente (la liste peut ne pas être triée). */
+function noteRecente() {
+  return (A.nouveautes || []).reduce((m, n) => (!m || n.d > m.d ? n : m), null);
+}
+/** La version d'avant : la plus récente des notes déjà vues. */
+function versionVue() {
+  const vu = mem.get('nouveautes-vues', '');
+  const n = (A.nouveautes || []).filter(x => x.d <= vu).reduce((m, x) => (!m || x.d > m.d ? x : m), null);
+  return n ? n.v : '';
+}
+function copiePrete(r) {
+  return r === 'deposee' || r === true;
+}
+function etincelles(el) {
+  for (let k = 0; k < 14; k++) {
+    const s = document.createElement('i');
+    s.className = 's-etincelle';
+    s.style.setProperty('--r', k * (360 / 14) + (k % 2) * 9 + 'deg');
+    s.style.setProperty('--d', (k % 3) * 60 + 'ms');
+    el.append(s);
+    setTimeout(() => s.remove(), 1400);
+  }
+  if (AND) vibrer('double');
+}
+function fenetreVersion() {
+  const n = noteRecente(),
+    prec = versionVue(),
+    nonVues = nouveautesNonVues().sort((a, b) => (a.d < b.d ? 1 : -1));
+  if (AND) maj.copie = C.backend !== spBackend ? null : horsHeures() ? 'pause' : copiePrete(maj.depot) ? 'ok' : 'attente';
+  else maj.copie = 'pc';
+  let d = $s('#s-maj');
+  if (!d) {
+    d = document.createElement('dialog');
+    d.id = 's-maj';
+    d.className = 's-dialogue s-maj';
+    d.setAttribute('aria-label', 'Nouvelle version installée');
+    document.body.append(d);
+  }
+  const el = (tag, k, t) => {
+    const e = document.createElement(tag);
+    if (k) e.className = k;
+    if (t != null) e.textContent = t;
+    return e;
+  };
+  const f = el('form');
+  f.method = 'dialog';
+  const h = el('div', 's-majh');
+  h.append(el('h2', null, 'Nouvelle version installée'));
+  if (n) h.append(el('div', 's-majv', A.titre + ' ' + n.v));
+  if (prec && n && prec !== n.v) h.append(el('div', 's-majp', 'précédente\u00a0: ' + prec));
+  const b = el('div', 's-majb');
+  for (const x of nonVues) {
+    const s = el('section');
+    s.append(el('h3', null, x.v + (x.t ? ' · ' + x.t : '')));
+    const ul = el('ul');
+    for (const i of x.items) ul.append(el('li', null, i));
+    s.append(ul);
+    b.append(s);
+  }
+  if (!nonVues.length) b.append(el('p', 's-aide', 'Petites corrections et améliorations.'));
+  const pied = el('div', 's-pied s-majf');
+  pied.append(el('div', 's-majc'));
+  const ok = el('button', 's-primaire', 'OK');
+  ok.value = 'ok';
+  pied.append(ok);
+  f.append(h, b, pied);
+  d.replaceChildren(f);
+  peindreCopie();
+  if (A.nouveautes && A.nouveautes.length) mem.set('nouveautes-vues', nouveauteRecente());
+  if (!d.open) d.showModal();
+  if (d.classList.contains('fete')) etincelles(d);
+  return d;
+}
+function peindreCopie() {
+  const d = $s('#s-maj');
+  if (!d) return;
+  const c = $s('.s-majc', d),
+    avec = maj.autres.length ? ', avec ' + listeTitres(maj.autres) : '';
+  c.textContent =
+    {
+      attente: '◌ Copie pour le PC\u00a0: dépôt dans OneDrive…',
+      ok: '✓ Déposée dans OneDrive pour le PC' + avec,
+      pause: 'Copie pour le PC\u00a0: dépôt ' + texteReprise(),
+      pc: '✓ Arrivée au PC par OneDrive'
+    }[maj.copie] || '';
+  c.classList.toggle('ok', maj.copie === 'ok' || maj.copie === 'pc');
+  d.classList.toggle('fete', maj.copie === 'ok' || maj.copie === 'pc');
+}
+/** Résultat du dépôt pour le PC ('deposee', true, false) et titres des autres outils déposés en même temps. */
+function surDepot(r, autres) {
+  autres = autres || [];
+  if (A.surDepot) return A.surDepot(r, autres);
+  maj.depot = r;
+  maj.autres = autres;
+  const d = $s('#s-maj');
+  if (d && d.open && AND) {
+    const avant = maj.copie;
+    if (copiePrete(r)) maj.copie = 'ok';
+    else if (maj.copie === 'attente') maj.copie = null;
+    peindreCopie();
+    if (maj.copie === 'ok' && avant !== 'ok') etincelles(d);
+    return;
+  }
+  const L = (r === 'deposee' ? [A.titre] : []).concat(autres);
+  if (L.length) {
+    toast('✓ Nouvelle version de ' + listeTitres(L) + ' déposée dans OneDrive pour le PC', null, null, 5000);
+    const t = $s('#s-toast');
+    t.classList.add('s-fete');
+    etincelles(t);
+  }
+}
+
 /* ---- notes de version ---- */
 /** La date la plus récente des notes de version (la liste peut ne pas être triée : 1.8). */
 function nouveauteRecente() {
@@ -4779,8 +5119,7 @@ function annoncerNouveautes() {
   const L = A.nouveautes || [];
   if (!L.length) return;
   if (!mem.get('nouveautes-vues', '')) return mem.set('nouveautes-vues', nouveauteRecente());
-  const n = nouveautesNonVues().sort((a, b) => (a.d < b.d ? 1 : -1));
-  if (n.length) toast('Nouveautés de ' + A.titre + ' ' + n[0].v, 'Voir', () => montrerNouveautes(n), 8000);
+  if (nouveautesNonVues().length) fenetreVersion(); /* 1.16 : la fenêtre de nouvelle version, au PC comme au téléphone */
 }
 /* socle/js/20-demarrage.js : démarrage, relectures, cycle de vie du Compagnon. */
 
@@ -4800,8 +5139,9 @@ function annoncerNouveautes() {
  *   elements(texte) → Map(clé → libellé) : les éléments d'un fichier, lus sur le texte brut, y compris les lignes que
  *   parse ne comprendrait pas ; le socle refuse d'écrire si l'un d'eux disparaîtrait sans suppression (1.4),
  *   apresLecture() après chaque lecture en accès direct (doublons ramassés, page déposée),
- *   apresMiseAJour(tamponPrecedent) au lieu du message « X est à jour » ; surDepot(r) après le dépôt de la page
- *   pour le PC ('deposee', true ou false) ; fermeParRetour(dialog) avant qu'une fenêtre se ferme par le bouton retour,
+ *   apresMiseAJour(tamponPrecedent) au lieu de la fenêtre « Nouvelle version installée » (1.16) ; surDepot(r, autres)
+ *   après le dépôt de la page pour le PC ('deposee', true ou false ; autres : titres des autres outils déposés en même
+ *   temps, 1.16) ; fermeParRetour(dialog) avant qu'une fenêtre se ferme par le bouton retour,
  *   recevoir(message) : un message d'un autre outil de la suite ({id, de, type, donnees, le}) ; renvoyer false s'il
  *   ne peut pas encore être appliqué (il reste dans la boîte) ; voir 21-boite.js (1.6),
  *   surTexte(t), surFichier({name, size, type}) : raccourci « Nouvelle note » ('' ), texte ou fichier partagés vers
@@ -4825,7 +5165,7 @@ async function demarrer(adaptateur) {
       const avant = mem.get('page-maj');
       mem.set('page-maj', null);
       if (A.apresMiseAJour) A.apresMiseAJour(avant);
-      else toast(A.titre + ' est à jour');
+      else fenetreVersion();
     }
     verifierPage();
     verifierAppli();
@@ -5299,7 +5639,7 @@ function fermerCouche() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.15.2',
+  version: '1.16.0',
   demarrer,
   /* fichier */
   modifie,
@@ -9304,6 +9644,16 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-07 23:10',
+    v: '0.73.7',
+    t: 'Nouvelle version fêtée',
+    items: [
+      'Après une mise à jour, une fenêtre «\u00a0Nouvelle version installée\u00a0» (comme dans Tâches) montre la version, la précédente et ce qui change. Au téléphone, elle dit aussi où en est la copie pour le PC, et s’entoure d’un arc-en-ciel avec un petit feu d’artifice quand elle est déposée dans OneDrive. Au PC, elle est fêtée dès l’ouverture.',
+      'Téléphone\u00a0: quand Saison dépose sa nouvelle version pour le PC, il dépose aussi celle de Tâches (et inversement), sans attendre que tu ouvres l’autre au téléphone.',
+      'PC\u00a0: le bandeau «\u00a0nouvelle version dans le dossier\u00a0» prend le contour arc-en-ciel de Tâches.'
+    ]
+  },
   {
     d: '2026-11-07 18:55',
     v: '0.72.6',
