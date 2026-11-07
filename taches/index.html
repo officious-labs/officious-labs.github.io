@@ -1,13 +1,39 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261107141629">
+<meta name="officious-page" content="20261107152806">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tâches</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiNmZmYiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMjIgLTIyKSI+PHJlY3QgeD0iMzEiIHk9IjMxLjUiIHdpZHRoPSI0NiIgaGVpZ2h0PSIxMyIgcng9IjMuNSIgZmlsbD0iIzJGNkY1RSIvPjxyZWN0IHg9IjM4IiB5PSIzNS44IiB3aWR0aD0iMjQiIGhlaWdodD0iMi40IiByeD0iMS4yIiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9Ii43NSIvPjxyZWN0IHg9IjM4IiB5PSIzOS44IiB3aWR0aD0iMTUiIGhlaWdodD0iMi40IiByeD0iMS4yIiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9Ii41NSIvPjxyZWN0IHg9IjMxIiB5PSI0Ny41IiB3aWR0aD0iNDYiIGhlaWdodD0iMTMiIHJ4PSIzLjUiIGZpbGw9IiMyRjZGNUUiLz48cmVjdCB4PSIzMy45IiB5PSI0OS45IiB3aWR0aD0iOC4yIiBoZWlnaHQ9IjguMiIgcng9IjIiIGZpbGw9IiNmZmYiIHN0cm9rZT0iIzFFNEEzRSIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48cmVjdCB4PSI0NiIgeT0iNTIuOCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjIuNCIgcng9IjEuMiIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIuNTUiLz48cmVjdCB4PSIzMSIgeT0iNjMuNSIgd2lkdGg9IjQ2IiBoZWlnaHQ9IjEzIiByeD0iMy41IiBmaWxsPSIjMkY2RjVFIiBmaWxsLW9wYWNpdHk9Ii40NSIvPjxyZWN0IHg9IjMzLjQiIHk9IjY1LjQiIHdpZHRoPSI5LjIiIGhlaWdodD0iOS4yIiByeD0iMi4yIiBmaWxsPSIjMkY2RjVFIi8+PHBhdGggZD0iTTM1LjkgNzBsMS41IDEuNiAyLjktMy4yIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cmVjdCB4PSI0NiIgeT0iNjguOCIgd2lkdGg9IjE4IiBoZWlnaHQ9IjIuNCIgcng9IjEuMiIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIuNTUiLz48L2c+PC9zdmc+">
 <style>
+/* curseurs : début (outils/curseurs.py, ne pas modifier à la main) */
+/* Curseurs, crédits et licences complets : https://github.com/officious-labs/socle/blob/v1.13.1/curseurs/LISEZMOI.md
+   lien, texte : Posy's Improved Cursors (Posy, portage simtrami), CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+   attraper, tenir : Oxygen White, projet KDE (oxygen-icons.org), GNU GPL 3+, https://www.gnu.org/licenses/gpl-3.0.html */
+:root {
+  --s-lien: image-set(url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABXElEQVR42u2Wv2rCUBSHv6QIDqWUzg7ZfYFOxTfo5hRnl5YOfYDYV/ABOghuhbp1kjyBOASKQ5AiDv2zSCkiQfh1qEqqNUS8aaHkg0BIwj0fJ+ece2GTCqDFVSFjrB+eSdLXS8va9o0xbP6YXCCNwK8VZLwItahESZLv+4qJZCZjbRPYImPs9633faLA8t5kNjYWTiOwlg0zAv1+/1ugOL7vJ2VjL249z1st2Gg0lJbJZGJEwCkWix9hGGpXBoOBgHDfOfA0m828er3Ocg9ISxAEAI8mOuEA6LXb7Z0y4LqugAtT7XhWKpU0nU5TBR8OhyoUCu/AsclhdN9sNlMJ1Go1ATemp+Gp4ziaz+eJwYMgkGVZb8BRFiO51+12EwWq1aqA66w2o8tyuaxWq6XRaKQoihRFkcbjsTqdjlzXlW3bL8Bhlse0c+AOeI7N/FfgAbgCTsjJycnJ+S98AvE+LswTC8NkAAAAAElFTkSuQmCC") 1x, url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAD10lEQVR42u2aT0hjRxjAf5EEK2qCusUWWipa6aFQKQTcCgXtxUCh9NDa2oN6UERZL+JtTyI9lEiv/gEpCjnItpRCIaddtiAtiFCsrYUXjaYqKpHGmKSFZs3Xw2aWxGTLpkn2vej84IH5Yob5fjMvM/PlwbPTCTwA/klfDwA3N4S3gAQgV6448OZNEHAPkMHBQTk/P5doNCoDAwNKwtc3QcCfgBweHori6OhICTiv5MRsz/h/AiAi2R+22Qptx3JUccPRArQALUALKAVqSYwAPuCV6yZKHq+C2djtdsmzOxTgD+DWtRdwNX5yciJdXV0q/gtgpLfLZ8Ay8PK1FiAisr6+/rRZIUAAcF1rAZnx7e1tSSaTYhiGtLW1qfhdqyb5UXqafgG8WwoBmfh8PhX/GaizWvILeabrd0BjqQSEw+Gr7R8AXwIvmZ38J4DU1NSI1+sVr9crjY2NqpO/AS+WQoCKV1dXS11dXaaIMPCemQIeArKwsPCko7u7u9LS0qI6+FMpBaj4xsaGeDweFUsAbWYJCAKys7OT1VnDMMTlcmVN21IKEBFJpVLS19en4p+btRMMAmxtbWW90d7ezvLycuaZP3dpEMmpERRUjLDZGBoaUi9vmzUD7gDidrvl8vIyZ9TGx8efOqKFkq+dQCCQuUcwhReAECCLi4s5nY7H4yUTkI+DgwPVfsjML8JPAWloaMiq+10dvXJgGIYSYJh5GlwFvo9EIoyMjOS9r4u51/+LSCSi/oyaKUCAYSDs9/tZWlp6bh0IBJ7c+vtm1wNOgRGAyclJ9vefT38yVp9frbItXgKkp6dHUqmUlJvOzk71HfC+VQS4gCNA5ubmypr86empVFVVCfAXUGOlw9HHgDQ1NcnZ2VnZBMzMzKjR/9aKx+MfABkbGytL8olEQpqbm5WAbisKcAMpu90uhmGUXMD09LRK/kcrV4JWAOnv7y9p8sfHx+pInAK6rCzgNSBpt9tzTovFMDo6qkb/XiXUA1cBmZiYKEnywWBQHA6HAEmgvRIEvA2I0+mUWCxWtIDh4WE1+l9VUlV4DZCVlZWikg+FQpmj/3olCRgDxOPxFCVgampKjf5qpf0ucAt45HA4ZHZ2ViKRSEGJx+NxmZ+fF6fTqQTctkpihTza4gM+A6itraW3t5fu7m46OjpobW2lvr4el8tFNBolFouxt7fH5uYma2tr+P1+Li4uVDvfpH+DqDhswAfA/fT6LQVeD4EPsdjzRP+3M68CHuAd4A2gNX2YcfH4qbG/08XW39Nl9ftml7w0Go1Go9FoNBqNRqPRaDQajUajgX8B4ePlZKEV1/sAAAAASUVORK5CYII=") 2x) 5 1, pointer;
+  --s-texte: image-set(url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAcElEQVR42u2WMQ7AMAgDDf//s7uEiKK0U0M6+CQkFAafsgAAcFTl6f1TnGQOvPVptk+gBLEzHADczKwGRh+z7T+wCuoInwInkYAEJCABCfxDgIvdy6Z97BGUl1/0HRJewm0Umrbx6+3XchMKIYQ4zgUtRS4X++FoJAAAAABJRU5ErkJggg==") 1x, url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAyElEQVR42u3aOw7DMAwEUZL3vzPTGRKiD+HKWs10QaBiX5w0iptZWp/bvjdnPllk5m7c8v3B+bMAJiPyhvEPQBFBbryZWbi7FxCm49vzJ9aOz2bU/AdAaHz3Fdg8CZLjO4AdguL4P4DKOKXxQ4DbAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuBsjNvXeq3IuPAFY3xO1rJYSojFdGiMJ4V0aI4nhZhKh+8iuE4wEK42UR3C7/oyQRERERERERERER3dQPagRfSS5qaqcAAAAASUVORK5CYII=") 2x) 3 10, text;
+  --s-attraper: image-set(url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAADUUlEQVR42uWWz0sjZxzGP/POTLQbJ2htsRQ1hh5K6ErXQ3tIBbcWKXQR692DepGeJdKjBSkuRg9FerIn/wGhIAREugg9moNt7YpFEgzG2oj5YXQyk/n20Emaiusu0lM78ML7DvM+z/d5vj8Y+D89nwG/ALvAx/8WaAdgARqQT6VSsre3Jy0tLb8DnwLfAE/uCz5hWZYdDAYd4GvDMNxisSjn5+cyNTUlbW1tsra2JpFIxAM+ug/B81QqJel0WsbHxwWQdDotuVxOEomEjI2NSaVSkWQyKcB3LwJRdxD8kc/nMU2TRCKBZVlks1lEhO7ubgKBAJ7n0dnZCRC6D8HTpaUlNE3DNE3m5+fJZDJ/JaajA8Mw8Dyv/u0bwBfA0KsQPAImgGfJZPJ5NpvFdV2GhoaoVquICO3t7XR1dSEi9TuPp6env+3r6/sBGL2L4INwOLw7OTm5rpTaA652d3cxTZPe3l4sy2ooiMViuK6LbdsMDAywsrJCPB4HeP8ugk9mZma0hYUFtra2egKBwKP9/X0MwwCgv78fESEUCjE4OIht2xQKBRYXF1FKcXBwAPBrM6Bxg0A7PDwEIBqNsrq6SmtrK0opbNvGsixs20ZEGisWizVysb29jd+MfwPeIHgTeBaPx6Ozs7NomoZSikAggK7rVKtVdF3/x14pRbVapVwuEw6Hj4F3AAeQ2yw6Bz5fXl4u5nI5PM/DdV0cx+Hq6gqAWq3G9fU1AI7jUKlU0HWdnZ0dgE3AbA5cv6FGB0wRCSmlPhwZGWmoqEdbPwONvWEYTExMkM/nnwK/NSu4aZcJvAU80XX98ujoSC4uLqRQKEipVJLLy8vGKpfLUiwWpVwuy8bGhgA/Aw+BB83O6Lf0gQCOiLx9enr6cHR0tKHAMIxGDurRn5ycMDw8XHJd90u/gkqA96LurdsUAqLAj3Nzc1IoFMS2bXEcRzzPE9d1xXEcOTs7k56eHhf4CnjPn7zqZUOuTmL5kr+PRCK1zc1NOT4+llKpJJlMRtbX1yUYDNrAqt9cHX7Za3eVafN7DXgNeB147I+Pd4FO4BTY96foT8AZcAnUbiZXe4ka5UfV6ifvgX+uAddABbgCqj7wrZXzKpZpPpnWdEeaIpb/7p/Cn2NUe5nUGPeEAAAAAElFTkSuQmCC") 1x, url("data:image/png;base64,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") 2x) 12 11, grab;
+  --s-tenir: image-set(url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAC/ElEQVR42u2Vv08jRxTHP7M/bIyFLYFxlKOIlIjqlDJV8jekCBVKQ43Ev5AKKVKK/AU0QEAUiZAinWhMGuua5E6pwRbGEkgogmVnzSb2/piX4sYrx0fiI02arPT0Rrsz7/Ped3bewP/PjEe943cFiB3LUwDujOA+MA9U7ViekNzMzMvAJ8D39Xr9DvgB+Ab4GfgKeM8mqP4NzAGawE8nJycSx7Gcnp7K/v6+aK3l8PBQgF+BV8DXwPtPhXnAR7VaLQ3DUM7Pz0VrLVEUSb/flziO5fj4WLTWcnR0JMBr4BdbWXMWZCzP80ajIUEQSKfTkV6vJ5eXl9Lr9WQwGMjDw0MB293dlTAMZW9vT4Dv7Hr12EYpYBnYBL5YXFz8uNvtorVGKYXjOG/0cxyMMeR5Tr1ex/d9bm9vWV5eZmVlZai1/gC4BYw3FbwEfLu9vf3l+vo6rVaLUqnE0tISaZqilML3fdI0faOj5zEcDkmShFqthuu6VKvVOa31AhAARk1tbKNUKvXPzs7mRIRKpUKlUiGOY8rlMgDGmKKS0WiE67pkWcZoNKLZbLK6usrNzc1zoAsk3hRgwfO8Oc/zSJKEJEmKgMaYQiYRQURwHIcsy8iyDIAsyzDG/EX6aUDZTkApVZjruriuW2Q+rgQoQMYYRKR4/xgAQBljiqwnbQxQSiEihZ+ck+f5WwBnCiBpmgZXV1eFHNOQyWqmLQgCoigKJlvKJMAAQxFp7+zsoJQqpPonwFjGcrnMwcEBWZa1gaGN91Y1DeBzoLO2tibdblfu7u4kDEOJ41iSJJE8zyVJEonjWLTWcn9/L9fX17K5uSlAx65vPKJOcYKfAZ8BL3zfTzY2NqTVasnFxYVEUSR5nstgMJB+vy/tdlu2trZkfn4+AV7Ydc9mneRxi14EPrQZfWp7TN1xnKoxJgY08BvwEvgRuLCH63cgHe+D+ptepOwfVgEWrC9b84AMGFn7AxhYn9nA8i6Xhpowx5prvQFy681EUHnqlTlrrvznl/6fj/yJgPjwqGUAAAAASUVORK5CYII=") 1x, url("data:image/png;base64,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") 2x) 12 11, grabbing;
+}
+/* curseurs : fin */
+/* les quatre curseurs aussi là où le navigateur les met de lui-même ; :where() : aucune priorité, une règle de
+   l'outil l'emporte toujours. Hors des champs, le texte garde la flèche (pas de curseur texte du navigateur). */
+:where(html) {
+  cursor: default;
+}
+:where(a[href], summary, select, label:has(> input[type='checkbox'], > input[type='radio'])) {
+  cursor: var(--s-lien);
+}
+:where(
+    textarea,
+    input:not([type='button'], [type='submit'], [type='reset'], [type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file'], [type='image']),
+    [contenteditable]:not([contenteditable='false'])
+  ) {
+  cursor: var(--s-texte);
+}
 /* socle.css : ce que le socle affiche (ids et classes préfixés « s- »). Les couleurs suivent celles de l'outil
    quand il définit --accent, --papier, --encre, --filet ; sinon, des valeurs neutres. */
 :root {
@@ -53,7 +79,7 @@
   color: #9fd0ff;
   font: inherit;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 
 /* échange avec OneDrive : barre fine sous l'en-tête, pastille qui dit ce qui se passe */
@@ -232,7 +258,7 @@ body:has(#s-version:not([hidden])) #s-toast {
   border: 1px solid var(--s-filet);
   background: transparent;
   color: inherit;
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 button.s-primaire {
   background: var(--s-accent);
@@ -430,7 +456,7 @@ button.s-primaire {
   font: inherit;
   font-size: 1.05rem;
   line-height: 1;
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .s-cherche .s-x:hover {
   background: color-mix(in srgb, var(--s-gris) 15%, transparent);
@@ -479,7 +505,7 @@ mark.trouve {
   padding: 0.65rem 0.8rem;
   border: 1px solid var(--s-filet);
   border-radius: 10px;
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .s-inter span {
   flex: 1;
@@ -535,7 +561,7 @@ mark.trouve {
 }
 .libre {
   color: var(--s-ocre) !important;
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 @media (prefers-reduced-motion: reduce) {
   .s-inter i,
@@ -691,7 +717,7 @@ button {
   color: var(--fg);
   border-radius: 6px;
   padding: 0.18rem 0.6rem;
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 @media (hover: hover) {
   button:hover {
@@ -734,7 +760,7 @@ button.primary {
   border: 2.5px solid transparent;
   color: #fff;
   font-size: 0.88rem;
-  cursor: pointer;
+  cursor: var(--s-lien);
   background:
     linear-gradient(#232733, #232733) padding-box,
     conic-gradient(from var(--arc, 0deg), #e8463c, #f2a33a, #f3d43f, #5cc46a, #3aa7e0, #7a5ce0, #d65cc0, #e8463c)
@@ -793,7 +819,7 @@ main {
   margin: 0 auto;
   padding: 1rem 1rem 30vh;
   min-height: 60vh;
-  cursor: text;
+  cursor: var(--s-texte);
 }
 
 .section {
@@ -809,7 +835,7 @@ main {
   flex: none;
   width: 0.75rem;
   opacity: 0;
-  cursor: grab;
+  cursor: var(--s-attraper);
   color: var(--muted);
   user-select: none;
   font-size: 0.7rem;
@@ -842,7 +868,7 @@ main {
   border: none;
   border-radius: 50%;
   background: var(--c);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .row.h .txt {
   font-weight: 650;
@@ -925,20 +951,20 @@ main {
   opacity: 1;
 }
 .card {
-  cursor: grab;
+  cursor: var(--s-attraper);
 }
 .card .txt,
 .card .cmt {
-  cursor: grab;
+  cursor: var(--s-attraper);
 }
 .card.editing .txt,
 .card.editing .cmt {
-  cursor: text;
+  cursor: var(--s-texte);
 }
 body.dragging,
 body.dragging * {
   user-select: none !important;
-  cursor: grabbing !important;
+  cursor: var(--s-tenir) !important;
 }
 .drag-src {
   opacity: 0.3 !important;
@@ -1027,7 +1053,7 @@ body.dragging * {
   border: none;
   background: none;
   padding: 0;
-  cursor: pointer;
+  cursor: var(--s-lien);
   opacity: 0;
   transform: translateY(14px) scale(0.6);
   animation: fabIn 0.2s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
@@ -1108,7 +1134,7 @@ body.dragging * {
   text-decoration: none;
   border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
   white-space: nowrap;
-  cursor: pointer !important;
+  cursor: var(--s-lien) !important;
 }
 .lnk:hover {
   border-color: var(--c);
@@ -1374,7 +1400,7 @@ body.dragging .tools {
   border-radius: 999px;
   font-size: 0.74rem;
   color: var(--muted);
-  cursor: pointer;
+  cursor: var(--s-lien);
   transition:
     background 0.15s,
     color 0.15s,
@@ -1952,7 +1978,7 @@ body.mobile #fabMenu {
   border: 1px solid var(--accent);
   border-radius: 8px;
   color: var(--accent);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 #mFilters {
   display: flex;
@@ -2609,12 +2635,12 @@ button.ico.aurg.on {
   margin: -0.1rem -0.3rem 0 0;
 }
 .msub .bx.tap {
-  cursor: pointer;
+  cursor: var(--s-lien);
   font-size: 1.05rem;
   margin-top: -0.1rem;
 }
 #toast.undo {
-  cursor: pointer;
+  cursor: var(--s-lien);
   pointer-events: auto;
 }
 .mpull {
@@ -2834,7 +2860,7 @@ button.ico.aurg.on {
   margin-top: 0.4rem;
   font-size: 0.8rem;
   color: var(--accent);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 #news ul.nwrl {
   font-size: 0.8rem;
@@ -2862,7 +2888,7 @@ button.ico.aurg.on {
 #news .nwabout summary {
   font-size: 0.8rem;
   color: var(--muted);
-  cursor: pointer;
+  cursor: var(--s-lien);
   margin: -0.3rem 0 0.4rem;
 }
 #news .nwintro strong {
@@ -3188,7 +3214,7 @@ body.mobile.app #m {
   opacity: 0.55;
 }
 .mcard {
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 /* téléphone : aucun texte sélectionnable hors des champs de saisie, sinon Android ouvre son menu « Copier, Tout sélectionner » à l'appui long */
 body.mobile {
@@ -3623,7 +3649,7 @@ body.mobile button:focus {
   border-left: 4px solid var(--note-bar);
   border-radius: 8px;
   background: var(--note-bg);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .mnotec .when {
   font-size: 0.74rem;
@@ -3813,7 +3839,7 @@ body.mobile button:focus {
   border-left: 4px solid var(--note-bar);
   border-radius: 8px;
   background: var(--note-bg);
-  cursor: grab;
+  cursor: var(--s-attraper);
 }
 .inote.dragging {
   opacity: 0.4;
@@ -3848,7 +3874,7 @@ body.mobile button:focus {
   color: inherit;
   background: var(--bg);
   border-radius: 4px;
-  cursor: text;
+  cursor: var(--s-texte);
 }
 .inote.editing {
   cursor: default;
@@ -4444,7 +4470,7 @@ body.dateview #list > .section {
   opacity: 0.4;
 }
 .dcd.has {
-  cursor: pointer;
+  cursor: var(--s-lien);
   font-weight: 650;
 }
 .dcd.today > span {
@@ -5516,7 +5542,7 @@ body.mobile:has(dialog:modal) {
   padding: 0.75rem 0 0.6rem;
   font-size: 0.9rem;
   color: var(--muted);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 #mMenu .madv summary::-webkit-details-marker {
   display: none;
@@ -5568,7 +5594,7 @@ body.mobile:has(dialog:modal) {
   min-height: 1.4em;
   max-width: calc(100vw - 8rem);
   padding: 0.1rem 0;
-  cursor: text;
+  cursor: var(--s-texte);
   white-space: pre-wrap;
 }
 /* marques de mise en forme : cachées, sauf autour du curseur */
@@ -5758,7 +5784,7 @@ body.mobile:has(dialog:modal) {
 
 /* nom de la rubrique sous une tâche : un clic pour en changer */
 #list .card > .insec {
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 #list .card > .insec:hover {
   color: var(--fg);
@@ -5782,7 +5808,7 @@ body.mobile:has(dialog:modal) {
   border: none;
   background: none;
   color: var(--muted);
-  cursor: pointer;
+  cursor: var(--s-lien);
   padding: 0.1rem 0.3rem;
 }
 #sConges .cgadd {
@@ -5823,7 +5849,7 @@ body.mobile #rubBar {
   border-radius: 99px;
   background: var(--panel);
   color: var(--fg);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 #rubBar button:hover {
   border-color: var(--c);
@@ -5926,7 +5952,7 @@ body.mobile #rubBar {
   border-radius: 6px;
   border: 1px solid var(--muted, #999);
   background: transparent;
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .encart button.primaire {
   background: var(--c, #215e99);
@@ -5982,7 +6008,7 @@ body.mobile #radar {
   background: color-mix(in srgb, var(--j) 8%, var(--bg));
   color: var(--fg);
   font: inherit;
-  cursor: pointer;
+  cursor: var(--s-lien);
   white-space: nowrap;
 }
 .rj b {
@@ -6016,7 +6042,7 @@ body.mobile #radar {
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .rajout {
   margin-left: auto;
@@ -6033,7 +6059,7 @@ body.mobile #radar {
   margin: 0.35rem 0;
   font-size: 0.8rem;
   color: var(--j);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .jsep::before,
 .jsep::after {
@@ -6129,7 +6155,7 @@ body.mobile #radar {
 }
 body.rub-glisse,
 body.rub-glisse * {
-  cursor: grabbing !important;
+  cursor: var(--s-tenir) !important;
 }
 body:has(#fly) #rubBar button[data-sec] {
   opacity: 0;
@@ -6645,7 +6671,7 @@ header .s-cherche input:not(:placeholder-shown) {
   background: none;
   color: var(--fg);
   text-align: left;
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .rhe:hover {
   background: var(--hover);
@@ -6678,7 +6704,7 @@ header .s-cherche input:not(:placeholder-shown) {
   border: 0;
   background: none;
   color: var(--accent);
-  cursor: pointer;
+  cursor: var(--s-lien);
 }
 .rechrien {
   margin: 2.5rem 0;
@@ -9480,7 +9506,7 @@ function fermerCouche() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.11.2',
+  version: '1.13.1',
   demarrer,
   /* fichier */
   modifie,
@@ -18499,10 +18525,30 @@ $('#mTabs').addEventListener('click', e => {
   buzz('tick');
 });
 /* ---------- notes de version ----------
-   Une entrée par publication qui change quelque chose de visible. type 'web' (« Application web Chromium » = cette page, arrive toute seule ; v = numéro suivant)
+   Une entrée par publication qui change quelque chose de visible. type 'web' (« Application web Chromium » = cette page, arrive toute seule ; v = « majeure.mineure.livraison », la livraison
+   donnée par python3 socle/outils/version.py --suivante, depuis la 3.11)
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-07 16:30',
+    type: 'web',
+    v: '3.11.2',
+    t: 'Nouveaux curseurs',
+    items: [
+      'PC\u00a0: nouveaux curseurs, avec un contour noir qui ne disparaît plus. Main des liens et curseur texte\u00a0: Posy (le plus proche de Windows)\u202f; mains pour attraper et tenir\u00a0: Oxygen White (KDE). La flèche et les autres restent ceux de Windows. Hors des champs d’écriture, le texte garde la flèche.'
+    ]
+  },
+  {
+    d: '2026-11-07 15:45',
+    type: 'web',
+    v: '3.11.1',
+    t: 'Numéros de version',
+    items: [
+      'Nouveaux numéros de version, comme dans les applis Android : majeure.mineure suivie du numéro de livraison. Celle-ci est la 1re livraison comptée : 3.11.1. Une retouche ne change que le dernier numéro (3.11.2), une nouvelle fonction le deuxième (3.12.3) ; le dernier ne revient jamais en arrière.',
+      'Le Compagnon Android suit le même schéma : 3.0 suivi de son numéro de fabrication. Tâches l’affiche ainsi dès que le Compagnon est à jour, et « fabrication … » d’ici là.'
+    ]
+  },
   {
     d: '2026-11-07 15:30',
     type: 'web',
@@ -19614,7 +19660,8 @@ function compV(b) {
 }
 const WEB_V = NOUVEAUTES.find(
   e => e.type === 'web'
-).v; /* « 2.4.2 » : majeure (grand tournant).mineure (nouvelle fonction).retouche ; la plus récente en tête de liste */
+).v; /* « 3.11.1 » : majeure (grand tournant).mineure (nouvelle fonction).livraison (compteur FABRICATION, depuis la 3.11 ;
+   avant : retouche) ; la plus récente en tête de liste */
 function vcmp(a, b) {
   const x = String(a || '0')
       .split('.')
@@ -19746,7 +19793,7 @@ function openNews() {
   $('#nwver').textContent =
     'Sur cet appareil\u00a0: Application web Chromium v' +
     WEB_V +
-    (mAndV ? ', Compagnon Officine fabrication ' + mAndV : '') +
+    (mAndV ? ', Compagnon Officine ' + compNom(mAndV, mAndNom) : '') +
     '.';
   mstore.set('taches-nouveautes-vues', NOUVEAUTES[0].d);
   newsDot();
@@ -19950,8 +19997,8 @@ function vcHide() {
 /* nouvelle version installée : une vraie fenêtre (fond grisé, au centre), toutes les notes de la version, bouton OK.
    La carte (vcRender) ne sert plus qu'à annoncer un dépôt pour le PC fait plus tard, sans nouvelle version. */
 /* même fenêtre après une mise à jour du Compagnon Android (fabrication installée plus récente qu'au dernier lancement) */
-function vcOpenComp(prev, cur) {
-  vc.comp = { prev: +prev, cur: +cur };
+function vcOpenComp(prev, cur, prevNom, curNom) {
+  vc.comp = { prev: +prev, cur: +cur, prevNom: prevNom || '', curNom: curNom || '' };
   if (vc.modal) return vmRender();
   vc.web = false;
   vc.copy = null;
@@ -20000,8 +20047,8 @@ function vmRender() {
   }
   if (cp0) {
     /* 3.6 : le Compagnon Officine se compte par fabrications ; les notes « appli » (ancien Compagnon) n'en parlent pas */
-    h.append(el('div', 'vmv', 'Compagnon Officine · fabrication ' + cp0.cur));
-    if (cp0.prev) h.append(el('div', 'vmp', 'précédente\u00a0: fabrication ' + cp0.prev));
+    h.append(el('div', 'vmv', 'Compagnon Officine · ' + compNom(cp0.cur, cp0.curNom)));
+    if (cp0.prev) h.append(el('div', 'vmp', 'précédente\u00a0: ' + compNom(cp0.prev, cp0.prevNom)));
   }
   const b = el('div', 'vmb'),
     u = newsUnseen().filter(e => e.type !== 'appli');
@@ -22391,7 +22438,12 @@ async function mPick() {
 }
 /* versions : l'application web du téléphone et celle déposée dans OneDrive pour le PC peuvent différer */
 let mVerTxt = '',
-  mAndV = 0; /* fabrication du Compagnon installée (notes de version) */
+  mAndV = 0, /* fabrication du Compagnon installée (notes de version) */
+  mAndNom = ''; /* son numéro complet (ex. 3.0.50, depuis la 3.11) ; vide avec un Compagnon plus ancien */
+/* « 3.0.50 » si le Compagnon le donne, sinon « fabrication 50 » */
+function compNom(fab, nom) {
+  return nom && /\./.test(nom) ? nom : 'fabrication ' + fab;
+}
 function mVerLines() {
   return ['Application web : v' + WEB_V + (socle.enDirect ? '' : ' (copie pour le PC : avec l’adresse en ligne)'), mVerTxt || '']
     .filter(Boolean)
@@ -22408,16 +22460,23 @@ async function mCheckUpdate(force) {
     return;
   }
   mAndV = a;
-  const prev = mstore.get('taches-officious-version');
+  try {
+    mAndNom = String((await andCall('versionNom')) || '');
+  } catch (e) {
+    mAndNom = '';
+  }
+  const prev = mstore.get('taches-officious-version'),
+    prevNom = mstore.get('taches-officious-nom') || '';
   mstore.set('taches-officious-version', a);
-  if (prev && a > prev) vcOpenComp(prev, a);
+  mstore.set('taches-officious-nom', mAndNom);
+  if (prev && a > prev) vcOpenComp(prev, a, prevNom, mAndNom);
   const b = socle.appliPubliee || 0,
     btn = $('#mUpd');
   btn.hidden = !(b > a);
-  btn.title = b > a ? 'Compagnon Officine : fabrication ' + b + ' disponible (installée : ' + a + ')' : '';
+  btn.title = b > a ? 'Compagnon Officine : fabrication ' + b + ' disponible (installée : ' + compNom(a, mAndNom) + ')' : '';
   $('#mVer').hidden = true;
-  mVerTxt = 'Compagnon Officine : fabrication ' + a + (b > a ? ' (' + b + ' disponible)' : '');
-  if (force) toast(b > a ? 'Compagnon : fabrication ' + b + ' disponible' : 'Le Compagnon est à jour (fabrication ' + a + ')');
+  mVerTxt = 'Compagnon Officine : ' + compNom(a, mAndNom) + (b > a ? ' (fabrication ' + b + ' disponible)' : '');
+  if (force) toast(b > a ? 'Compagnon : fabrication ' + b + ' disponible' : 'Le Compagnon est à jour (' + compNom(a, mAndNom) + ')');
 }
 async function mUpdate() {
   const btn = $('#mUpd');
