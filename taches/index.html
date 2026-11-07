@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261031171455">
+<meta name="officious-page" content="20261107135918">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4065,6 +4065,31 @@ body.mobile button:focus {
   color: #fff;
   font-weight: 600;
 }
+/* 3.10 : ordre dans les cases, un bouton qui tourne, en gris (ce n'est pas une affaire d'urgence) */
+.oseg {
+  font-size: 0.78rem;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.oseg:hover {
+  color: var(--fg);
+}
+.oseg.on {
+  background: var(--muted);
+  border-color: var(--muted);
+  color: #fff;
+  font-weight: 600;
+}
+#mMenu .mseg[hidden] {
+  display: none;
+}
+#mMenu .mseg + .mseg {
+  margin-top: 0.4rem;
+}
 /* coche : un petit rebond, le trait se dessine ; puis la carte s'efface */
 .chk.pop {
   animation: chkPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -6882,6 +6907,7 @@ header .s-cherche input:not(:placeholder-shown) {
     <form method="dialog">
       <div class="mmh"><span>Affichage</span><button type="submit" class="mmx" aria-label="Fermer" title="Fermer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></div>
       <div class="mseg" id="oView"><button type="button" data-v="prio" title="Les priorités regroupées en haut">Priorités</button><button type="button" data-v="rub" title="Chaque tâche dans sa rubrique">Rubriques</button><button type="button" data-v="date" title="Par date d’échéance">Échéances</button></div>
+      <div class="mseg" id="oOrdre" aria-label="Ordre"><button type="button" data-o="main" title="L’ordre où tu les as rangées">À ta main</button><button type="button" data-o="recentes" title="Par date de création, les plus récentes en haut">Récentes</button><button type="button" data-o="anciennes" title="Par date de création, les plus anciennes en haut">Anciennes</button></div>
       <input type="checkbox" id="oUrgTop" hidden><input type="checkbox" id="oDate" hidden>
       <label class="mswitch"><span>Filtres<small>priorités, à relancer, personnes</small></span><input type="checkbox" id="oFilters" role="switch"><i></i></label>
       <div class="msync" id="oSync"><div class="ms1" id="oSync1"></div><p class="ms2" id="oOff" hidden></p><button type="button" class="oforce" id="oForce" hidden>Envoyer cette fois…</button></div>
@@ -9568,7 +9594,7 @@ let dragId = null,
 
 /* ---------- utilitaires ---------- */
 function todayISO() {
-  const d = new Date();
+  const d = window.__now ? new Date(window.__now) : new Date(); /* horloge des tests (3.10) */
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function fmtDate(iso) {
@@ -10084,7 +10110,7 @@ function dueActive(it) {
 }
 function dueNear(it) {
   if (!dueActive(it)) return false;
-  const n = daysTo(it.due);
+  const n = joursUrg(it.due);
   return n > seuilUrg() && n <= seuilBientot();
 }
 /* tâche qui attend sans échéance : patine à 2 puis 4 semaines */
@@ -10109,10 +10135,51 @@ function ageTxt(it) {
 function daysTo(iso) {
   return Math.round((new Date(iso + 'T12:00') - new Date(todayISO() + 'T12:00')) / 864e5);
 }
+/* 3.10 (François) : le compte à rebours en jours travaillés. Un mardi vu le vendredi est à J-2 (lundi, mardi), pas à
+   J-4. Ne comptent pas : week-ends, jours fériés, vacances fixes de l'application (offDayReason) et congés de ⚙.
+   « aujourd'hui », « demain » et « passée » restent au calendrier. Les seuils (urgente à J-3, bientôt à J-7) suivent
+   le même compte. */
+function jourTravaille(iso) {
+  return !offDayReason(new Date(iso + 'T12:00')) && !congeOf(iso);
+}
+const _jtCache = new Map();
+/** Jours travaillés après aujourd'hui, jusqu'à l'échéance comprise (calendrier si elle est passée, du jour ou demain). */
+function joursTravail(iso) {
+  const n = daysTo(iso);
+  if (n <= 1) return n;
+  const t = todayISO(),
+    key = t + '|' + iso + '|' + JSON.stringify(settings.conges || []);
+  if (_jtCache.has(key)) return _jtCache.get(key);
+  let j = 0;
+  for (let d = 1; d <= Math.min(n, 1000); d++) if (jourTravaille(addDays(t, d))) j++;
+  if (_jtCache.size > 3000) _jtCache.clear();
+  _jtCache.set(key, j);
+  return j;
+}
+/** Le compte qui sert aux règles (urgente, bientôt, halo) : au moins 1 tant que l'échéance n'est pas aujourd'hui. */
+function joursUrg(iso) {
+  const n = daysTo(iso);
+  return n <= 1 ? n : Math.max(1, joursTravail(iso));
+}
+/** « J-2 », ou '' si aucun jour travaillé ne reste avant une échéance qui tombe un jour chômé (on affiche alors la date). */
+function jMoins(iso) {
+  const j = joursTravail(iso);
+  return j > 0 ? 'J-' + j : '';
+}
+/** Infobulle : le compte expliqué. */
+function jExplique(iso) {
+  const n = daysTo(iso),
+    j = joursTravail(iso);
+  if (n <= 1) return '';
+  return (
+    (j ? j + '\u00a0jour' + (j > 1 ? 's' : '') + ' travaillé' + (j > 1 ? 's' : '') : 'aucun jour travaillé') +
+    ' d’ici là (' + n + '\u00a0jours au calendrier)'
+  );
+}
 /* halo d'urgence : d'autant plus marqué que l'échéance approche (0 à 7 jours avant, 1 le jour même et après) */
 function dueHalo(el, it) {
   if (!dueSoon(it)) return;
-  const n = daysTo(it.due),
+  const n = joursUrg(it.due),
     h = Math.max(0, Math.min(1, 1 - n / (seuilUrg() + 1)));
   el.classList.add('halo');
   if (n <= 1) el.classList.add('halo-vif');
@@ -10126,10 +10193,10 @@ function dueHalo(el, it) {
         ? 'échéance aujourd’hui'
         : n === 1
           ? 'échéance demain'
-          : 'échéance dans ' + n + ' jours');
+          : 'échéance dans ' + jExplique(it.due));
 }
 function dueSoon(it) {
-  return dueActive(it) && daysTo(it.due) <= seuilUrg();
+  return dueActive(it) && joursUrg(it.due) <= seuilUrg();
 }
 function isUrgent(it) {
   return !!dueSoon(it);
@@ -10139,7 +10206,7 @@ function isPrio(it) {
 } /* rangée « Priorités » : urgentes et importantes */
 /* ordre d'affichage : échéance dépassée ou du jour, puis urgentes (J-1 à J-3), puis importantes, puis les autres datées par date, puis sans échéance (ordre du fichier) */
 function urgKey(it) {
-  const n = dueActive(it) ? daysTo(it.due) : null;
+  const n = dueActive(it) ? joursUrg(it.due) : null;
   if (n != null && n <= 0) return '0' + it.due;
   if (n != null && n <= seuilUrg()) return '1' + it.due;
   if (it.important) return '2';
@@ -10152,7 +10219,7 @@ function waitKey(it) {
 }
 function sortIdx(arr, key) {
   return arr
-    .map((i, k) => [key(items[i]), k, i])
+    .map((i, k) => [key(items[i], i), k, i])
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1]))
     .map(z => z[2]);
 }
@@ -10164,6 +10231,31 @@ function relanceDone(it) {
 }
 function isLate(it) {
   return it.level === 0 && it.state === 'attente' && it.relance && it.relance <= todayISO();
+}
+/* 3.10 (François) : ordre dans chaque case : « à ta main » (l'ordre du fichier, celui du glisser), ou par date de
+   création, récentes ou anciennes d'abord (réglage de cet appareil). Ce qui presse (urgentes, relances dues) reste en
+   tête ; le fichier ne change pas. */
+function ordre() {
+  try {
+    const v = localStorage.getItem('taches-ordre');
+    return v === 'recentes' || v === 'anciennes' ? v : 'main';
+  } catch (e) {
+    return 'main';
+  }
+}
+function setOrdre(v) {
+  try {
+    localStorage.setItem('taches-ordre', v);
+  } catch (e) {}
+}
+const _inv = s => s.replace(/\d/g, c => 9 - c);
+/** Clé de tri qui tient compte de l'ordre choisi ; `base` est la clé habituelle (urgKey, waitKey). */
+function ordreKey(it, i, base) {
+  const o = ordre();
+  if (o === 'main') return base;
+  const presse = it.state === 'attente' ? isLate(it) : isUrgent(it),
+    c = createdOf(it) + String(i).padStart(6, '0');
+  return presse ? '0' + base : '1' + (o === 'recentes' ? _inv(c) : c);
 }
 /* urgentes regroupées en haut (réglage de cet appareil, par défaut oui) */
 function dateView() {
@@ -10236,7 +10328,14 @@ function bandTops() {
       by[bandOf(it)].push(i);
   });
   for (const k in by)
-    by[k] = sortIdx(by[k], k === 'sans' ? it => (it.important ? '0' : '1') + createdOf(it) : it => bandDue(it) + urgKey(it));
+    by[k] = sortIdx(
+      by[k],
+      k === 'sans'
+        ? (it, i) =>
+            (it.important ? '0' : '1') +
+            (ordre() === 'recentes' ? _inv(createdOf(it) + String(i).padStart(6, '0')) : createdOf(it))
+        : it => bandDue(it) + urgKey(it)
+    );
   return by;
 }
 /* ---------- Markdown ---------- */
@@ -11008,8 +11107,8 @@ function makeRow(it) {
           ? 'échéance aujourd’hui'
           : n === 1
             ? 'échéance demain'
-            : 'échéance le ' + shortDate(it.due) + (n <= seuilBientot() ? ' · J-' + n : ''));
-    c.title = 'Clic : changer ou effacer l’échéance';
+            : 'échéance le ' + shortDate(it.due) + (joursUrg(it.due) <= seuilBientot() && jMoins(it.due) ? ' · ' + jMoins(it.due) : ''));
+    c.title = 'Clic : changer ou effacer l’échéance' + (n > 1 && !dueSoon(it) ? ' · ' + jExplique(it.due) : '');
     dueHalo(c, it);
     m.append(c);
   }
@@ -11264,8 +11363,9 @@ function render() {
     if (c.dataset.band) return;
     const cards = [...c.querySelectorAll(':scope>.card')],
       rk = x => {
-        const it = items[idx(x.dataset.id)];
-        return it ? (it.state === 'attente' ? waitKey(it) : urgKey(it)) : '9';
+        const i = idx(x.dataset.id),
+          it = items[i];
+        return it ? ordreKey(it, i, it.state === 'attente' ? waitKey(it) : urgKey(it)) : '9';
       };
     const sorted = cards
       .map((x, k) => [rk(x), k, x])
@@ -14392,6 +14492,28 @@ function renderFilters() {
     });
     box.append(u);
   }
+  if (!dateView()) {
+    /* 3.10 : ordre dans chaque case, un bouton qui tourne (la place manque dans l'en-tête) ; dans la vue par
+       échéance, c'est la date qui range */
+    const L = { main: 'à ta main', recentes: 'récentes d’abord', anciennes: 'anciennes d’abord' },
+      suiv = { main: 'recentes', recentes: 'anciennes', anciennes: 'main' },
+      o = document.createElement('button');
+    o.type = 'button';
+    o.className = 'oseg' + (ordre() !== 'main' ? ' on' : '');
+    o.dataset.o = ordre();
+    o.textContent = '↕ ' + L[ordre()];
+    o.title =
+      'Ordre dans chaque case : ' +
+      L[ordre()] +
+      (ordre() === 'main' ? ' (glisser pour ranger)' : ' (par date de création ; ce qui presse reste en tête)') +
+      '\nClic : ' +
+      L[suiv[ordre()]];
+    o.onclick = () => {
+      setOrdre(suiv[ordre()]);
+      render();
+    };
+    box.append(o);
+  }
   if (filter && filter.t === 'urgent') filter = null;
   const chips = [{ t: 'late', l: '⏰ À relancer' }];
   for (const n of [
@@ -16769,9 +16891,9 @@ $('#setBtn').onclick = () => {
     <label>Dossier OneDrive sur ce PC<input id="sLocal" placeholder="C:\\Users\\…\\OneDrive - …"></label>
     <label>Adresse web de ce dossier<input id="sWeb" placeholder="https://…-my.sharepoint.com/personal/…/Documents"></label></fieldset>
     <label>Archiver les tâches faites au bout de (jours ; 2 = le surlendemain matin, elles restent visibles jusqu’au lendemain soir ; 0 = jamais)<input id="sArch" type="number" min="0" placeholder="2"></label>
-    <label>Une échéance rend la tâche urgente à J-…<input id="sUrgJ" type="number" min="0" placeholder="3"></label>
+    <label>Une échéance rend la tâche urgente à J-… <span class="muted">(en jours travaillés)</span><input id="sUrgJ" type="number" min="0" placeholder="3"></label>
     <label>et la signale (corail) dès J-…<input id="sBientotJ" type="number" min="0" placeholder="7"></label>
-    <fieldset id="sConges"><legend>Mes congés <span class="muted">(grisés dans le calendrier ; les vacances fixes de l’application ne changent pas)</span></legend>
+    <fieldset id="sConges"><legend>Mes congés <span class="muted">(grisés dans le calendrier, et hors du compte des jours travaillés ; les vacances fixes de l’application ne changent pas)</span></legend>
     <div class="cgl"></div><button type="button" class="cgadd">+ Ajouter une période</button></fieldset>
     <label>Règles des rubriques (une par ligne)<textarea id="sRules" rows="4" placeholder="Commandes = Demande de devis ; Bon de commande&#10;Conventions = → Calendrier"></textarea></label>
     <p class="muted" style="margin:.2rem 0 0;font-size:.8rem">Quand une tâche arrive dans la rubrique (créée ou déplacée) : les sous-tâches listées sont ajoutées ; « → Rubrique » en crée une copie dans cette rubrique.</p>
@@ -17574,8 +17696,8 @@ function mDue(it) {
           ? 'aujourd’hui'
           : n === 1
             ? 'demain'
-            : n <= seuilBientot()
-              ? 'J-' + n
+            : joursUrg(it.due) <= seuilBientot() && jMoins(it.due)
+              ? jMoins(it.due)
               : shortDate(it.due)),
     soon ? (n <= 0 ? 'redf' : 'red') : dueNear(it) ? 'near' : ''
   );
@@ -17774,6 +17896,8 @@ function mCard(i, withSec) {
     }
   }
   if (ageLevel(it)) ch.append(mChip(ageTxt(it), 'age'));
+  /* 3.10 : rangées par date de création, la date se voit */
+  else if (ordre() !== 'main' && it.created && it.state !== 'fait') ch.append(mChip('créée le ' + shortDate(it.created), 'cree'));
   const all = [it, ...subs].flatMap(x => x.links || []);
   if (all.length) {
     const f = all.some(mIsFile);
@@ -17980,7 +18104,7 @@ function mRender() {
     return;
   }
   /* urgentes d'abord (affichage seulement : l'ordre du fichier ne change pas) */
-  const urgentFirst = arr => sortIdx(arr, urgKey);
+  const urgentFirst = arr => sortIdx(arr, (it, i) => ordreKey(it, i, urgKey(it)));
   /* urgentes : une section à part, avant les rubriques (rubrique d'origine en puce) */
   const urg = urgTop() ? urgentFirst(groups.flatMap(g => g.todo.filter(i => inPrioRow(items[i])))) : [];
   let shown = urg.length;
@@ -18019,6 +18143,7 @@ function mRender() {
   }
   for (const g of groups) {
     if (urgTop()) g.todo = g.todo.filter(i => !inPrioRow(items[i]));
+    if (ordre() !== 'main') g.todo = sortIdx(g.todo, (it, i) => ordreKey(it, i, urgKey(it)));
     const n = g.todo.length + g.done.length;
     if (!n) continue;
     shown += n;
@@ -18036,7 +18161,7 @@ function mRender() {
     );
   }
   const w0 = tops.filter(i => items[i].state === 'attente' && !isLate(items[i]) && matchFilter(i));
-  const wait = sortIdx(w0, waitKey);
+  const wait = sortIdx(w0, (it, i) => ordreKey(it, i, waitKey(it)));
   if (wait.length) {
     shown += wait.length;
     list.append(
@@ -18294,6 +18419,18 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-07 15:00',
+    type: 'web',
+    v: '3.10',
+    t: 'Jours travaillés, ordre par date de création',
+    items: [
+      'Échéances : le compte à rebours compte les jours travaillés. Un mardi vu le vendredi est à J-2 (lundi, mardi), plus à J-4. Ne comptent pas : week-ends, jours fériés, vacances fixes et tes congés de ⚙. « Aujourd’hui » et « demain » restent au calendrier ; l’infobulle donne les deux comptes.',
+      'Les seuils suivent le même compte : une tâche devient urgente à J-3 travaillés, signalée à J-7. Une échéance qui tombe un dimanche est urgente le vendredi.',
+      'Ordre dans chaque case : « à ta main » (comme avant), « récentes d’abord » ou « anciennes d’abord », par date de création. Au PC, le bouton « ↕ » de l’en-tête (un clic passe au suivant) ; au téléphone, menu ⋮. Ce qui presse reste en tête, et taches.md garde son ordre.',
+      'Au téléphone, une pièce jointe partagée depuis une appli qui ne donne pas de vrai nom (GMX donnait « content://de.gmx… ») s’appelle désormais « Pièce jointe GMX du 2026-11-07 à 14 h 05.pdf ». Tu peux toujours changer le titre avant de créer la tâche.'
+    ]
+  },
   {
     d: '2026-10-31 18:10',
     type: 'web',
@@ -21946,8 +22083,10 @@ const mFichierRecu = info => {
   if (!AND) return;
   const d = document.querySelector('dialog[open]');
   if (d && d.id !== 'mAtt') d.close();
-  mAttInfo = info || {};
-  const name = mAttInfo.name || 'fichier';
+  mAttInfo = { ...(info || {}) };
+  /* 3.10 : un nom qui ne dit rien (adresse interne de GMX…) devient « Pièce jointe GMX du … » */
+  mAttInfo.name = nomNaturel(mAttInfo.name, mAttInfo.type);
+  const name = mAttInfo.name;
   const kb = mAttInfo.size || 0;
   $('#tFile').textContent =
     '📎 ' +
@@ -22276,7 +22415,19 @@ function initMobile() {
   window.mViewSeg = () => {
     const v = dateView() ? 'date' : urgTop() ? 'prio' : 'rub';
     document.querySelectorAll('#oView button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    /* 3.10 : ordre par date de création (sans objet dans la vue par échéance) */
+    $('#oOrdre').hidden = v === 'date';
+    document.querySelectorAll('#oOrdre button').forEach(b => b.classList.toggle('on', b.dataset.o === ordre()));
   };
+  document.querySelectorAll('#oOrdre button').forEach(
+    b =>
+      (b.onclick = () => {
+        setOrdre(b.dataset.o);
+        mViewSeg();
+        buzz('tick');
+        mRender();
+      })
+  );
   document.querySelectorAll('#oView button').forEach(
     b =>
       (b.onclick = () => {
@@ -22790,11 +22941,11 @@ function echeancesTick() {
 /* ---- le radar ---- */
 function compteARebours(iso) {
   const n = daysTo(iso);
-  return n < 0 ? 'passée' : n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : 'J-' + n;
+  return n < 0 ? 'passée' : n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : jMoins(iso) || shortDate(iso);
 }
 function classeRadar(iso) {
   const n = daysTo(iso);
-  return n < 0 ? 'passe' : n <= 7 ? 'imminent' : n <= 30 ? 'proche' : 'loin';
+  return n < 0 ? 'passe' : joursUrg(iso) <= 7 ? 'imminent' : n <= 30 ? 'proche' : 'loin';
 }
 function prochaineEtape(it) {
   const i = idx(it.id);
@@ -22822,7 +22973,7 @@ function renderRadar() {
           '" data-id="' +
           it.id +
           '" title="' +
-          escHtml(fmtDate(it.due) + (it.state === 'attente' ? ' (à confirmer)' : '') + (e ? '\nProchaine étape : ' + plainFmt(e.text) + ' (' + shortDate(e.due) + ')' : '')) +
+          escHtml(fmtDate(it.due) + (daysTo(it.due) > 1 ? ' · ' + jExplique(it.due) : '') + (it.state === 'attente' ? ' (à confirmer)' : '') + (e ? '\nProchaine étape : ' + plainFmt(e.text) + ' (' + shortDate(e.due) + ')' : '')) +
           '"><b>' +
           compteARebours(it.due) +
           '</b> ' +
@@ -23047,6 +23198,69 @@ function nomColle(f) {
   const d = new Date(),
     ext = (n.match(/\.[a-z]+$/i) || ['.' + ((f.type || '').split('/')[1] || 'png').replace('jpeg', 'jpg')])[0];
   return 'Image du ' + todayISO() + ' à ' + String(d.getHours()).padStart(2, '0') + ' h ' + String(d.getMinutes()).padStart(2, '0') + ext;
+}
+/* 3.10 (François) : un fichier partagé depuis une appli qui ne donne pas de vrai nom. GMX, par exemple, donne son
+   adresse interne (« content://de.gmx.mobile.android.mail.tokenaccess.attachmentprovider/18608?token=… »), d'autres
+   rien du tout (« fichier »). On le remplace par « Pièce jointe GMX du 2026-11-07 à 14 h 05.pdf » : l'appli d'origine
+   (tirée de l'adresse), le moment, et l'extension tirée du type du fichier. */
+const PJ_EXT = {
+  'application/pdf': 'pdf',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'text/plain': 'txt',
+  'text/csv': 'csv',
+  'text/html': 'html',
+  'text/calendar': 'ics',
+  'application/zip': 'zip',
+  'application/msword': 'doc',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'application/vnd.oasis.opendocument.text': 'odt',
+  'application/vnd.oasis.opendocument.spreadsheet': 'ods',
+  'audio/mpeg': 'mp3',
+  'video/mp4': 'mp4'
+};
+const PJ_APPLIS = [
+  [/gmx/i, 'GMX'],
+  [/gmail|com\.google\.android\.gm/i, 'Gmail'],
+  [/outlook|microsoft\.office/i, 'Outlook'],
+  [/k9|thunderbird/i, 'Thunderbird'],
+  [/whatsapp/i, 'WhatsApp'],
+  [/signal/i, 'Signal'],
+  [/teams/i, 'Teams'],
+  [/laposte/i, 'La Poste'],
+  [/orange/i, 'Orange'],
+  [/yahoo/i, 'Yahoo']
+];
+/** Le nom reçu ne dit rien : une adresse (content://, http…), un chemin, « fichier », ou une suite de chiffres. */
+function nomIllisible(n) {
+  n = String(n || '').trim();
+  return !n || /^[a-z][a-z0-9+.-]*:/i.test(n) || /^content-{2,}/i.test(n) || n.includes('/') || /^(fichier|file|attachment|recu)$/i.test(n) || /^[\d\s_.-]+$/.test(n.replace(/\.[a-z0-9]{1,5}$/i, ''));
+}
+function nomNaturel(name, type, d = window.__now ? new Date(window.__now) : new Date()) {
+  const n = String(name || '').trim();
+  if (!nomIllisible(n)) return n;
+  const app = (PJ_APPLIS.find(([rx]) => rx.test(n)) || [, ''])[1],
+    t = String(type || '').split(';')[0].trim().toLowerCase(),
+    ext = PJ_EXT[t] || ((n.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || '').toLowerCase() || (/^image\//.test(t) ? t.slice(6) : ''),
+    iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  return (
+    (/^image\//.test(t) ? 'Image' : 'Pièce jointe') +
+    (app ? ' ' + app : '') +
+    ' du ' +
+    iso +
+    ' à ' +
+    String(d.getHours()).padStart(2, '0') +
+    ' h ' +
+    String(d.getMinutes()).padStart(2, '0') +
+    (ext ? '.' + ext : '')
+  );
 }
 /** Copie des fichiers dans « Pièces jointes » ; renvoie leurs liens (ceux qui ont pu être copiés). Demande l'accès au
  *  dossier si besoin (doit venir d'un geste : collage, dépôt, clic) ; refusé → []. */
