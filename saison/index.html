@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261031171535">
+<meta name="officious-page" content="20261107140758">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1435,6 +1435,31 @@ fieldset.public legend {
 .plus input {
   margin-top: 0.3rem;
 }
+/* 0.71 : historique d'une date, dans la fiche */
+.histoire ol {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+.histoire li {
+  padding: 0.25rem 0 0.25rem 0.7rem;
+  border-left: 2px solid color-mix(in srgb, var(--gris) 35%, transparent);
+}
+.histoire time {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--gris);
+}
+.histoire .lien {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
 .fiche-pied {
   display: flex;
   gap: 0.5rem;
@@ -2632,7 +2657,7 @@ dialog.completer {
   <label class="champ" id="fPeriodeBloc" hidden>Période<select id="fPeriode"></select></label>
   <p class="aide" id="fAucuneAide" hidden>L’événement reste dans « À dater », en haut de la liste ; il n’ira ni sur les affiches ni dans « Demandez le programme ».</p>
   <div class="ligne2">
-    <label class="champ">Heure<input id="fHeures" placeholder="18h30 · 10h30-12h30 · 14h-14h45 et 15h15-16h"></label>
+    <label class="champ">Heure<input id="fHeures" placeholder="18h30 · 14h-14h45 et 15h15-16h · l’après-midi" title="Des heures (« 18h30 », « 14h-14h45 et 15h15-16h »), ou un horaire en toutes lettres, écrit tel quel (« l’après-midi », « entre 14h et 19h »)"></label>
     <label class="coche bas"><input id="fHeureInc" type="checkbox"> horaire à préciser</label>
   </div>
   <div class="champ">Lieu
@@ -2663,6 +2688,11 @@ dialog.completer {
     <summary>Libellé de date imposé</summary>
     <input id="fLibelle" placeholder="mardi 13 ou mercredi 14 avril">
     <p class="aide">À n’utiliser que si le libellé calculé ne convient pas : la date ne sert alors plus qu’au tri.</p>
+  </details>
+  <details class="plus histoire" id="fHistBloc">
+    <summary>Historique de cette date</summary>
+    <ol id="fHist"></ol>
+    <p class="aide" id="fHistCtx"></p>
   </details>
   <div class="fiche-pied">
     <button id="fSupprimer" class="danger">Supprimer</button>
@@ -5416,6 +5446,10 @@ function libDate(ev) {
   return 'du ' + jA + ' ' + (memeMois ? quantieme(a) : jourMois(a)) + ' au ' + jB + ' ' + jourMois(b);
 }
 
+/** Horaire à afficher : le libellé libre s'il y en a un (0.71), sinon les heures (« de 10 h 30 à 12 h 30 »). */
+function libHoraire(e) {
+  return e.horaire ? e.horaire : e.heures ? libHeures(e.heures) : '';
+}
 /** '20:00' → '20 h' ; '18:30' → '18 h 30'. */
 function libH(hm) {
   const [h, m] = hm.split(':');
@@ -5541,6 +5575,7 @@ function evVide() {
     d2: '',
     heures: '',
     heureInconnue: false,
+    horaire: '' /* 0.71 : libellé d'horaire libre (« l’après-midi », « entre 14h et 19h ») ; heures ne sert alors qu'au tri */,
     titre: '',
     soustitre: '' /* sous le titre, pour tous : affiches, mails, liste */,
     detail: '',
@@ -5555,7 +5590,8 @@ function evVide() {
     libelle: '',
     aDater: false /* date approximative : d1..d2 est une fenêtre (mois, période), pas la date */,
     taches: '' /* rétroplanning envoyé à Tâches : date de la manifestation à ce moment-là (jeton {tâches AAAA-MM-JJ}) */,
-    autres: []
+    autres: [],
+    histoire: '' /* 0.71 : lignes « AAAA-MM-JJ HH:MM · ce qui s'est passé » (création, modifications), interne */
   };
 }
 
@@ -5586,9 +5622,9 @@ function parse(texte) {
       if (m) doc.reglages.push({ cle: m[1].trim(), val: m[2].trim() });
       continue;
     }
-    const sous = l.match(/^\s+(↳|>|🔒|👥|🎟) ?(.*)$/u);
+    const sous = l.match(/^\s+(↳|>|🔒|👥|🎟|🕓) ?(.*)$/u);
     if (sous && ev) {
-      const champ = { '↳': 'soustitre', '>': 'detail', '🔒': 'remarque', '👥': 'eleves', '🎟': 'pratique' }[sous[1]];
+      const champ = { '↳': 'soustitre', '>': 'detail', '🔒': 'remarque', '👥': 'eleves', '🎟': 'pratique', '🕓': 'histoire' }[sous[1]];
       ev[champ] = ev[champ] ? ev[champ] + '\n' + sous[2] : sous[2];
       continue;
     }
@@ -5621,6 +5657,7 @@ function parse(texte) {
       let k;
       if ((k = t.match(/^id (.+)$/))) ev.id = k[1].trim();
       else if ((k = t.match(/^date « (.*) »$/))) ev.libelle = k[1];
+      else if ((k = t.match(/^horaire « (.*) »$/))) ev.horaire = k[1];
       else if ((k = t.match(/^lieu (.+)$/))) ev.lieu = k[1].trim();
       else if ((k = t.match(/^accompagnement (.+)$/))) ev.accomp = k[1].trim();
       else if (t === 'semaine') ev.semaine = true;
@@ -5729,6 +5766,7 @@ function ligneEv(e) {
   if (e.aDater && e.d1) j.push('à dater');
   if (e.semaine) j.push('semaine');
   if (e.heureInconnue) j.push('heure ?');
+  if (e.horaire) j.push('horaire « ' + e.horaire + ' »');
   if (e.lieu) j.push('lieu ' + e.lieu);
   if (e.accomp) j.push('accompagnement ' + e.accomp);
   if (e.statut) j.push(e.statut);
@@ -5742,6 +5780,7 @@ function ligneEv(e) {
   for (const l of (e.eleves || '').split('\n')) if (l.trim()) out.push('  👥 ' + l);
   for (const l of (e.pratique || '').split('\n')) if (l.trim()) out.push('  🎟 ' + l);
   for (const l of (e.remarque || '').split('\n')) if (l.trim()) out.push('  🔒 ' + l);
+  for (const l of (e.histoire || '').split('\n')) if (l.trim()) out.push('  🕓 ' + l);
   return out;
 }
 
@@ -5778,6 +5817,7 @@ const CHAMPS = [
   'd2',
   'heures',
   'heureInconnue',
+  'horaire',
   'titre',
   'soustitre',
   'detail',
@@ -5795,6 +5835,14 @@ const CHAMPS = [
   'autres'
 ];
 const egal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+/** Historique fusionné : toutes les lignes des deux côtés, sans doublon, dans l'ordre du temps (0.71). */
+function unionHistoire(a, b) {
+  const L = [...new Set([...(a || '').split('\n'), ...(b || '').split('\n')].filter(l => l.trim()))];
+  return L.map((l, k) => [l, k])
+    .sort((x, y) => (x[0].slice(0, 16) < y[0].slice(0, 16) ? -1 : x[0].slice(0, 16) > y[0].slice(0, 16) ? 1 : x[1] - y[1]))
+    .map(z => z[0])
+    .join('\n');
+}
 function cleReglage(r) {
   /* une période ou un lieu s'identifie par son nom ; les autres réglages par leur clé */
   return r.cle === 'période' || r.cle === 'lieu' ? r.cle + ':' + r.val.split(' = ')[0] : r.cle;
@@ -5826,6 +5874,7 @@ function merge3(B, M, T) {
         else if (eb && egal(et[c], vb)) r[c] = em[c];
         else conflits++;
       }
+      r.histoire = unionHistoire(em.histoire, et.histoire);
       evts.push(r);
     } else if (em) {
       /* absent du fichier : supprimé ailleurs (s'il existait dans la base) ou ajouté ici */
@@ -6367,7 +6416,7 @@ function metaQuand(e) {
     !(e.semaine && ecartJours(e.d1, e.d2) === 5 && jour(e.d1).getDay() === 1)
   )
     p.push(esc(libDate(e)));
-  if (e.heures) p.push(esc(libHeures(e.heures)));
+  if (libHoraire(e)) p.push(esc(typo(libHoraire(e))));
   if (e.heureInconnue) p.push('<span class="flou">horaire à préciser</span>');
   return p.join(' · ');
 }
@@ -6656,7 +6705,7 @@ function apercuSaisie() {
   a.innerHTML =
     '→ ' +
     (r.aDater ? '<b>À dater</b>' + (r.d1 ? ' (' + esc(typo(libFlou(r))) + ')' : '') : esc(majuscule(libDate(r)))) +
-    (r.heures ? ' · ' + esc(libHeures(r.heures)) : '') +
+    (libHoraire(r) ? ' · ' + esc(typo(libHoraire(r))) : '') +
     ' · <b>' +
     rich(r.titre) +
     '</b>' +
@@ -6668,12 +6717,83 @@ function apercuSaisie() {
   a.className = 'ok';
   return r;
 }
+/* ---------- historique d'une date (0.71, François : « retrouver dans quel contexte elle a été créée ») ----------
+   Lignes « 🕓 AAAA-MM-JJ HH:MM · … » sous la date dans planning.md, pour l'équipe seulement (jamais sur les affiches
+   ni dans les mails) : sa création (sur quel appareil, ce qui a été tapé, ou d'où elle vient) et, à chaque fermeture
+   de la fiche, ce qui a changé. Les dates d'avant la 0.71 n'en ont pas. */
+function horodatage() {
+  const d = window.__now ? new Date(window.__now) : new Date();
+  return isoDe(d) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+const appareil = () => (TACTILE ? 'au téléphone' : 'au PC');
+function noter(e, texte) {
+  e.histoire = (e.histoire ? e.histoire + '\n' : '') + horodatage() + ' · ' + texte.replace(/\s*\n\s*/g, ' ');
+}
+const citer = t => '« ' + String(t || '').replace(/\s*\|\s*/g, ' ').trim() + ' »';
+/** Ce qui a changé entre deux états d'une date, en une ligne (rien → ''). */
+function changements(a, e) {
+  const L = [],
+    jr = x => (x.d1 ? (estDatee(x) ? libDate(x) : 'à dater (' + libFlou(x) + ')') : 'à dater');
+  if (['d1', 'd2', 'aDater', 'libelle', 'semaine'].some(c => !egal(a[c], e[c]))) L.push('date : ' + jr(a) + ' → ' + jr(e));
+  if (libHoraire(a) !== libHoraire(e) || !!a.heureInconnue !== !!e.heureInconnue) {
+    const h = x => libHoraire(x) || (x.heureInconnue ? 'à préciser' : 'aucun');
+    L.push('horaire : ' + h(a) + ' → ' + h(e));
+  }
+  if ((a.titre || '') !== e.titre) L.push('titre : ' + citer(a.titre) + ' → ' + citer(e.titre));
+  if ((a.lieu || '') !== e.lieu) L.push('lieu : ' + (a.lieu || 'aucun') + ' → ' + (e.lieu || 'aucun'));
+  if ((a.statut || '') !== e.statut) L.push('état : ' + (a.statut || 'confirmée') + ' → ' + (e.statut || 'confirmée'));
+  if (!!a.interne !== !!e.interne) L.push(e.interne ? 'réservée à l’équipe' : 'ouverte au public');
+  const autres = [
+    ['soustitre', 'sous-titre'],
+    ['detail', 'descriptif'],
+    ['eleves', 'élèves'],
+    ['pratique', 'infos pratiques'],
+    ['accomp', 'accompagnement'],
+    ['remarque', 'remarque']
+  ].filter(([c]) => (a[c] || '') !== (e[c] || ''));
+  if (autres.length) L.push(autres.map(x => x[1]).join(', ') + ' : modifié' + (autres.length > 1 ? 's' : ''));
+  return L.join(' ; ');
+}
+const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+/** « 2026-11-07 14:05 » → « 7 nov. 2026, 14 h 05 » */
+function libHorodatage(h) {
+  const m = h.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
+  return m ? +m[3] + ' ' + MOIS_COURTS[+m[2] - 1] + ' ' + m[1] + ', ' + libHeures(m[4] + ':' + m[5]) : h;
+}
+/** Fiche : l'historique de la date, et ce qui a été créé le même jour (le contexte). */
+function afficherHistoire(e) {
+  const L = (e.histoire || '').split('\n').filter(l => l.trim()),
+    ol = $('#fHist'),
+    ctx = $('#fHistCtx');
+  ol.innerHTML = L.map(l => {
+    const m = l.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}) · (.*)$/);
+    return '<li>' + (m ? '<time>' + esc(typo(libHorodatage(m[1]))) + '</time> ' + esc(typo(m[2])) : esc(typo(l))) + '</li>';
+  }).join('');
+  ol.hidden = !L.length;
+  const jour = (L.find(l => / · créée /.test(l)) || '').slice(0, 10);
+  const voisines = jour
+    ? doc.evts.filter(x => x.id !== e.id && (x.histoire || '').split('\n').some(l => l.startsWith(jour) && / · créée /.test(l)))
+    : [];
+  ctx.innerHTML = !L.length
+    ? 'Rien de noté : cette date existait avant le 7 novembre 2026, quand l’historique a commencé.'
+    : voisines.length
+      ? 'Créées le même jour : ' +
+        voisines
+          .slice(0, 8)
+          .map(x => '<button type="button" class="lien" data-ouvrir="' + esc(x.id) + '">' + (x.d1 ? esc(libCourt(x.d1)) + ' ' : '') + rich(x.titre) + '</button>')
+          .join(', ') +
+        (voisines.length > 8 ? ' et ' + (voisines.length - 8) + ' autres' : '')
+      : '';
+  ctx.hidden = !ctx.innerHTML;
+}
+let origineEnAttente = ''; /* au téléphone, une proposition de Tâches passe par la saisie : on s'en souvient */
 /** Ajout depuis la saisie rapide. Au PC (0.64, demande de François), la fiche s'ouvre en « Nouvelle date » : la date
  *  est déjà créée et enregistrée, on la complète, « Créer » referme, « Annuler » la retire. Au téléphone, comme avant. */
 function ajouter(r, fenetre = !TACTILE) {
   snapshot();
-  const { repriseDe, ...champs } = r;
-  const e = { ...evVide(), ...champs, id: idNouveau() };
+  const { repriseDe, origine, ...champs } = r;
+  const e = { ...evVide(), ...champs, id: idNouveau(), histoire: '' };
+  noter(e, 'créée ' + appareil() + (origine ? ', ' + origine : ''));
   while (doc.evts.some(x => x.id === e.id)) e.id = idNouveau();
   doc.evts.push(e);
   changed();
@@ -6715,7 +6835,7 @@ function ouvrirRetrouver() {
           esc(e.id) +
           '"> ' +
           esc(majuscule(libDate(e))) +
-          (e.heures ? ', ' + esc(libHeures(e.heures)) : '') +
+          (libHoraire(e) ? ', ' + esc(typo(libHoraire(e))) : '') +
           ' · <b>' +
           rich(e.titre) +
           '</b></label>'
@@ -6726,7 +6846,11 @@ function ouvrirRetrouver() {
     const ids = $$('#retrouverListe input:checked').map(i => i.value);
     if (!ids.length) return;
     snapshot();
-    for (const e of L) if (ids.includes(e.id)) doc.evts.push(e);
+    for (const e of L)
+      if (ids.includes(e.id)) {
+        noter(e, 'remise dans le planning ' + appareil() + ' (elle en avait disparu)');
+        doc.evts.push(e);
+      }
     changed();
     toutAfficher();
     toast(ids.length + ' manifestation' + (ids.length > 1 ? 's remises' : ' remise') + ' dans le planning');
@@ -6739,7 +6863,22 @@ function evSel() {
   return doc.evts.find(e => e.id === selId);
 }
 let ficheAvant = ''; /* l'événement à l'ouverture de la fiche, pour dire au « Valider » s'il a changé */
+/** Fiche quittée (fermée, ou une autre ouverte par-dessus) : ce qui a changé va dans l'historique de la date. */
+function noterFiche() {
+  const e = evSel();
+  if (!e || creation === selId) return;
+  let avant = {};
+  try {
+    avant = JSON.parse(ficheAvant || '{}');
+  } catch (x) {}
+  if (avant.id !== e.id) return;
+  const ch = changements(avant, e);
+  if (!ch) return;
+  noter(e, 'modifiée ' + appareil() + ' : ' + ch);
+  changed();
+}
 function ouvrirFiche(id) {
+  if (selId && selId !== id) noterFiche();
   selId = id;
   precChoisie = '';
   ficheAvant = JSON.stringify(doc.evts.find(e => e.id === id) || {});
@@ -6774,7 +6913,7 @@ function majCreation() {
 /** « Nouvelle date… » : une date vide (« Nouvelle date », date inconnue) dans la fiche de création. */
 function nouvelleDate() {
   if (!socle.ouvert) return toast('Ouvre d’abord planning.md');
-  ajouter({ titre: 'Nouvelle date' }, true);
+  ajouter({ titre: 'Nouvelle date', origine: 'par « Nouvelle date… »' }, true);
   $('#fTitre').select();
 }
 function fermerFiche() {
@@ -6795,6 +6934,7 @@ function fermerFiche() {
         return {};
       }
     })();
+  if (!creee) noterFiche();
   selId = null;
   $('#fiche').hidden = true;
   document.body.classList.remove('avec-fiche');
@@ -6813,6 +6953,7 @@ function fermerFiche() {
     toast('Modifications enregistrées. Toujours « ' + st + ' » : la confirmer ?', 'Confirmer', () => {
       snapshot();
       e.statut = '';
+      noter(e, 'confirmée ' + appareil());
       changed();
       toutAfficher();
       toast('Date confirmée');
@@ -6851,7 +6992,7 @@ function remplirFiche() {
     '<option value="">Choisir…</option>' +
     pers.map(p => '<option value="' + esc(p.nom) + '">' + esc(typo(p.nom)) + '</option>').join('');
   $('#fPeriode').value = (e.aDater && (pers.find(p => p.d1 === e.d1 && p.d2 === e.d2) || {}).nom) || '';
-  set('#fHeures', e.heures);
+  set('#fHeures', e.horaire || e.heures);
   $('#fHeureInc').checked = e.heureInconnue;
   const L = lieux(doc);
   $('#fLieux').innerHTML =
@@ -6887,6 +7028,7 @@ function remplirFiche() {
   set('#fLibelle', e.libelle);
   if (e.libelle) $('#fiche details.plus').open = true;
   afficherRetro(e);
+  afficherHistoire(e);
   const acc = [...new Set(doc.evts.map(x => x.accomp).filter(Boolean))].sort();
   $('#accomps').innerHTML = acc.map(a => '<option value="' + esc(a) + '">').join('');
 }
@@ -6964,7 +7106,8 @@ function initListe() {
       setTimeout(() => $('#ajoutApercu').classList.remove('secoue'), 400);
       return;
     }
-    ajouter(r);
+    ajouter({ ...r, origine: (origineEnAttente ? origineEnAttente + ', ' : '') + 'saisie ' + citer($('#ajoutTxt').value) });
+    origineEnAttente = '';
     $('#ajoutTxt').value = '';
     apercuSaisie();
   };
@@ -7118,15 +7261,42 @@ function initListe() {
   $('#fHeures').addEventListener('change', () => {
     const v = $('#fHeures').value.trim(),
       h = lireHeures(v);
-    /* jamais d'heure illisible dans le fichier : on la refuse ici plutôt que de l'écrire */
-    if (v && !heuresValides(h))
-      return toast('Heure non comprise : écris par exemple « 18h30 » ou « 14h-14h45 et 15h15-16h »');
-    modifier('heures', h);
+    const e = evSel();
+    if (!e) return;
+    if (!v || heuresValides(h)) {
+      if (e.horaire) {
+        snapshot();
+        editSnap = 'heures';
+        e.horaire = '';
+        if (e.heures === (v ? h : '')) {
+          changed();
+          afficherListe();
+          afficherControles();
+          return;
+        }
+      }
+      return modifier('heures', v ? h : '');
+    }
+    /* 0.71 (François) : ce qui ne se lit pas comme des heures devient un horaire libre, écrit tel quel (« l’après-midi »,
+       « entre 14h et 19h ») ; sa première heure, s'il en a une, sert au tri. Avant, on le refusait. */
+    const m = v.match(/(\d{1,2})\s*[h:]\s*(\d{2})?/i),
+      tri = m && +m[1] < 24 ? m[1].padStart(2, '0') + ':' + (m[2] || '00') : '';
+    if (e.horaire === v) return;
+    snapshot();
+    editSnap = null;
+    e.horaire = v;
+    e.heures = tri && heuresValides(tri) ? tri : '';
+    e.heureInconnue = false;
+    $('#fHeureInc').checked = false;
+    changed();
+    afficherListe();
+    afficherControles();
+    toast('Horaire écrit tel quel : « ' + typo(v) + ' »' + (tri ? ' (rangée à ' + libHeures(tri) + ')' : ''), 'Annuler', annuler);
   });
   $('#fHeures').addEventListener('blur', () => {
     editSnap = null;
     const e = evSel();
-    if (e) $('#fHeures').value = e.heures;
+    if (e) $('#fHeures').value = e.horaire || e.heures;
   });
   $('#fHeureInc').onchange = () => {
     editSnap = null;
@@ -7173,6 +7343,10 @@ function initListe() {
     supprimer(selId);
   };
   $('#ajoutNouv').onclick = nouvelleDate;
+  $('#fHistCtx').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-ouvrir]');
+    if (b) ouvrirFiche(b.dataset.ouvrir);
+  });
   $('#ajoutNouv').hidden = TACTILE;
   $('#fDupliquer').onclick = () => {
     const e = evSel();
@@ -7180,6 +7354,8 @@ function initListe() {
     snapshot();
     const c = JSON.parse(JSON.stringify(e));
     c.id = idNouveau();
+    c.histoire = '';
+    noter(c, 'créée ' + appareil() + ', copie de ' + citer(e.titre) + (e.d1 ? ' du ' + libCourt(e.d1) : ''));
     doc.evts.push(c);
     changed();
     toutAfficher();
@@ -7601,6 +7777,7 @@ function envoyerRetro(id) {
   });
   snapshot();
   e.taches = e.d1;
+  noter(e, 'rétroplanning envoyé à Tâches (' + E.length + ' étape' + (E.length > 1 ? 's' : '') + ')');
   changed();
   afficherListe();
   remplirFiche();
@@ -7683,10 +7860,11 @@ function initPropositions() {
       if (!r.erreur) {
         champ.value = '';
         apercuSaisie();
-        ajouter(r, true);
+        ajouter({ ...r, origine: 'proposée par Tâches (tâche ' + citer(p.titre) + ')' }, true);
         return toast('Proposé par Tâches : complète l’heure, le lieu… puis « Créer »');
       }
     }
+    origineEnAttente = 'proposée par Tâches (tâche ' + citer(p.titre) + ')';
     champ.dispatchEvent(new Event('input', { bubbles: true }));
     champ.focus();
     toast('Vérifie la saisie (heure, lieu…), puis Entrée');
@@ -7991,7 +8169,7 @@ function ligneA3(e) {
     n === 0 ? JOURS[a.getDay()].slice(0, 3) + '.' : e.semaine ? 'sem.' : n === 1 && a.getDay() === 6 ? 'w.-e.' : 'du';
   /* lieu : nom court dans sa couleur (« Salle Schubert », « CCED »), la légende donne les bâtiments (19/10/2026) */
   const quand = [
-    e.heures ? esc(typo(libHeures(e.heures))) : '',
+    libHoraire(e) ? esc(typo(libHoraire(e))) : '',
     L ? '<span class="a3-lieu" style="color:' + vif(L) + '">' + rich(nomCourt(L)) + '</span>' : ''
   ].filter(Boolean);
   return (
@@ -8512,8 +8690,8 @@ function htmlMail(p, avenir) {
   const ligne = (html, taille, coul, plus) => '<div style="' + t(taille, coul, plus) + '">' + html + '</div>';
   const jourL = e => ligne(esc(typo(majuscule(libDate(e)))), 15, ENCRE, 'font-weight:bold;');
   const heure = e =>
-    e.heures
-      ? ligne(esc(majuscule(typo(libHeures(e.heures)))), 15, ENCRE)
+    libHoraire(e)
+      ? ligne(esc(majuscule(typo(libHoraire(e)))), 15, ENCRE)
       : e.heureInconnue
         ? ligne('Horaire à préciser', 15, GRIS)
         : '';
@@ -8568,7 +8746,7 @@ function texteMail(p, avenir) {
   if (!G.length) return out.concat('', 'Programme à venir.', '', typo(MAIL_FIN[0]), '', typo(MAIL_FIN[1])).join('\n');
   const quand = e => {
     const r = [majuscule(net(libDate(e)))];
-    if (e.heures) r.push(majuscule(net(libHeures(e.heures))));
+    if (libHoraire(e)) r.push(majuscule(net(libHoraire(e))));
     else if (e.heureInconnue) r.push('Horaire à préciser');
     const L = lieuDe(e);
     if (L) r.push(net(L.nom));
@@ -8606,7 +8784,7 @@ function manques(p, avenir) {
       const m = [];
       /* un programme détaillé avec ses horaires (« - 18 h : … ») vaut heure, comme pour le théâtre en mai */
       const programme = /^\s*[-•]\s.*\b\d{1,2}\s?h\b/m.test(g.detail || '');
-      if (!e.heures && !e.libelle && !programme) m.push('heure');
+      if (!e.heures && !e.horaire && !e.libelle && !programme) m.push('heure');
       if (!e.lieu) m.push('lieu');
       if (!g.detail) m.push('descriptif');
       if (!g.eleves && !/élève/i.test(g.soustitre || '')) m.push('élèves concernés');
@@ -8830,7 +9008,7 @@ function objetEquipe(p, complet) {
 function blocEquipe(e, complet) {
   const L = lieuDe(e);
   let quand = majuscule(estDatee(e) ? libDate(e) : libFlou(e));
-  if (e.heures) quand += ', ' + libHeures(e.heures);
+  if (libHoraire(e)) quand += ', ' + libHoraire(e);
   else if (e.heureInconnue) quand += ', horaire à préciser';
   let titre = e.titre;
   if (e.statut) titre += ' (' + e.statut + ')';
@@ -9067,6 +9245,17 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-07 16:00',
+    v: '0.71',
+    t: 'Horaire en toutes lettres, historique d’une date',
+    items: [
+      'Horaire en toutes lettres : dans la fiche, écris « l’après-midi » ou « entre 14h et 19h » dans le champ Heure. Il s’affiche tel quel dans la liste, sur les affiches et dans les mails ; s’il contient une heure, la date se range à cette heure-là.',
+      'Historique d’une date : en bas de la fiche, « Historique de cette date » dit quand et sur quel appareil elle a été créée, ce que tu avais tapé (ou « proposée par Tâches », « copie de… »), puis ce qui a changé à chaque fois (date, horaire, titre, lieu, état…).',
+      'Juste dessous, les dates créées le même jour : de quoi retrouver le contexte. Un clic ouvre leur fiche.',
+      'L’historique commence aujourd’hui : les dates déjà saisies n’en ont pas. Il reste pour l’équipe : jamais sur les affiches ni dans les mails.'
+    ]
+  },
   {
     d: '2026-10-31 18:10',
     v: '0.70',
