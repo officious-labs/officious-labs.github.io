@@ -435,6 +435,9 @@ public abstract class MainActivity extends Activity {
                 case "version":
                     repondre(id, true, String.valueOf(versionInstallee()));
                     break;
+                case "versionNom":   // numéro lisible, ex. 3.0.13 (la fabrication seule reste dans « version »)
+                    repondre(id, true, nomVersionInstallee());
+                    break;
                 case "checkUpdate":
                     reseau.execute(() -> {
                         try { repondre(id, true, new String(telecharger(DEPOT + "version.txt", 100), StandardCharsets.UTF_8).trim()); }
@@ -589,6 +592,14 @@ public abstract class MainActivity extends Activity {
     }
 
     // ---------- mise à jour de l'appli depuis la version publiée sur GitHub ----------
+
+    private String nomVersionInstallee() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return String.valueOf(versionInstallee());
+        }
+    }
 
     private long versionInstallee() {
         try {

@@ -64,9 +64,10 @@ jobs:
             exit 1
           fi
           cp android/app/build/outputs/apk/release/app-release.apk officious.apk
-          echo "$GITHUB_RUN_NUMBER" > version.txt
+          echo "$GITHUB_RUN_NUMBER" > version.txt   # la fabrication seule : c'est elle que compare la mise à jour
+          NOM="$(tr -d '[:space:]' < android/VERSION).$GITHUB_RUN_NUMBER"
           gh release delete android --yes --cleanup-tag || true
           gh release create android officious.apk version.txt \
             --title "Compagnon Officine" \
-            --notes "Fabrication ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA::7})." \
+            --notes "Compagnon Officine ${NOM}, fabrication ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA::7})." \
             --target "$GITHUB_SHA"
