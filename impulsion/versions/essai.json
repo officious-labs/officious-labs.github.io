@@ -1,1 +1,1 @@
-{"version": 48, "nom": "0.8.48", "apk": "https://github.com/officious-labs/officious-labs.github.io/releases/download/impulsion-v0.8.48/impulsion-0.8.48.apk", "notes": "0.8 : dictée précédente donnée à Claude, questions visibles et « À régler » ; ordre avant la 1.0 validé"}
+{"version": 50, "nom": "0.8.50", "apk": "https://github.com/officious-labs/officious-labs.github.io/releases/download/impulsion-v0.8.50/impulsion-0.8.50.apk", "notes": "Tests : nom sans point-virgule (interdit par Kotlin)"}
