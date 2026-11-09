@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Impulsion · pCloud</title>
+<!--
+  Retour de pCloud après « Connecter pCloud » (0.7). pCloud n’accepte comme adresse de retour qu’une adresse
+  https:// : il revient ici, avec le jeton après « # ». Ce qui suit « # » n’est jamais envoyé au serveur de la
+  page ; le script le passe tel quel à l’appli (impulsion://pcloud#…), puis l’efface de la barre d’adresse.
+-->
+<style>
+  :root { --encre: #1c1c1e; --gris: #6b6b70; --fond: #f4f4f6; --accent: #1c1c1e; --sur-accent: #fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --encre: #f2f2f4; --gris: #a1a1a8; --fond: #121214; --accent: #f2f2f4; --sur-accent: #121214; }
+  }
+  body { margin: 0; background: var(--fond); color: var(--encre); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 32rem; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.8rem; font-weight: 600; margin: 0 0 4px; }
+  .gris { color: var(--gris); }
+  a.bouton { display: block; text-align: center; background: var(--accent); color: var(--sur-accent); text-decoration: none;
+             font-size: 1.2rem; border-radius: 20px; padding: 20px 16px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Impulsion</h1>
+  <p id="texte" class="gris">Retour dans Impulsion…</p>
+  <a id="bouton" class="bouton" href="impulsion://pcloud" hidden>Revenir dans Impulsion</a>
+</main>
+<script>
+  var reponse = location.hash || location.search;
+  if (reponse) {
+    var adresse = "impulsion://pcloud#" + reponse.substring(1);
+    var bouton = document.getElementById("bouton");
+    bouton.href = adresse;
+    bouton.hidden = false;
+    history.replaceState(null, "", location.pathname);
+    location.replace(adresse);
+    setTimeout(function () {
+      document.getElementById("texte").textContent =
+        "Si Impulsion ne s’est pas ouvert tout seul, toucher le bouton.";
+    }, 1500);
+  } else {
+    document.getElementById("texte").textContent =
+      "Cette page sert au retour de pCloud ; elle ne fait rien seule. Ouvrir Impulsion et toucher « Connecter pCloud ».";
+  }
+</script>
+</body>
+</html>
