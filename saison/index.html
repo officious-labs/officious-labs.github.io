@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261107232227">
+<meta name="officious-page" content="20261109202333">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -89,6 +89,8 @@
   left: 50%;
   bottom: 1.4rem;
   z-index: 80;
+  box-sizing: border-box;
+  width: max-content; /* 1.18 : un long message prend la largeur permise, au lieu de la moitié de l'écran (left: 50%) */
   max-width: min(36rem, calc(100vw - 2rem));
   padding: 0.6rem 1rem;
   border-radius: 10px;
@@ -386,6 +388,76 @@
   }
   .s-etincelle {
     display: none;
+  }
+}
+/* accès au fichier perdu, au PC (1.18) : en haut de la page, avant l'en-tête de l'outil, pleine largeur ; rouge de la
+   charte (« à risque »), sur un fond pâle pour rester sobre ; pas une fenêtre : le reste de la page reste utilisable */
+:root {
+  --s-rouge: var(--rouge, #c8102e);
+}
+.s-alerte {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 1rem;
+  padding: 0.5rem 1rem;
+  background: #fdecee;
+  color: #7a0c1e;
+  border-bottom: 2px solid var(--s-rouge);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.s-alerte[hidden] {
+  display: none;
+}
+.s-acces-txt {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 64rem;
+}
+/* la ligne d'état de l'outil, tant que l'accès manque : en rouge (elle reste visible quand la page défile, le bandeau non) */
+.s-etat-perdu {
+  color: var(--s-rouge) !important;
+  font-weight: 600;
+}
+.s-acces-txt strong {
+  font-weight: 600;
+}
+.s-alerte-b {
+  display: inline-flex;
+  gap: 0.5rem;
+  flex: none;
+}
+.s-alerte button {
+  font: inherit;
+  padding: 0.3rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--s-rouge) 45%, transparent);
+  background: #fff;
+  color: inherit;
+  cursor: var(--s-cur-pointer);
+}
+.s-alerte button.s-primaire {
+  background: var(--s-rouge);
+  border-color: var(--s-rouge);
+  color: #fff;
+  font-weight: 600;
+}
+.s-alerte button[hidden] {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  .s-alerte {
+    background: #3a1418;
+    color: #ffd7dc;
+  }
+  .s-alerte button {
+    background: transparent;
+  }
+}
+@media print {
+  .s-alerte {
+    display: none !important;
   }
 }
 body:has(#s-version:not([hidden])) #s-toast {
@@ -2752,6 +2824,19 @@ dialog.completer {
     display: none;
   }
 }
+/* menu : dernier passage de la synchro du matin (socle 1.18), une ligne en lecture seule */
+.menu .note-menu {
+  margin: 0.3rem 0 0;
+  padding: 0.45rem 0.7rem 0.2rem;
+  border-top: 1px solid var(--filet);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--gris);
+  max-width: 18rem;
+}
+.menu .note-menu[hidden] {
+  display: none;
+}
 /* menu : « Synchroniser hors des heures » (socle 1.10), avec son interrupteur */
 .menu [data-act='horsheures'] {
   display: flex;
@@ -2829,6 +2914,7 @@ dialog.completer {
     <button data-act="nouveautes" role="menuitem">Nouveautés</button>
     <button data-act="journal" role="menuitem">Copier le journal de synchronisation</button>
     <button data-act="aide" role="menuitem">Aide</button>
+    <p id="mMatin" class="note-menu" hidden></p>
   </div>
 </header>
 
@@ -3349,7 +3435,7 @@ function journalTexte() {
 }
 /* socle/js/14-interface.js : ce que le socle affiche lui-même, pareil dans tous les outils.
    Message (toast), indicateur d'échange avec OneDrive (barre fine et pastille, Compagnon), ligne d'état, bandeau de
-   nouvelle version au PC, fenêtres (adresse en ligne, envoyer quand même, nouveautés), tirer pour actualiser,
+   nouvelle version au PC, bandeau « accès au fichier perdu » au PC (1.18), fenêtres (adresse en ligne, envoyer quand même, nouveautés), tirer pour actualiser,
    vibrations, copie riche. Les éléments sont créés par le socle (ids préfixés « s- ») ; l'outil donne seulement
    où les placer (A.entete, A.etatEl, A.liste). */
 
@@ -3380,6 +3466,19 @@ function creerInterface() {
   }
   const vb = ajoute('<div id="s-version" class="s-bandeau" hidden></div>');
   if (tete) tete.after(vb);
+  /* accès au fichier perdu, au PC (1.18) : en haut de la page, avant l'en-tête, pleine largeur (17-fichier-pc.js) */
+  if (!AND && hasFS) {
+    const ab = ajoute(
+      `<div id="s-acces" class="s-alerte" role="alert" hidden>
+        <span class="s-acces-txt"></span>
+        <span class="s-alerte-b"><button class="s-primaire" data-a="reprendre">Reprendre</button><button data-a="ouvrir">Ouvrir…</button></span>
+      </div>`
+    );
+    if (tete) tete.before(ab);
+    else corps.prepend(ab);
+    $s('[data-a=reprendre]', ab).onclick = () => reprendrePc();
+    $s('[data-a=ouvrir]', ab).onclick = () => ouvrir();
+  }
   ajoute(
     `<dialog id="s-enligne" class="s-dialogue s-plein" aria-label="Adresse en ligne">
       <h2>Adresse en ligne de ${A.fichier}</h2>
@@ -3604,10 +3703,12 @@ function etat() {
   if (e) {
     e.textContent = texteEtat();
     e.classList.toggle('erreur', !!C.saveErr);
+    e.classList.toggle('s-etat-perdu', !AND && !!accesPerdu()); /* 1.18 : en rouge, reste visible dans l'en-tête */
     e.classList.toggle('pause', horsHeures());
     e.classList.toggle('libre', libreActif());
   }
   verifierVersionPc();
+  if (A && !AND) peindreAcces();
   if (A && A.surEtat) A.surEtat();
 }
 
@@ -3850,7 +3951,10 @@ function initTirer() {
    parfois des versions périmées, ou garde des copies jamais envoyées (journal de Tâches, 12/10/2026). */
 
 /* ---- PC ---- */
-const fichierPc = { handle: null, perm: false, mod: 0 };
+/* perm : lecture et écriture autorisées ; reponse : dernière réponse d'Edge ('granted', 'prompt', 'denied') ;
+   demandee : la permission a été demandée au moins une fois dans cette session ; introuvable : le fichier a disparu
+   (déplacé ou renommé) ; ces trois derniers servent au bandeau « accès au fichier perdu » (1.18, 17-fichier-pc.js) */
+const fichierPc = { handle: null, perm: false, mod: 0, reponse: '', demandee: false, introuvable: false };
 const pcBackend = {
   async read() {
     const f = await fichierPc.handle.getFile();
@@ -4187,6 +4291,7 @@ async function syncSave() {
     C.savedAt = Date.now();
     C.saveErr = null;
     C.forcer = C.nouveau = false;
+    if (C.backend === pcBackend) fichierPc.introuvable = false;
     syncSave.essai = 0;
   } catch (err) {
     if (/^conflit:/.test(err && err.message) && (syncSave.essai = (syncSave.essai || 0) + 1) <= 3) {
@@ -4195,6 +4300,7 @@ async function syncSave() {
       return syncSave(); /* « écrire quand même » vaut aussi pour le nouvel essai */
     }
     C.forcer = false;
+    if (C.backend === pcBackend) accesEchec(err); /* 1.18 : permission retirée, fichier disparu → bandeau */
     C.saveErr =
       err && err.name === 'NotFoundError'
         ? 'fichier introuvable (déplacé ou renommé ?), rouvre-le'
@@ -4222,8 +4328,14 @@ async function syncSave() {
 /** Relecture : le fichier a-t-il été modifié ailleurs ? (au retour sur la page, toutes les 30 s) */
 async function checkExternal() {
   if (!C.backend || C.saving || C.dirty || horsHeures() || (A.enSaisie && A.enSaisie())) return;
+  if (C.backend === pcBackend && !fichierPc.perm) return; /* accès à redonner : le bandeau le dit (1.18) */
   try {
-    if (C.backend.changedSince && !(await C.backend.changedSince())) return;
+    const change = !C.backend.changedSince || (await C.backend.changedSince());
+    if (C.backend === pcBackend && fichierPc.introuvable) {
+      fichierPc.introuvable = false; /* le fichier est revenu (OneDrive l'a remis) */
+      etat();
+    }
+    if (!change) return;
     const cur = await C.backend.read();
     if (cur === C.baseText || !cur.trim() || staleEcho(cur)) return;
     if (lostAncestor(cur)) {
@@ -4239,12 +4351,20 @@ async function checkExternal() {
     backup();
     etat();
     toast('Mis à jour : le fichier a été modifié ailleurs');
-  } catch (e) {}
+  } catch (e) {
+    if (C.backend === pcBackend) {
+      accesEchec(e); /* 1.18 : premier échec d'une relecture → bandeau */
+      etat();
+    }
+  }
 }
 /* socle/js/17-fichier-pc.js : le fichier sur le PC (File System Access, Edge), et la copie dans un navigateur
    qui ne sait pas ouvrir de fichier (téléphone hors Compagnon, Firefox).
    Edge redemande la permission à chaque session pour une page ouverte en file:// : le premier clic ou la première
-   touche n'importe où dans la page la redemande (pas de bouton « Reprendre », choix de François pour Tâches, 2.21.3). */
+   touche n'importe où dans la page la redemande (choix de François pour Tâches, 2.21.3).
+   1.18 (09/11/2026) : ce premier geste n'a pas suffi (deux jours sans lecture ni écriture, seule la ligne d'état le
+   disait) ; tant que la page ne peut ni lire ni écrire son fichier, un bandeau en haut de la page le dit, avec
+   « Reprendre » (et « Ouvrir… » si Edge a refusé, ou si le fichier a disparu). Voir accesPerdu, peindreAcces. */
 
 function idb() {
   return new Promise((res, rej) => {
@@ -4280,19 +4400,30 @@ async function chargerPc() {
   A.appliquer(A.parse(t));
   C.baseText = t;
   C.dirty = false;
+  fichierPc.introuvable = false;
   if (A.apresChargement) A.apresChargement();
   backup();
   etat();
 }
-async function reprendrePc() {
+/** Redemande la permission à Edge (doit venir d'un geste : clic, touche). Une seule demande à la fois : le premier
+    geste, la ligne d'état et le bouton « Reprendre » du bandeau peuvent arriver ensemble. */
+function reprendrePc() {
+  if (!reprendrePc.p) reprendrePc.p = reprendre().finally(() => (reprendrePc.p = null));
+  return reprendrePc.p;
+}
+async function reprendre() {
   try {
-    fichierPc.perm = (await fichierPc.handle.requestPermission({ mode: 'readwrite' })) === 'granted';
+    fichierPc.demandee = true;
+    const r = await fichierPc.handle.requestPermission({ mode: 'readwrite' });
+    fichierPc.reponse = r;
+    fichierPc.perm = r === 'granted';
     if (!fichierPc.perm) return etat();
     if (C.dirty) {
       await enregistrer();
-      toast('Modifications enregistrées dans ' + fichierPc.handle.name);
+      if (!C.saveErr) toast('Modifications enregistrées dans ' + fichierPc.handle.name);
     } else await chargerPc();
   } catch (e) {
+    accesEchec(e);
     toast('Impossible d’ouvrir le fichier : ' + e.message);
   }
   etat();
@@ -4308,9 +4439,12 @@ async function ouvrir() {
     const enAttente = C.dirty && C.ouvert;
     if (C.ouvert && A.avantModif) A.avantModif();
     fichierPc.handle = h;
-    await idbSet('poignee', h);
+    await idbSet('poignee', h).catch(() => {}); /* une poignée non gardée sera redemandée à la prochaine ouverture */
     if (!enAttente) C.baseText = null;
-    fichierPc.perm = (await h.requestPermission({ mode: 'readwrite' })) === 'granted';
+    fichierPc.introuvable = false;
+    fichierPc.demandee = true;
+    fichierPc.reponse = await h.requestPermission({ mode: 'readwrite' });
+    fichierPc.perm = fichierPc.reponse === 'granted';
     if (fichierPc.perm) {
       if (enAttente) {
         C.saveErr = null;
@@ -4339,8 +4473,10 @@ async function nouveauFichier(modeleNeuf) {
   try {
     const h = await showSaveFilePicker({ suggestedName: A.fichier, types: TYPES() });
     fichierPc.handle = h;
-    await idbSet('poignee', h);
+    await idbSet('poignee', h).catch(() => {}); /* une poignée non gardée sera redemandée à la prochaine ouverture */
     fichierPc.perm = true;
+    fichierPc.reponse = 'granted';
+    fichierPc.introuvable = false;
     C.baseText = null;
     C.nouveau = true;
     C.ouvert = true;
@@ -4406,30 +4542,125 @@ async function demarragePc() {
   try {
     h = await idbGet('poignee');
   } catch (e) {}
-  if (!h) return;
+  if (h) await brancherPc(h);
+}
+/** Au démarrage : le fichier gardé (poignée d'IndexedDB) ; lu tout de suite si Edge le permet encore, sinon au premier
+    geste (et le bandeau le dit). Séparé de demarragePc pour les tests (une fausse poignée ne va pas dans IndexedDB). */
+async function brancherPc(h) {
   fichierPc.handle = h;
   C.backend = pcBackend;
   let perm = 'prompt';
   try {
     perm = await h.queryPermission({ mode: 'readwrite' });
   } catch (e) {}
+  fichierPc.reponse = perm;
   if (perm === 'granted') {
     fichierPc.perm = true;
     try {
       if (C.dirty) await enregistrer();
       else await chargerPc();
     } catch (e) {
+      accesEchec(e);
       C.saveErr = e.name === 'NotFoundError' ? 'fichier introuvable (déplacé ou renommé ?), rouvre-le' : e.message;
     }
   } else {
-    const premier = () => {
-      removeEventListener('pointerdown', premier, true);
-      removeEventListener('keydown', premier, true);
-      if (!fichierPc.perm) reprendrePc();
-    };
-    addEventListener('pointerdown', premier, true);
-    addEventListener('keydown', premier, true);
+    fichierPc.perm = false;
+    armerPremierGeste();
   }
+  etat();
+}
+/** Le premier clic ou la première touche n'importe où redemande la permission (sauf dans le bandeau, dont les boutons
+    font eux-mêmes la demande ou ouvrent le fichier : deux fenêtres d'Edge à la fois sinon). */
+function armerPremierGeste() {
+  if (armerPremierGeste.arme) return;
+  armerPremierGeste.arme = true;
+  const premier = e => {
+    if (e.target && e.target.closest && e.target.closest('#s-acces')) return;
+    removeEventListener('pointerdown', premier, true);
+    removeEventListener('keydown', premier, true);
+    armerPremierGeste.arme = false;
+    if (fichierPc.handle && !fichierPc.perm) reprendrePc();
+  };
+  addEventListener('pointerdown', premier, true);
+  addEventListener('keydown', premier, true);
+}
+
+/* ---- accès au fichier perdu, au PC (1.18) ----
+   Le 09/11/2026, Edge avait perdu l'autorisation d'accès à taches.md après un redémarrage ; pendant deux jours, la page
+   n'a rien lu ni écrit, et seule la ligne d'état, en gris et tronquée, le disait. Désormais, tant que la page ne peut
+   ni lire ni écrire son fichier, un bandeau du socle, en haut de la page, pleine largeur, le dit ; il disparaît dès que
+   l'accès revient. Trois cas : permission à redonner (« Reprendre »), refusée par Edge (« Reprendre » ou « Ouvrir… »),
+   fichier introuvable (« Ouvrir… »). Journal : « accès au fichier perdu », « … refusé par Edge », « … repris ». */
+function accesPerdu() {
+  if (AND || !hasFS || !fichierPc.handle) return '';
+  if (!fichierPc.perm) return fichierPc.reponse === 'denied' ? 'refus' : 'permission';
+  return fichierPc.introuvable ? 'introuvable' : '';
+}
+/** Une lecture ou une écriture a échoué : est-ce l'accès au fichier qui est perdu ? (premier échec en cours de session) */
+function accesEchec(e) {
+  if (AND || !e || !fichierPc.handle || !fichierPc.perm) return;
+  if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
+    fichierPc.perm = false;
+    fichierPc.reponse = 'prompt';
+    armerPremierGeste();
+  } else if (e.name === 'NotFoundError') fichierPc.introuvable = true;
+}
+/** Modifications en attente : leur nombre (éléments changés depuis la dernière lecture, comme le résumé de la synchro
+    du matin), -1 s'il ne se compte pas exactement (pas de base, outil sans A.elements, réglage seul), 0 s'il n'y en a pas. */
+function modifsEnAttente() {
+  if (!C.dirty) return 0;
+  if (C.baseText == null || !A.elements) return -1;
+  const m = modifsEnAttente.m;
+  if (m && m.rev === C.rev && m.base === C.baseText) return m.n;
+  const n = ecarts(C.baseText, A.serialize(A.etat())) || -1;
+  modifsEnAttente.m = { rev: C.rev, base: C.baseText, n };
+  return n;
+}
+let accesAvant = '';
+function peindreAcces() {
+  const k = accesPerdu(),
+    nom = fichierPc.handle ? fichierPc.handle.name : A.fichier;
+  if (k !== accesAvant) {
+    if (!k) journal('accès au fichier repris', { fichier: nom });
+    else
+      journal(k === 'refus' && accesAvant ? 'accès au fichier refusé par Edge' : 'accès au fichier perdu', {
+        fichier: nom,
+        cause: k === 'introuvable' ? 'fichier introuvable' : 'permission ' + (fichierPc.reponse || 'prompt')
+      });
+    accesAvant = k;
+  }
+  const b = $s('#s-acces');
+  if (!b) return;
+  b.hidden = !k;
+  if (!k) return;
+  const n = modifsEnAttente();
+  const t1 =
+    k === 'introuvable'
+      ? A.titre + ' ne trouve plus ' + nom + ' (déplacé ou renommé\u00a0?)\u00a0: rien n’est lu ni enregistré.'
+      : A.titre + ' n’a plus accès à ' + nom + '\u00a0: rien n’est lu ni enregistré.';
+  const t2 = !n
+    ? ''
+    : n === 1
+      ? 'Ta modification attend dans la copie de secours.'
+      : n > 1
+        ? 'Tes ' + n + '\u00a0modifications attendent dans la copie de secours.'
+        : 'Tes modifications attendent dans la copie de secours.';
+  const t3 =
+    k === 'refus'
+      ? 'Edge a refusé\u00a0: clique sur «\u00a0Reprendre\u00a0» et réponds «\u00a0Autoriser\u00a0», ou rouvre le fichier par «\u00a0Ouvrir…\u00a0».'
+      : k === 'introuvable'
+        ? 'Rouvre-le par «\u00a0Ouvrir…\u00a0».'
+        : fichierPc.demandee
+          ? 'Clique sur «\u00a0Reprendre\u00a0», puis réponds «\u00a0Autoriser\u00a0» à Edge.'
+          : '';
+  const txt = $s('.s-acces-txt', b),
+    fort = document.createElement('strong');
+  fort.textContent = t1;
+  txt.replaceChildren(fort);
+  for (const t of [t2, t3]) if (t) txt.append(' ' + t);
+  b.dataset.cas = k;
+  $s('[data-a=reprendre]', b).hidden = k === 'introuvable';
+  $s('[data-a=ouvrir]', b).hidden = k === 'permission';
 }
 
 /* ---- dossier du fichier, au PC (1.7, 26/10/2026) : fichiers voisins (logo de l'affiche, pièces jointes) ----
@@ -5192,6 +5423,11 @@ function annoncerNouveautes() {
  *   l'outil depuis Android (1.5 ; l'activité de l'outil doit les déclarer dans le Compagnon).
  * Synchro du matin (1.17, 24-matin.js) : rien de plus à fournir ; A.apresLecture, s'il renvoie une promesse, est
  *   attendu avant de rendre la main. L'outil peut lire socle.synchroMatin pour ne rien ouvrir lui-même au démarrage.
+ * Bilan de la synchro du matin (1.18) : au téléphone, le socle le montre seul (un message, une fois par passage). Pour
+ *   le rendre consultable, l'outil peut appeler socle.dernierMatin() → promesse : null, ou {quand, jour, heure,
+ *   aujourdhui, bilan (cet outil), tous, texte, ligne} ; « ligne » est prête à afficher (« Synchro du matin : 9 h 02,
+ *   1 modification envoyée, page déposée pour le PC »), par exemple dans le menu.
+ * Accès au fichier perdu au PC (1.18) : rien à fournir ; le bandeau se place avant A.entete.
  */
 async function demarrer(adaptateur) {
   A = adaptateur;
@@ -5229,6 +5465,7 @@ async function demarrer(adaptateur) {
   livrerRecus();
   initBoite();
   relever();
+  annoncerMatin(); /* téléphone : bilan de la synchro du matin, une fois (1.18) */
   /* relecture : au retour sur la page et toutes les 30 s ; ce qui attend part */
   addEventListener('focus', () => !AND && checkExternal());
   document.addEventListener('visibilitychange', () => {
@@ -5250,6 +5487,7 @@ async function demarrer(adaptateur) {
 window.compagnonResume = () => {
   if (matin.mode) return; /* vue invisible de la synchro du matin : rien d'autre que la synchro */
   relever();
+  annoncerMatin(); /* la page restée ouverte depuis la veille : le bilan du matin au retour (1.18) */
   verifierPage();
   verifierAppli();
   if (!C.backend || C.saving) return chargerTel();
@@ -5891,10 +6129,100 @@ async function faireMatin() {
     finirMatin(b, n);
   }
 }
+
+/* ---- bilan de la synchro du matin, à l'ouverture au téléphone (1.18) ----
+   Le Compagnon (3.0.52) garde le dernier passage et le rend par la méthode « synchroMatin » : JSON
+   {quand (ISO avec décalage, heure du téléphone), outils: [bilans]} ou "" ; un Compagnon ancien répond une erreur.
+   Les bilans sont ceux de synchroFinie, ou ceux du Compagnon lui-même (raison 'ouvert', 'delai', 'illisible').
+   À l'ouverture normale de l'outil (et au retour dans l'appli), si le dernier passage date d'aujourd'hui et n'a pas
+   encore été montré dans cet outil (clé <appli>-matin-vu) : un message de 6 s, « Synchro du matin, 9 h 02 : … ».
+   Une couche à la fois : il attend qu'aucune fenêtre (« Nouvelle version installée » comprise), aucun menu et aucun
+   autre message ne soit à l'écran. Rien au PC : il ne parle pas au Compagnon. */
+
+/** « 2026-11-10T09:02:10+01:00 » → {jour: '2026-11-10', heure: '9 h 02'} (heure du téléphone, telle qu'écrite). */
+function heureMatin(q) {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(q || '');
+  return m ? { jour: m[1], heure: +m[2] + NBSP + 'h' + NBSP + m[3] } : null;
+}
+/** Le résumé d'un bilan sans le titre de l'outil en tête (« Tâches : … » → « … »), typographié. */
+function resteResume(b) {
+  let r = String((b && b.resume) || '').trim();
+  const t = String((b && b.titre) || A.titre);
+  if (r.startsWith(t)) r = r.slice(t.length).replace(/^\s*:\s*/, '');
+  if (!r) r = b && b.ok ? 'fait' : (b && b.raison) || 'pas de bilan';
+  return r.replace(/ ([:;?!])/g, NBSP + '$1');
+}
+/**
+ * socle.dernierMatin() → promesse : null (pas au téléphone, Compagnon ancien, aucun passage), sinon
+ * {quand, jour, heure ('9 h 02'), aujourdhui, bilan (celui de cet outil, ou null), tous (les bilans), texte (résumé de
+ * cet outil, sans son titre), ligne (« Synchro du matin : 9 h 02, 1 modification envoyée… », prête pour un menu)}.
+ */
+async function dernierMatin() {
+  if (!AND) return null;
+  let o;
+  try {
+    const t = await andCallRaw('synchroMatin');
+    if (!t) return null;
+    o = JSON.parse(t);
+  } catch (e) {
+    return null; /* Compagnon ancien (méthode inconnue) ou bilan illisible */
+  }
+  const h = o && heureMatin(o.quand);
+  if (!h) return null;
+  const tous = Array.isArray(o.outils) ? o.outils.filter(b => b && typeof b === 'object') : [],
+    bilan = tous.find(b => b.appli === C.appli) || null,
+    auj = isoDe(maintenant()),
+    hier = plusJoursIso(auj, -1);
+  let quand = h.heure;
+  if (h.jour === hier) quand = 'hier à ' + h.heure;
+  else if (h.jour !== auj) {
+    const [a, m, j] = h.jour.split('-').map(Number),
+      d = new Date(a, m - 1, j, 12);
+    quand = JOURS_S[d.getDay()] + ' ' + (j === 1 ? '1er' : j) + NBSP + MOIS_S[m - 1] + ' à ' + h.heure;
+  }
+  const texte = bilan ? resteResume(bilan) : '';
+  return {
+    quand: o.quand,
+    jour: h.jour,
+    heure: h.heure,
+    aujourdhui: h.jour === auj,
+    bilan,
+    tous,
+    texte,
+    ligne: 'Synchro du matin' + NBSP + ': ' + quand + (bilan ? ', ' + texte : ' (sans ' + A.titre + ')')
+  };
+}
+/** Attend que l'écran soit libre : ni fenêtre, ni menu sur un voile, ni message en cours. */
+async function ecranLibre() {
+  for (;;) {
+    while ($s('dialog[open]') || voile || $s('#s-toast.on')) await dormir(400);
+    await dormir(400);
+    if (!$s('dialog[open]') && !voile && !$s('#s-toast.on')) return;
+  }
+}
+/** À l'ouverture normale (et au retour dans l'appli) : le bilan du matin, une fois par passage et par outil. */
+function annoncerMatin() {
+  if (!AND || matin.mode || annoncerMatin.p) return annoncerMatin.p;
+  annoncerMatin.p = (async () => {
+    const d = await dernierMatin();
+    if (!d || !d.aujourdhui || !d.bilan || mem.get('matin-vu') === d.quand) return;
+    /* l'outil était à l'écran : il a fait la synchro lui-même, rien à dire */
+    if (d.bilan.raison === 'ouvert') return mem.set('matin-vu', d.quand);
+    /* la fenêtre « Nouvelle version installée » de Tâches s'ouvre 600 ms après le démarrage : on lui laisse le temps */
+    await dormir(1000);
+    await ecranLibre();
+    if (mem.get('matin-vu') === d.quand) return;
+    mem.set('matin-vu', d.quand);
+    toast('Synchro du matin, ' + d.heure + NBSP + ': ' + d.texte, null, null, 6000);
+  })()
+    .catch(() => {})
+    .finally(() => (annoncerMatin.p = null));
+  return annoncerMatin.p;
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.17.0',
+  version: '1.18.0',
   demarrer,
   /* fichier */
   modifie,
@@ -5990,6 +6318,8 @@ return {
   get synchroMatin() {
     return matin.mode;
   },
+  /* bilan du dernier passage, au téléphone (1.18) */
+  dernierMatin,
   mettreAJourAppli,
   get appliPubliee() {
     return appliPubliee;
@@ -6008,6 +6338,9 @@ return {
     verifierPage,
     verifierAppli,
     fichierPc,
+    brancherPc,
+    reprendrePc,
+    accesPerdu,
     dossierPc,
     tel,
     mem
@@ -7188,14 +7521,28 @@ function afficherListe() {
          n'a fait défiler entre-temps : un bandeau du socle ou une relecture peuvent encore décaler la page */
       (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
         const sc = document.scrollingElement;
+        /* bandeau « accès au fichier perdu » du socle (1.18) : il n'est pas collant, en tête de page ; le faire défiler
+           le cacherait justement à l'ouverture, seul moment où il est vu. La page reste en haut. */
+        const bandeau = () => { const b = $('#s-acces'); return !!b && !b.hidden; };
         requestAnimationFrame(() => {
+          if (bandeau()) return;
           allerProchaine();
           const pos = sc.scrollTop;
-          setTimeout(() => Math.abs(sc.scrollTop - pos) <= 2 && allerProchaine(), 600);
+          setTimeout(() => !bandeau() && Math.abs(sc.scrollTop - pos) <= 2 && allerProchaine(), 600);
         });
       });
   }
 }
+
+/* Le bandeau du socle peut apparaître juste après le défilement d'ouverture (l'ordre dépend de la lecture du fichier) :
+   dans les premières secondes, on remonte alors en haut pour qu'il soit vu. */
+document.addEventListener('DOMContentLoaded', () => {
+  const b = $('#s-acces');
+  if (b)
+    new MutationObserver(() => {
+      if (!b.hidden && performance.now() < 5000) window.scrollTo({ top: 0 });
+    }).observe(b, { attributes: true, attributeFilter: ['hidden'] });
+});
 
 /** La prochaine date réelle, non annulée (aujourd'hui compris). */
 function prochaineDate() {
@@ -9905,6 +10252,15 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-11-09 21:22',
+    v: '0.75.9',
+    t: 'Accès au fichier et synchro du matin',
+    items: [
+      'Au PC, si Saison perd l’accès à planning.md (Edge le redemande parfois après un redémarrage), un bandeau rouge le dit en haut de la page, avec «\u00a0Reprendre\u00a0».',
+      'Au téléphone, le bilan de la synchro du matin s’affiche à ta première ouverture du jour.'
+    ]
+  },
+  {
     d: '2026-11-08 00:21',
     v: '0.74.8',
     t: 'Synchro du matin',
@@ -10534,6 +10890,17 @@ function initBoutons() {
     $('[data-act=horsheures]').setAttribute('aria-checked', String(socle.synchroLibre));
     menu.hidden = false;
     socle.couche(menu, fermerMenu);
+    /* dernier passage de la synchro du matin (socle 1.18) : lu à chaque ouverture, caché s'il n'y en a pas */
+    const ligne = $('#mMatin');
+    ligne.hidden = true;
+    socle
+      .dernierMatin()
+      .then(m => {
+        if (menu.hidden || !m || !m.ligne) return;
+        ligne.textContent = m.ligne;
+        ligne.hidden = false;
+      })
+      .catch(() => {});
   };
   menu.addEventListener('click', ev => {
     const a = ev.target.closest('[data-act]');
