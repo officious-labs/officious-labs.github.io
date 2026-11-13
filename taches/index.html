@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113103512">
+<meta name="officious-page" content="20261113104344">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7295,6 +7295,86 @@ header .s-cherche input:not(:placeholder-shown) {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
+/* 3.16 : listes numérotées dans les notes (« 1. » dans le fichier), à l'affichage et dans l'éditeur */
+.inote .tx > div.ol,
+.mnotec .tx > div.ol,
+.inote .ned > div.o,
+#nEd > div.o {
+  position: relative;
+  padding-left: calc(1.55em + var(--lv, 0) * 1.15em);
+}
+.inote .tx > div.ol::before,
+.mnotec .tx > div.ol::before,
+.inote .ned > div.o::before,
+#nEd > div.o::before {
+  content: attr(data-n) '.';
+  position: absolute;
+  left: calc(var(--lv, 0) * 1.15em);
+  width: 1.3em;
+  text-align: right;
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* 3.16 : liens internet dans les notes */
+.inote .tx a.nurl,
+.mnotec .tx a.nurl {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+  cursor: var(--s-cur-pointer, pointer);
+}
+.inote .tx a.nurl:hover {
+  text-decoration-thickness: 2px;
+}
+.ned .fu {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+#lienBulle {
+  position: fixed;
+  z-index: 75;
+  display: none;
+  align-items: center;
+  gap: 0.35em;
+  max-width: min(22rem, calc(100vw - 16px));
+  padding: 0.3rem 0.65rem 0.3rem 0.5rem;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--bg);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  cursor: var(--s-cur-pointer, pointer);
+}
+#lienBulle.on {
+  display: inline-flex;
+  animation: lienBulle 0.16s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+#lienBulle span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+  opacity: 0.8;
+}
+@keyframes lienBulle {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #lienBulle.on {
+    animation: none;
+  }
+}
 </style>
 </head>
 <body>
@@ -7446,7 +7526,7 @@ header .s-cherche input:not(:placeholder-shown) {
   <dialog id="mNote">
     <form method="dialog" id="nForm">
       <p class="ameta" id="nMeta"></p>
-      <div class="ntool"><button type="button" id="nBold" class="ico" title="Gras" aria-label="Gras"><b>B</b></button><button type="button" id="nItal" class="ico" title="Italique" aria-label="Italique"><i>I</i></button><button type="button" id="nTitreH" class="ico" title="Niveau de titre (titre 1, 2, 3, puis texte)" aria-label="Niveau de titre"><b>T</b><sub></sub></button><button type="button" id="nBullet" class="ico" title="Liste à puces" aria-label="Liste à puces"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg></button><span class="sp"></span><button type="button" id="nPaste" class="ico npaste" title="Coller le presse-papiers" aria-label="Coller le presse-papiers"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg><span>Coller</span></button></div>
+      <div class="ntool"><button type="button" id="nBold" class="ico" title="Gras" aria-label="Gras"><b>B</b></button><button type="button" id="nItal" class="ico" title="Italique" aria-label="Italique"><i>I</i></button><button type="button" id="nTitreH" class="ico" title="Niveau de titre (titre 1, 2, 3, puis texte)" aria-label="Niveau de titre"><b>T</b><sub></sub></button><button type="button" id="nBullet" class="ico" title="Liste à puces" aria-label="Liste à puces"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg></button><button type="button" id="nNum" class="ico" title="Liste numérotée" aria-label="Liste numérotée"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 7H20M10 12H20M10 17H20"/><text x="2.2" y="9.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">1</text><text x="2.2" y="14.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">2</text><text x="2.2" y="19.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">3</text></svg></button><span class="sp"></span><button type="button" id="nPaste" class="ico npaste" title="Coller le presse-papiers" aria-label="Coller le presse-papiers"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg><span>Coller</span></button></div>
       <input id="nTitle" class="ntitre" placeholder="Titre" aria-label="Titre de la note" enterkeyhint="next" autocomplete="off">
       <div id="nLinks"></div><div class="nwrap"><textarea id="nText" rows="6" placeholder="Ce qu’on vient de te dire…"></textarea><div id="nEd" class="ned" contenteditable="true" spellcheck="true" data-placeholder="Ce qu’on vient de te dire…" role="textbox" aria-multiline="true" aria-label="Texte de la note" hidden></div><button type="button" id="nCopy" class="ico ccopy" title="Copier la note" aria-label="Copier la note"><span class="i1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg></span><span class="i2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button></div>
       <div class="nbar"><button type="button" id="nDel" class="ico adel" title="Supprimer la note" aria-label="Supprimer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg></button><button type="button" id="nArch" class="ico" title="Archiver la note" aria-label="Archiver la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.2"/><path d="M5 9v10h14V9M10 13h4"/></svg></button><button type="button" id="nMd" class="ico" title="Enregistrer sous… (fichier .md)" aria-label="Enregistrer la note sous un fichier .md"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10.5M7.5 10l4.5 4.5 4.5-4.5"/><path d="M5 16.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5"/></svg></button><button type="button" id="nCancel" class="ico" title="Annuler" aria-label="Annuler"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="sp"></span><span class="ntabs"><button type="button" class="ico" data-p="task" title="En faire une tâche" aria-label="En faire une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></svg></button><button type="button" class="ico" data-p="attach" title="Ajouter à une tâche" aria-label="Ajouter à une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button></span><button type="submit" class="ico ok" id="nOk" title="Enregistrer la note" aria-label="Enregistrer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
@@ -12977,6 +13057,113 @@ const RX_LI = /^(\s*)[-*•] (.*)$/;
    (« #### »), la ligne reste du texte. Une ligne est un titre ou une puce, pas les deux. */
 const RX_H = /^(#{1,3}) (.*)$/,
   RX_H_ALL = /^#{1,3} /gm;
+/* listes numérotées (3.16) : « 1. » (ou « 1) ») en début de ligne, sous-niveaux par retrait de deux espaces comme les
+   puces. Les numéros se recalculent (1, 2, 3… par niveau, à partir de 1 après toute ligne qui n'est pas de la liste) :
+   le fichier garde des numéros justes, lisibles dans le bloc-notes. */
+const RX_OL = /^(\s*)(\d{1,3})[.)] (.*)$/;
+/** Ligne de liste (puce ou numéro) dans le texte du fichier. */
+function estListe(l) {
+  return RX_LI.test(l || '') || RX_OL.test(l || '');
+}
+/** Numéros d'une suite de lignes {k: 'b' (puce) | 'o' (numéro) | '' (autre), lv} ; 0 hors liste numérotée. */
+function numerote(L) {
+  const cpt = [],
+    typ = [];
+  return L.map(({ k, lv }) => {
+    if (!k) {
+      cpt.length = typ.length = 0;
+      return 0;
+    }
+    cpt.length = typ.length = lv + 1;
+    if (k === 'b') {
+      typ[lv] = 'b';
+      return 0;
+    }
+    cpt[lv] = typ[lv] === 'o' ? cpt[lv] + 1 : 1;
+    typ[lv] = 'o';
+    return cpt[lv];
+  });
+}
+/** Lignes du fichier → genre et niveau, pour numerote(). */
+function genresLignes(ls) {
+  return ls.map(l => {
+    const m = RX_LI.exec(l),
+      o = !m && RX_OL.exec(l);
+    return m ? { k: 'b', lv: liLevel(m[1]) } : o ? { k: 'o', lv: liLevel(o[1]) } : { k: '', lv: 0 };
+  });
+}
+/* liens internet dans les notes (3.16) : adresses en http(s):// ou www., cliquables à l'affichage, soulignées dans
+   l'éditeur (Ctrl+clic, ou la bulle « Ouvrir » quand le curseur est dessus) ; le fichier garde l'adresse telle quelle */
+const RX_URL = /\b(?:https?:\/\/|www\.)[^\s<>"«»]+/gi;
+/** Adresses trouvées dans une ligne : [{s, e, url}] (ponctuation finale exclue, parenthèse gardée si elle est ouverte dans l'adresse). */
+function urlsDans(src) {
+  const R = [];
+  let m;
+  const rx = new RegExp(RX_URL.source, 'gi');
+  while ((m = rx.exec(src))) {
+    let u = m[0];
+    for (;;) {
+      const t = u.replace(/[.,;:!?'*»]+$/, '');
+      if (t !== u) u = t;
+      else if (/[)\]]$/.test(u) && (u.match(/[(\[]/g) || []).length < (u.match(/[)\]]/g) || []).length) u = u.slice(0, -1);
+      else break;
+    }
+    if (u.length > 4 && !/^www\.$/i.test(u)) R.push({ s: m.index, e: m.index + u.length, url: u });
+  }
+  return R;
+}
+function hrefUrl(u) {
+  return /^www\./i.test(u) ? 'https://' + u : u;
+}
+/** Bulle « ↗ Ouvrir » au-dessus de l'adresse où se trouve le curseur, dans l'éditeur d'une note (3.16, PC et
+    téléphone) ; ed = null : la cacher. Un vrai lien (target _blank) : le Compagnon l'ouvre comme les autres liens. */
+function lienBulle(ed) {
+  let b = document.getElementById('lienBulle');
+  const s = getSelection(),
+    n = ed && s.rangeCount && s.isCollapsed ? s.anchorNode : null,
+    f = n && ed.contains(n) ? (n.nodeType === 1 ? n : n.parentNode).closest('.fu') : null;
+  if (!f || ed.hidden) {
+    if (b) b.classList.remove('on');
+    return;
+  }
+  if (!b) {
+    b = document.createElement('a');
+    b.id = 'lienBulle';
+    b.target = '_blank';
+    b.rel = 'noopener';
+    b.onmousedown = e => e.preventDefault(); /* le curseur reste dans la note */
+    b.onclick = () => setTimeout(() => b.classList.remove('on'), 0);
+  }
+  const parent = ed.closest('dialog') || document.body; /* au téléphone, la note est une fenêtre au premier plan */
+  if (b.parentNode !== parent) parent.append(b);
+  let hote = f.dataset.url;
+  try {
+    hote = new URL(f.dataset.url).hostname.replace(/^www\./, '');
+  } catch (e) {}
+  b.href = f.dataset.url;
+  b.title = f.dataset.url;
+  b.innerHTML =
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>Ouvrir <span>' +
+    escHtml(hote) +
+    '</span>';
+  b.classList.add('on');
+  const r = f.getClientRects()[0] || f.getBoundingClientRect(),
+    w = b.offsetWidth,
+    h = b.offsetHeight;
+  b.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left)) + 'px';
+  b.style.top = (r.top - h - 6 < 8 ? r.bottom + 6 : r.top - h - 6) + 'px';
+}
+/** Une ligne de note en HTML : adresses en liens, puis gras et italique. */
+function fmtLigne(src) {
+  let h = '',
+    p = 0;
+  for (const u of urlsDans(src)) {
+    h += escHtml(src.slice(p, u.s)) + '<a class="nurl" href="' + escHtml(hrefUrl(u.url)) + '" target="_blank" rel="noopener">' + escHtml(u.url) + '</a>';
+    p = u.e;
+  }
+  h += escHtml(src.slice(p));
+  return h.replace(RX_B, '<strong>$1</strong>').replace(RX_I, '$1<em>$2</em>');
+}
 /** Niveau de titre d'une ligne du fichier (1 à 3), 0 sinon. */
 function hLevel(l) {
   const m = RX_H.exec(l || '');
@@ -12991,7 +13178,7 @@ function liLevel(ind) {
 }
 /* titre d'une note : sa première ligne, quand une ligne vide la sépare de la suite (comme l'objet d'un e-mail) */
 function noteTitled(ls) {
-  return ls.length > 2 && !!ls[0].trim() && !RX_LI.test(ls[0]) && !ls[1].trim() && ls.slice(2).some(l => l.trim());
+  return ls.length > 2 && !!ls[0].trim() && !estListe(ls[0]) && !ls[1].trim() && ls.slice(2).some(l => l.trim());
 }
 /* ---- titre des notes, à la Joplin (3.6, idée de François) ----
    Le titre est un champ à part. Une note écrite sans titre prend sa première ligne comme titre, et le titre la suit
@@ -13005,7 +13192,7 @@ function notePartie(text) {
 /** Titre tiré du corps : sa première ligne non vide, si ce n'est pas une puce. */
 function titreAuto(corps) {
   const l = (corps || '').split('\n').find(x => x.trim());
-  return l && !RX_LI.test(l) ? sansDieses(l.trim()) : '';
+  return l && !estListe(l) ? sansDieses(l.trim()) : '';
 }
 /** Texte enregistré. auto : titre tiré du corps (sa première ligne devient le titre, sans être répétée). */
 function noteAssemblee(titre, corps, auto) {
@@ -13013,7 +13200,7 @@ function noteAssemblee(titre, corps, auto) {
   if (auto) {
     const ls = corps.split('\n'),
       l = ls[0] || '';
-    if (!l.trim() || RX_LI.test(l)) return corps;
+    if (!l.trim() || estListe(l)) return corps;
     const reste = ls.slice(1).join('\n').replace(/^(\s*\n)+/, '').replace(/\s+$/, ''),
       t1 = sansDieses(l.trim()); /* 3.15 : un titre de section en tête devient le titre de la note */
     return reste ? t1 + '\n\n' + reste : t1;
@@ -13030,25 +13217,27 @@ function edPremiereLigne(root) {
 /** Une ligne de l'éditeur, au format du fichier : « - » des puces (deux espaces par niveau), « # » des titres. */
 function edLigneTexte(d) {
   const h = edH(d);
-  return ((d.classList.contains('b') ? '  '.repeat(edLv(d)) + '- ' : h ? '#'.repeat(h) + ' ' : '') + d.textContent)
+  const k = edListe(d);
+  return ((k ? '  '.repeat(edLv(d)) + (k === 'o' ? (d.dataset.n || 1) + '. ' : '- ') : h ? '#'.repeat(h) + ' ' : '') + d.textContent)
     .replace(/\u00a0/g, ' ')
     .replace(/\s+$/, '');
 }
 function noteView(t) {
   /* une ligne par bloc, comme dans l'éditeur : mêmes puces, même titre */
   const ls = (t || '').split('\n'),
-    multi = noteTitled(ls);
+    multi = noteTitled(ls),
+    nums = numerote(genresLignes(ls));
   return ls
     .map((l, k) => {
       if (multi && k === 1) return ''; /* 3.9 : la ligne vide qui sépare le titre du corps ne s'affiche pas */
       const m = RX_LI.exec(l),
-        lv = m ? liLevel(m[1]) : 0,
-        hn = m || (k === 0 && multi) ? 0 : hLevel(l),
-        h = escHtml(m ? m[2] : sansDieses(l))
-          .replace(RX_B, '<strong>$1</strong>')
-          .replace(RX_I, '$1<em>$2</em>');
+        o = !m && RX_OL.exec(l),
+        lv = m ? liLevel(m[1]) : o ? liLevel(o[1]) : 0,
+        hn = m || o || (k === 0 && multi) ? 0 : hLevel(l),
+        h = fmtLigne(m ? m[2] : o ? o[3] : sansDieses(l));
       return (
-        '<div class="' + (m ? 'li' + (lv ? ' l' + lv : '') : '') + (hn ? 'nh nh' + hn : '') + (k === 0 && multi ? ' nt1' : '') + '">' + (h || '<br>') + '</div>'
+        '<div class="' + (m ? 'li' + (lv ? ' l' + lv : '') : '') + (o ? 'ol' + (lv ? ' l' + lv : '') : '') + (hn ? 'nh nh' + hn : '') + (k === 0 && multi ? ' nt1' : '') + '"' +
+        (o ? ' data-n="' + nums[k] + '"' : '') + '>' + (h || '<br>') + '</div>'
       );
     })
     .join('');
@@ -13057,18 +13246,23 @@ function noteView(t) {
 function noteHtml(t, title) {
   const ls = (t || '').replace(/\s+$/, '').split('\n'),
     multi = noteTitled(ls),
-    fmt = l => escHtml(l).replace(RX_B, '<strong>$1</strong>').replace(RX_I, '$1<em>$2</em>');
-  let h = '',
-    depth = 0; /* listes ouvertes : une par niveau de puce */
-  const to = d => {
-    while (depth < d) (h += '<ul>'), depth++;
-    while (depth > d) (h += '</ul>'), depth--;
+    fmt = fmtLigne;
+  let h = '';
+  const pile = []; /* listes ouvertes : une par niveau, <ul> (puces) ou <ol> (numéros, 3.16) */
+  const to = (d, tag) => {
+    while (pile.length > d) h += '</' + pile.pop() + '>';
+    if (tag && pile.length === d && d && pile[d - 1] !== tag) h += '</' + pile.pop() + '>';
+    while (pile.length < d) {
+      pile.push(tag);
+      h += '<' + tag + '>';
+    }
   };
   ls.forEach((l, k) => {
-    const m = RX_LI.exec(l);
-    if (m) {
-      to(Math.min(liLevel(m[1]) + 1, depth + 1));
-      h += '<li>' + fmt(m[2]) + '</li>';
+    const m = RX_LI.exec(l),
+      o = !m && RX_OL.exec(l);
+    if (m || o) {
+      to(Math.min(liLevel((m || o)[1]) + 1, pile.length + 1), m ? 'ul' : 'ol');
+      h += '<li>' + fmt(m ? m[2] : o[3]) + '</li>';
       return;
     }
     to(0);
@@ -13105,8 +13299,9 @@ function wrapSel(ta, m) {
   ta.focus();
   ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
-const isBullet = l => /^\s*[-*•]\s+/.test(l),
-  unBullet = l => l.replace(/^\s*[-*•]\s+/, '').trim();
+/* puces et numéros (3.16) : les deux deviennent des sous-tâches */
+const isBullet = l => /^\s*(?:[-*•]|\d{1,3}[.)])\s+/.test(l),
+  unBullet = l => l.replace(/^\s*(?:[-*•]|\d{1,3}[.)])\s+/, '').trim();
 /* note → tâche : 1re ligne = intitulé, lignes à puces = sous-tâches, le reste = commentaire */
 function noteSplit(text) {
   const ls = (text || '')
@@ -13235,6 +13430,31 @@ function toggleBullet(ta) {
     ta.setRangeText('- ', ls, ls);
     ta.setSelectionRange(p + 2, p + 2);
   }
+  ta.focus();
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+/** Champ simple (repli du téléphone) : la ligne du curseur devient un élément numéroté (« 1. », ou le numéro qui suit
+    celui de la ligne du dessus), ou redevient du texte (3.16). */
+function toggleNumber(ta) {
+  const v = ta.value,
+    p = ta.selectionStart,
+    ls = v.lastIndexOf('\n', p - 1) + 1,
+    le = v.indexOf('\n', p) < 0 ? v.length : v.indexOf('\n', p),
+    line = v.slice(ls, le),
+    o = RX_OL.exec(line);
+  let nv, pre;
+  if (o) {
+    pre = o[1] + o[2] + '. ';
+    nv = o[1];
+  } else {
+    pre = (/^(#{1,3} |\s*[-*•] )?/.exec(line) || [''])[0];
+    const av = ls ? v.slice(v.lastIndexOf('\n', ls - 2) + 1, ls - 1) : '',
+      po = RX_OL.exec(av);
+    nv = (po ? po[1] + (+po[2] + 1) : '1') + '. ';
+  }
+  ta.setRangeText(nv, ls, ls + pre.length);
+  const q = Math.max(ls + nv.length, p - pre.length + nv.length);
+  ta.setSelectionRange(q, q);
   ta.focus();
   ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
@@ -13480,7 +13700,10 @@ function edRanges(src) {
   R.forEach(r => (ph = ph.slice(0, r.s) + '\u0002'.repeat(r.e - r.s) + ph.slice(r.e)));
   const ri = new RegExp(RX_I.source, 'gm');
   while ((m = ri.exec(ph))) R.push({ k: 'i', s: m.index + m[1].length, e: m.index + m[0].length, m: 1 });
-  return R.sort((x, y) => x.s - y.s || y.e - x.e);
+  /* 3.16 : adresses internet, sans marques ; un gras ou un italique qui chevauche une adresse sans l'englober est ignoré */
+  const U = urlsDans(src).map(u => ({ k: 'u', s: u.s, e: u.e, m: 0, url: u.url }));
+  const R2 = R.filter(r => !U.some(u => r.s < u.e && u.s < r.e && !(r.s <= u.s && u.e <= r.e)));
+  return [...R2, ...U].sort((x, y) => x.s - y.s || y.e - x.e);
 }
 function edLineHtml(src) {
   if (!src) return '<br>';
@@ -13494,9 +13717,9 @@ function edLineHtml(src) {
       while (x < rs.length && rs[x].s < r.e) kids.push(rs[x++]);
       h +=
         escHtml(src.slice(p, r.s)) +
-        '<span class="f f' + r.k + '" data-s="' + r.s + '" data-e="' + r.e + '"><span class="mk">' +
-        src.substr(r.s, r.m) + '</span>' + out(r.s + r.m, r.e - r.m, kids) +
-        '<span class="mk">' + src.substr(r.e - r.m, r.m) + '</span></span>';
+        '<span class="f f' + r.k + '" data-s="' + r.s + '" data-e="' + r.e + '"' + (r.url ? ' data-url="' + escHtml(hrefUrl(r.url)) + '" title="Ctrl+clic pour ouvrir"' : '') + '>' +
+        (r.m ? '<span class="mk">' + src.substr(r.s, r.m) + '</span>' : '') + out(r.s + r.m, r.e - r.m, kids) +
+        (r.m ? '<span class="mk">' + src.substr(r.e - r.m, r.m) + '</span>' : '') + '</span>';
       p = r.e;
       j = x;
     }
@@ -13505,20 +13728,40 @@ function edLineHtml(src) {
   return out(0, src.length, edRanges(src));
 }
 function noteToEd(text) {
-  return (text || '')
-    .split('\n')
-    .map(l => {
+  const ls = (text || '').split('\n'),
+    nums = numerote(genresLignes(ls));
+  return ls
+    .map((l, i) => {
       const m = RX_LI.exec(l),
-        lv = m ? liLevel(m[1]) : 0,
-        hn = m ? 0 : hLevel(l);
+        o = !m && RX_OL.exec(l),
+        lv = m ? liLevel(m[1]) : o ? liLevel(o[1]) : 0,
+        hn = m || o ? 0 : hLevel(l);
       return (
-        '<div' + (m ? ' class="b' + (lv ? ' l' + lv : '') + '"' : hn ? ' class="h' + hn + '"' : '') + '>' + edLineHtml(m ? m[2] : hn ? sansDieses(l) : l) + '</div>'
+        '<div' +
+        (m ? ' class="b' + (lv ? ' l' + lv : '') + '"' : o ? ' class="o' + (lv ? ' l' + lv : '') + '" data-n="' + nums[i] + '"' : hn ? ' class="h' + hn + '"' : '') +
+        '>' + edLineHtml(m ? m[2] : o ? o[3] : hn ? sansDieses(l) : l) + '</div>'
       );
     })
     .join('');
 }
+/** Ligne de liste de l'éditeur : 'b' (puce), 'o' (numéro), '' sinon. */
+function edListe(d) {
+  return d.classList.contains('b') ? 'b' : d.classList.contains('o') ? 'o' : '';
+}
+/** Recalcule les numéros affichés (data-n) des lignes numérotées de l'éditeur (3.16). */
+function edRenum(root) {
+  if (!root || !root.children) return;
+  const ls = [...root.children],
+    nums = numerote(ls.map(d => ({ k: edListe(d), lv: edLv(d) })));
+  ls.forEach((d, i) => {
+    if (nums[i]) {
+      if (d.dataset.n !== String(nums[i])) d.dataset.n = nums[i];
+    } else if (d.dataset.n) delete d.dataset.n;
+  });
+}
 function edToNote(root) {
   edNorm(root);
+  edRenum(root);
   return [...root.children]
     .map(edLigneTexte)
     .join('\n')
@@ -13589,7 +13832,7 @@ function edAct(root, sel) {
 function edSameShape(L, html) {
   const tpl = document.createElement('div');
   tpl.innerHTML = html;
-  const cur = L.innerHTML.replace(/ data-[se]="\d+"/g, '').replace(/ class="f f([bi]) on"/g, ' class="f f$1"'),
+  const cur = L.innerHTML.replace(/ data-[se]="\d+"/g, '').replace(/ class="f f([biu]) on"/g, ' class="f f$1"'),
     nxt = tpl.innerHTML.replace(/ data-[se]="\d+"/g, '');
   if (cur !== nxt) return false;
   const a = L.querySelectorAll('.f'),
@@ -13619,6 +13862,7 @@ function edSync(root) {
     L._src = t;
     touched = true;
   }
+  edRenum(root);
   if (sel) {
     edAct(root, sel);
     if (touched) edPlace(root, sel.a, sel.f);
@@ -13703,7 +13947,24 @@ function edToggleList(root) {
   const ls = edLinesInSel(root);
   if (!ls.length) return;
   const on = !ls.every(d => d.classList.contains('b'));
-  ls.forEach(d => (on ? d.classList.contains('b') || edSetLv(d, 0) : edSetLv(d, -1)));
+  ls.forEach(d => {
+    if (!on) return edSetLv(d, -1);
+    if (d.classList.contains('b')) return;
+    d.classList.remove('o');
+    edSetLv(d, edLv(d));
+  });
+}
+/** Liste numérotée sur les lignes sélectionnées (3.16) ; déjà toutes numérotées : plus de liste. */
+function edToggleNum(root) {
+  const ls = edLinesInSel(root);
+  if (!ls.length) return;
+  const on = !ls.every(d => d.classList.contains('o'));
+  ls.forEach(d => {
+    if (!on) return edSetLv(d, -1);
+    d.classList.remove('b', 'h1', 'h2', 'h3');
+    d.classList.add('o');
+  });
+  edRenum(root);
 }
 /* niveau d'une puce dans l'éditeur (classes l1 à l3) ; -1 : plus une puce */
 function edLv(d) {
@@ -13712,12 +13973,13 @@ function edLv(d) {
 }
 function edSetLv(d, lv) {
   d.classList.remove('l1', 'l2', 'l3');
-  if (lv < 0) d.classList.remove('b');
+  if (lv < 0) d.classList.remove('b', 'o');
   else {
     d.classList.remove('h1', 'h2', 'h3');
-    d.classList.add('b');
+    if (!d.classList.contains('o')) d.classList.add('b'); /* une ligne numérotée garde son numéro (3.16) */
     if (lv) d.classList.add('l' + lv);
   }
+  edRenum(d.parentNode);
 }
 /* niveau de titre d'une ligne de l'éditeur (classes h1 à h3) ; 0 : texte ou puce */
 function edH(d) {
@@ -13728,9 +13990,10 @@ function edH(d) {
 function edSetH(d, n) {
   d.classList.remove('h1', 'h2', 'h3');
   if (n) {
-    d.classList.remove('b', 'l1', 'l2', 'l3');
+    d.classList.remove('b', 'o', 'l1', 'l2', 'l3');
     d.classList.add('h' + n);
   }
+  edRenum(d.parentNode);
 }
 /** Bouton « T » (3.15) : texte → titre 1 → titre 2 → titre 3 → texte ; n donné (Ctrl+Alt+1…) : ce niveau, ou le
     retirer s'il y est déjà. Toutes les lignes sélectionnées prennent le niveau qui suit celui de la première. */
@@ -13759,9 +14022,9 @@ function edAuDebut(line) {
 /* Tab : sous-puce (jusqu'à un cran sous la ligne du dessus) ; Maj+Tab : remonter d'un cran */
 function edIndent(root, dir) {
   edLinesInSel(root).forEach(d => {
-    if (!d.classList.contains('b')) return;
+    if (!edListe(d)) return;
     const p = d.previousElementSibling,
-      max = p && p.classList.contains('b') ? Math.min(3, edLv(p) + 1) : 0,
+      max = p && edListe(p) ? Math.min(3, edLv(p) + 1) : 0,
       lv = edLv(d);
     edSetLv(d, dir > 0 ? Math.min(max, lv + 1) : Math.max(0, lv - 1));
   });
@@ -13819,13 +14082,35 @@ function edNorm(root) {
       }
       continue;
     }
+    /* 3.16 : « 1. » ou « 1) » suivis d'une espace en début de ligne : une liste numérotée */
+    const om = /^(\d{1,3})[.)][ \u00a0]/.exec(d.textContent);
+    if (om && !edListe(d) && !edH(d)) {
+      const w = document.createTreeWalker(d, NodeFilter.SHOW_TEXT);
+      let f = w.nextNode();
+      while (f && !f.nodeValue) f = w.nextNode();
+      if (f && f.nodeValue.startsWith(om[0])) {
+        f.nodeValue = f.nodeValue.slice(om[0].length);
+        d.classList.add('o');
+        if (!d.textContent) d.innerHTML = '<br>';
+        const r = document.createRange();
+        r.setStart(f.isConnected ? f : d.firstChild, 0);
+        r.collapse(true);
+        const s = getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+        edRenum(root);
+      }
+      continue;
+    }
     if (!/^[-*•][ \u00a0]/.test(d.textContent)) continue;
     const w = document.createTreeWalker(d, NodeFilter.SHOW_TEXT);
     let f = w.nextNode();
     while (f && !f.nodeValue) f = w.nextNode();
     if (f && /^[-*•][ \u00a0]/.test(f.nodeValue)) {
       f.nodeValue = f.nodeValue.slice(2);
-      edSetLv(d, 0);
+      const lv0 = edListe(d) ? edLv(d) : 0;
+      d.classList.remove('o');
+      edSetLv(d, lv0);
       if (!d.textContent) d.innerHTML = '<br>';
       const r = document.createRange();
       r.setStart(f.isConnected ? f : d.firstChild, 0);
@@ -13846,6 +14131,7 @@ function edHistory(ed) {
   const load = st => {
     ed.innerHTML = st.h.map(([c, t]) => '<div' + (c ? ' class="' + c + '"' : '') + '>' + edLineHtml(t) + '</div>').join('');
     [...ed.children].forEach(L => (L._src = L.textContent));
+    edRenum(ed);
     if (st.sel) {
       edPlace(ed, st.sel.a, st.sel.f);
       edAct(ed);
@@ -13945,6 +14231,10 @@ function editNote(id) {
     I(
       '<circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/>'
     ) +
+    '</button><button type="button" data-f="o" class="fnum" title="Liste numérotée (Ctrl+Maj+L, ou «\u00a01.\u00a0» en début de ligne)" aria-label="Liste numérotée">' +
+    I(
+      '<path d="M10 7H20M10 12H20M10 17H20"/><text x="2.2" y="9.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">1</text><text x="2.2" y="14.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">2</text><text x="2.2" y="19.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">3</text>'
+    ) +
     '</button><button type="button" data-f="t" class="ftitre" title="Titre\u00a0: titre 1, puis 2, puis 3, puis texte (Ctrl+Alt+1, 2, 3\u202f; Ctrl+Alt+0\u00a0: texte\u202f; ou «\u00a0#\u00a0» en début de ligne)" aria-label="Niveau de titre">T<sub></sub></button><span class="sp"></span><span class="hint ent"><kbd>Entrée</kbd> enregistrer · <kbd>Maj+Entrée</kbd> à la ligne</span><button type="button" data-f="md" class="fmd" title="Enregistrer sous… (fichier .md)" aria-label="Enregistrer la note sous un fichier .md">' +
     I('<path d="M12 4v10.5M7.5 10l4.5 4.5 4.5-4.5"/><path d="M5 16.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5"/>') +
     '</button><button type="button" data-f="x" class="fx" title="Quitter sans enregistrer (Échap)">' +
@@ -13968,6 +14258,7 @@ function editNote(id) {
     }
     hist.push(true);
     if (f === 'l') edToggleList(ed);
+    else if (f === 'o') edToggleNum(ed);
     else if (f === 't') edTitre(ed);
     else edFmt(ed, f);
     ed.focus();
@@ -13985,7 +14276,7 @@ function editNote(id) {
       tb.querySelector('sub').textContent = h || '';
     },
     entSync = () => {
-      ent.classList.toggle('on', ed.children.length === 1 && !ed.children[0].classList.contains('b') && !edH(ed.children[0]));
+      ent.classList.toggle('on', ed.children.length === 1 && !edListe(ed.children[0]) && !edH(ed.children[0]));
       majTitre();
     };
   entSync();
@@ -13993,13 +14284,14 @@ function editNote(id) {
   const sel = document.createElement('div');
   sel.className = 'selbar';
   sel.innerHTML =
-    '<button type="button" data-f="b" title="Gras (Ctrl+B)"><b>G</b></button><i class="sep"></i><button type="button" data-f="i" title="Italique (Ctrl+I)"><i>I</i></button><i class="sep"></i><button type="button" data-f="l" title="Liste à puces (Ctrl+L)">•</button>';
+    '<button type="button" data-f="b" title="Gras (Ctrl+B)"><b>G</b></button><i class="sep"></i><button type="button" data-f="i" title="Italique (Ctrl+I)"><i>I</i></button><i class="sep"></i><button type="button" data-f="l" title="Liste à puces (Ctrl+L)">•</button><i class="sep"></i><button type="button" data-f="o" title="Liste numérotée (Ctrl+Maj+L)">1.</button>';
   sel.onmousedown = e => e.preventDefault();
   sel.onclick = e => {
     const b = e.target.closest('button');
     if (!b) return;
     hist.push(true);
     if (b.dataset.f === 'l') edToggleList(ed);
+    else if (b.dataset.f === 'o') edToggleNum(ed);
     else edFmt(ed, b.dataset.f);
     selPlace();
   };
@@ -14023,6 +14315,7 @@ function editNote(id) {
       if (!ed._comp) edAct(ed);
       entSync();
       titreEtat();
+      lienBulle(ed);
     });
   document.addEventListener('selectionchange', onSel);
   let cancelled = false;
@@ -14079,6 +14372,13 @@ function editNote(id) {
     edNorm(ed);
     edSync(ed);
   });
+  /* 3.16 : Ctrl+clic sur une adresse l'ouvre (comme dans Word et Outlook) */
+  ed.addEventListener('click', e => {
+    const u = (e.ctrlKey || e.metaKey) && e.target.closest('.fu');
+    if (!u) return;
+    e.preventDefault();
+    window.open(u.dataset.url, '_blank', 'noopener');
+  });
   ed.addEventListener('beforeinput', e => {
     if (e.inputType === 'historyUndo' || e.inputType === 'historyRedo') {
       e.preventDefault();
@@ -14119,7 +14419,8 @@ function editNote(id) {
       } else if (k === 'l') {
         e.preventDefault();
         hist.push(true);
-        edToggleList(ed);
+        if (e.shiftKey) edToggleNum(ed); /* 3.16 : Ctrl+Maj+L, liste numérotée */
+        else edToggleList(ed);
       } else if (k === 'enter') {
         e.preventDefault();
         ed.blur();
@@ -14128,7 +14429,7 @@ function editNote(id) {
     }
     /* note d'une seule ligne : Entrée l'enregistre ; Maj+Entrée en fait un titre et ouvre une ligne dessous
        (ensuite, Entrée crée des lignes comme d'habitude). Une puce seule reste une liste : Entrée continue la liste. */
-    if (e.key === 'Enter' && !e.isComposing && ed.children.length === 1 && !ed.children[0].classList.contains('b') && !edH(ed.children[0])) {
+    if (e.key === 'Enter' && !e.isComposing && ed.children.length === 1 && !edListe(ed.children[0]) && !edH(ed.children[0])) {
       e.preventDefault();
       if (e.shiftKey) {
         /* 3.6 : le titre a son champ ; Maj+Entrée va simplement à la ligne */
@@ -14167,7 +14468,7 @@ function editNote(id) {
       }
       return;
     }
-    if (!line || !line.classList.contains('b')) return;
+    if (!line || !edListe(line)) return;
     /* Entrée sur une puce vide : un cran plus haut, puis fin de la liste ; Retour arrière au début d'une puce : pareil */
     if (e.key === 'Enter' && !e.shiftKey && !line.textContent.trim()) {
       e.preventDefault();
@@ -14222,6 +14523,7 @@ function editNote(id) {
     fini = true;
     document.removeEventListener('selectionchange', onSel);
     sel.remove();
+    lienBulle(null);
     fond.remove();
     place.remove();
     c.classList.remove('plein');
@@ -19447,8 +19749,8 @@ function mRender() {
               c.append(lk);
             }
             if (AND) {
-              c.onclick = () => {
-                if (c.dataset.swiped) return;
+              c.onclick = e => {
+                if (c.dataset.swiped || e.target.closest('a')) return; /* 3.16 : un lien dans la note s'ouvre, la note non */
                 mNoteDepuis = c.getBoundingClientRect(); /* 3.6 : la fiche grandit depuis la note */
                 mOpenNote(n.id);
               };
@@ -19837,6 +20139,17 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-13 12:02',
+    type: 'web',
+    v: '3.16.11',
+    t: 'Liens cliquables et listes numérotées dans les notes',
+    items: [
+      'Notes\u00a0: les adresses internet (https://… ou www.…) deviennent des liens. Dans la liste des notes, un clic (un toucher au téléphone) les ouvre. Dans une note ouverte, quand le curseur est sur une adresse, une bulle «\u00a0Ouvrir\u00a0» apparaît au-dessus\u00a0; au PC, Ctrl+clic l’ouvre aussi, comme dans Word.',
+      'Listes numérotées\u00a0: bouton «\u00a01 2 3\u00a0» de la barre, Ctrl+Maj+L au PC, ou «\u00a01.\u00a0» tapé en début de ligne. Entrée continue la liste, Entrée sur une ligne vide la termine, Tab fait une sous-liste (au PC). Les numéros se recalculent tout seuls.',
+      'Copiées vers Word, Outlook ou Teams, les notes gardent leurs liens et leurs listes numérotées. Une note numérotée qui devient tâche donne des sous-tâches, comme les puces.'
+    ]
+  },
   {
     d: '2026-11-13 11:39',
     type: 'web',
@@ -23391,7 +23704,8 @@ function mInitNotes() {
     ['#nBullet', ta => toggleBullet(ta), 'l'],
     ['#nBold', ta => wrapSel(ta, '**'), 'b'],
     ['#nItal', ta => wrapSel(ta, '*'), 'i'],
-    ['#nTitreH', ta => toggleHeading(ta), 't']
+    ['#nTitreH', ta => toggleHeading(ta), 't'],
+    ['#nNum', ta => toggleNumber(ta), 'o']
   ]) {
     const b = $(id);
     b.onpointerdown = e => e.preventDefault();
@@ -23798,6 +24112,7 @@ function mEdFmt(k) {
   if (!edSel(ed)) mNoteFocus(true);
   mEdHist.push(true);
   if (k === 'l') edToggleList(ed);
+  else if (k === 'o') edToggleNum(ed);
   else if (k === 't') edTitre(ed);
   else edFmt(ed, k);
   mEdVersTexte();
@@ -23866,7 +24181,7 @@ function mInitNoteRiche() {
         return;
       }
     }
-    if (line && line.classList.contains('b')) {
+    if (line && edListe(line)) {
       if ((e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') && !line.textContent.trim()) {
         e.preventDefault();
         mEdHist.push(true);
@@ -23918,8 +24233,10 @@ function mInitNoteRiche() {
     requestAnimationFrame(() => {
       edAct(ed);
       mEdTitreEtat();
+      lienBulle(ed);
     });
   });
+  $('#mNote').addEventListener('close', () => lienBulle(null));
   $('#oRiche').onchange = () => {
     mState.noteSimple = !$('#oRiche').checked;
     mstore.set(MKEY + '-ui', mState);
