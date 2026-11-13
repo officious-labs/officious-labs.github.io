@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113115047">
+<meta name="officious-page" content="20261113115837">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7244,17 +7244,21 @@ header .s-cherche input:not(:placeholder-shown) {
 .ned > div.h3 {
   font-weight: 700;
   line-height: 1.25;
-  color: var(--accent); /* 3.17.15 : les trois niveaux en vert (choix de François) ; la taille marque la hiérarchie */
+  color: var(--accent); /* 3.17.15 : vert ; 3.17.16 : dégradé (choix de François), titre 3 dans la couleur d'accent */
 }
 .inote .tx > div.nh1,
 .mnotec .tx > div.nh1,
 .ned > div.h1 {
+  /* 3.17.16 : dégradé, du plus foncé (1) au vert d'accent (3), mêlé à la couleur du texte : plus contrasté encore en
+     mode sombre ; éclaircir le titre 3 vers le fond le rendait trop pâle (contraste 3,9 en clair) */
+  color: color-mix(in srgb, var(--accent) 50%, var(--fg));
   font-size: 1.28em;
   margin: 0.35em 0 0.1em;
 }
 .inote .tx > div.nh2,
 .mnotec .tx > div.nh2,
 .ned > div.h2 {
+  color: color-mix(in srgb, var(--accent) 75%, var(--fg));
   font-size: 1.12em;
   margin: 0.3em 0 0.08em;
 }
@@ -20319,6 +20323,15 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-11-13 13:05',
+    type: 'web',
+    v: '3.17.16',
+    t: 'Titres des notes en dégradé de vert',
+    items: [
+      'Notes\u00a0: les titres passent du vert le plus foncé (titre 1) au vert de l’appli (titre 3), en plus de leur taille. Même chose dans le document Word.'
+    ]
+  },
+  {
     d: '2026-11-13 12:57',
     type: 'web',
     v: '3.17.15',
@@ -26027,7 +26040,7 @@ function noteDocx(text, links) {
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ' + W_NS + '>' +
     '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="fr-FR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
     '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
-    titre('Titre', 'Title', 40, '1F1F1F', 0) + titre('Titre1', 'heading 1', 32, '2F6F5E', 280) + titre('Titre2', 'heading 2', 27, '2F6F5E', 220) + titre('Titre3', 'heading 3', 23, '2F6F5E', 180) +
+    titre('Titre', 'Title', 40, '1F1F1F', 0) + titre('Titre1', 'heading 1', 32, '26463C', 280) + titre('Titre2', 'heading 2', 27, '2A5A4D', 220) + titre('Titre3', 'heading 3', 23, '2F6F5E', 180) +
     '<w:style w:type="paragraph" w:styleId="Paragraphedeliste"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="40"/><w:ind w:left="720"/><w:contextualSpacing/></w:pPr></w:style>' +
     '<w:style w:type="character" w:styleId="Lienhypertexte"><w:name w:val="Hyperlink"/><w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/></w:rPr></w:style>' +
     '</w:styles>';
