@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113114421">
+<meta name="officious-page" content="20261113115047">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7244,7 +7244,7 @@ header .s-cherche input:not(:placeholder-shown) {
 .ned > div.h3 {
   font-weight: 700;
   line-height: 1.25;
-  color: var(--fg);
+  color: var(--accent); /* 3.17.15 : les trois niveaux en vert (choix de François) ; la taille marque la hiérarchie */
 }
 .inote .tx > div.nh1,
 .mnotec .tx > div.nh1,
@@ -20319,6 +20319,15 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-11-13 12:57',
+    type: 'web',
+    v: '3.17.15',
+    t: 'Titres des notes en vert',
+    items: [
+      'Notes\u00a0: les trois niveaux de titre sont maintenant en vert (avant, seulement le 3e)\u00a0; leur taille marque la hiérarchie. Le titre de la note reste noir. Même chose dans le document Word.'
+    ]
+  },
+  {
     d: '2026-11-13 12:52',
     type: 'web',
     v: '3.17.14',
@@ -26018,7 +26027,7 @@ function noteDocx(text, links) {
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ' + W_NS + '>' +
     '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="fr-FR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
     '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
-    titre('Titre', 'Title', 40, '1F1F1F', 0) + titre('Titre1', 'heading 1', 32, '1F1F1F', 280) + titre('Titre2', 'heading 2', 27, '1F1F1F', 220) + titre('Titre3', 'heading 3', 23, '2E6B5A', 180) +
+    titre('Titre', 'Title', 40, '1F1F1F', 0) + titre('Titre1', 'heading 1', 32, '2F6F5E', 280) + titre('Titre2', 'heading 2', 27, '2F6F5E', 220) + titre('Titre3', 'heading 3', 23, '2F6F5E', 180) +
     '<w:style w:type="paragraph" w:styleId="Paragraphedeliste"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="40"/><w:ind w:left="720"/><w:contextualSpacing/></w:pPr></w:style>' +
     '<w:style w:type="character" w:styleId="Lienhypertexte"><w:name w:val="Hyperlink"/><w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/></w:rPr></w:style>' +
     '</w:styles>';
