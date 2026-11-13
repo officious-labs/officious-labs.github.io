@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113161302">
+<meta name="officious-page" content="20261113170737">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7467,6 +7467,10 @@ html:has(.inote.plein) {
 #nEd > div.s[data-p='b'] {
   padding-left: calc(1.1em + var(--lv, 0) * 1.2em);
 }
+/* 3.18.18 : la ligne du curseur, ramenée dans la zone visible, garde un peu d'air au-dessus et au-dessous */
+.ned > div {
+  scroll-margin: 0.6em 0;
+}
 </style>
 </head>
 <body>
@@ -14198,6 +14202,16 @@ function edApresSuite(root, avant, nouvelle) {
   if (lv) nouvelle.classList.add('l' + lv);
   edRenum(root);
 }
+/** 3.18.18 : la ligne du curseur reste visible dans le texte de la note. Les lignes créées par Tâches (Entrée au bout
+    d'un titre, d'une ligne de suite, dans une liste…) ne faisaient pas défiler : la nouvelle ligne restait sous le bord,
+    cachée derrière les images jointes, jusqu'à la première lettre tapée (vu par François). */
+function edVoirCurseur(root) {
+  const s = getSelection();
+  if (!root || !s.rangeCount || !root.contains(s.focusNode)) return;
+  let L = s.focusNode;
+  while (L && L.parentNode !== root) L = L.parentNode;
+  if (L && L.nodeType === 1) L.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
 /** Le curseur est-il au tout début de la ligne (sans sélection) ? */
 function edAuDebut(line) {
   const s = getSelection(),
@@ -14505,6 +14519,7 @@ function editNote(id, sansAnim) {
       entSync();
       titreEtat();
       lienBulle(ed);
+      edVoirCurseur(ed);
     });
   document.addEventListener('selectionchange', onSel);
   let cancelled = false;
@@ -20431,6 +20446,15 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-11-13 18:16',
+    type: 'web',
+    v: '3.18.18',
+    t: 'La ligne où tu écris reste visible',
+    items: [
+      'Notes\u00a0: dans une longue note, Entrée au bout d’un titre (ou dans une liste) créait une ligne sous le bord visible, cachée derrière les images jointes, jusqu’à la première lettre tapée. La note défile désormais pour la montrer, avec un peu d’air autour.'
+    ]
+  },
+  {
     d: '2026-11-13 17:21',
     type: 'web',
     v: '3.18.17',
@@ -24613,6 +24637,7 @@ function mInitNoteRiche() {
       edAct(ed);
       mEdTitreEtat();
       lienBulle(ed);
+      edVoirCurseur(ed);
     });
   });
   $('#mNote').addEventListener('close', () => lienBulle(null));
