@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113104344">
+<meta name="officious-page" content="20261113110443">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -13476,9 +13476,31 @@ function toggleHeading(ta) {
 }
 
 /* ---------- notes à trier (prises au téléphone) ---------- */
+/* note ouverte au PC (3.16.12) : {id, at, texte(), detacher()} ; voir renderInbox et editing() */
+let noteOuverte = null;
 let noteEditId = null,
   noteDragId = null;
 function renderInbox() {
+  /* 3.16.12 : la page se redessine pendant qu'une note est ouverte (fichier relu, message d'un autre outil…) : le texte
+     en cours entre dans le modèle (la note est recréée si elle n'y est plus), puis la note se rouvre telle quelle.
+     Avant, elle disparaissait avec tout ce qui avait été tapé (13/11). */
+  let rouvrir = null;
+  if (noteOuverte) {
+    const o = noteOuverte;
+    let v = '';
+    try {
+      v = o.texte();
+    } catch (e) {}
+    o.detacher();
+    noteOuverte = null;
+    let n = notes.find(y => y.id === o.id);
+    if (!n) notes.unshift((n = { id: o.id, at: o.at || nowStamp(), text: '' }));
+    if (v && n.text !== v) {
+      n.text = v;
+      socle.modifie();
+    }
+    rouvrir = o.id;
+  }
   const box = $('#inbox');
   box.hidden = false;
   box.innerHTML = '';
@@ -13666,7 +13688,8 @@ function renderInbox() {
   box.append(wrap);
   add();
   requestAnimationFrame(() => ajusterLiens(box));
-  if (noteEditId) {
+  if (rouvrir) editNote(rouvrir, true);
+  else if (noteEditId) {
     const id = noteEditId;
     noteEditId = null;
     editNote(id);
@@ -14164,7 +14187,7 @@ function edHistory(ed) {
     }
   };
 }
-function editNote(id) {
+function editNote(id, sansAnim) {
   const c = document.querySelector('.inote[data-id="' + id + '"]'),
     n = notes.find(y => y.id === id);
   if (!c || !n) return;
@@ -14206,7 +14229,7 @@ function editNote(id) {
   const fond = document.createElement('div');
   fond.id = 'noteFond';
   document.body.append(fond);
-  if (c.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (!sansAnim && c.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const r1 = c.getBoundingClientRect();
     c.animate(
       [
@@ -14521,6 +14544,10 @@ function editNote(id) {
   const finir = () => {
     if (fini) return;
     fini = true;
+    if (noteOuverte && noteOuverte.id === n.id) noteOuverte = null;
+    obs.disconnect();
+    clearTimeout(brT);
+    brouillonEffacer(); /* ce qui suit met la note dans le modèle (ou l'abandonne, Échap) */
     document.removeEventListener('selectionchange', onSel);
     sel.remove();
     lienBulle(null);
@@ -14554,6 +14581,39 @@ function editNote(id) {
       return;
     }
     render();
+  };
+  /* 3.16.12 : le texte en cours, tel qu'il serait enregistré ; brouillon gardé à chaque modification ; inscription dans
+     noteOuverte pour que la relecture du fichier attende, et qu'un rendu forcé ne perde rien */
+  const courant = () => {
+    const net = s => s.replace(/\u00a0/g, ' ').replace(/^\s+|\s+$/g, ''),
+      corps = edToNote(ed);
+    return !titreTouche && net(corps) === net(parts.corps) ? n.text.replace(/^\s+|\s+$/g, '') : noteAssemblee(ti.value, corps, auto0 && !titreTouche);
+  };
+  let brT = null;
+  const brouillonMaj = () => {
+    clearTimeout(brT);
+    brT = setTimeout(() => {
+      if (!fini) brouillonEcrire({ id: n.id, at: n.at, text: courant() });
+    }, 400);
+  };
+  const obs = new MutationObserver(brouillonMaj);
+  obs.observe(ed, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+  ti.addEventListener('input', brouillonMaj);
+  noteOuverte = {
+    id: n.id,
+    at: n.at,
+    texte: courant,
+    detacher: () => {
+      fini = true;
+      obs.disconnect();
+      clearTimeout(brT);
+      document.removeEventListener('selectionchange', onSel);
+      sel.remove();
+      lienBulle(null);
+      fond.remove();
+      place.remove();
+      $('#inbox').classList.remove('noting');
+    }
   };
   ed.focus();
   const r = document.createRange();
@@ -18896,8 +18956,54 @@ function changed() {
   setStatus();
 }
 function editing() {
+  /* 3.16.12 (note perdue le 13/11) : une note ouverte au PC compte comme une saisie, où que soit le curseur ; sinon la
+     relecture du fichier (toutes les 30 s, au retour sur la page) redessinait la page et effaçait la note */
+  if (typeof noteOuverte !== 'undefined' && noteOuverte) return true;
   const a = document.activeElement;
-  return !!(a && a.matches && a.matches('.txt,.cmt,input,textarea,#nEd'));
+  return !!(a && a.matches && a.matches('.txt,.cmt,input,textarea,#nEd,[contenteditable="true"]'));
+}
+/* ---- brouillon de la note en cours (3.16.12) ----
+   Ce qu'on tape dans une note n'entre dans le modèle (et dans taches.md) qu'à sa fermeture. En attendant, une copie
+   est gardée à chaque frappe dans ce navigateur ; si la page se recharge ou se ferme avant (bouton « Recharger »,
+   Edge fermé, appli tuée par Android), la note est reprise et enregistrée à la réouverture. */
+const BROUILLON = 'taches-brouillon-note';
+function brouillonEcrire(b) {
+  mstore.set(BROUILLON, { id: b.id || null, at: b.at || '', text: b.text || '', le: Date.now() });
+}
+function brouillonEffacer() {
+  if (mstore.get(BROUILLON)) mstore.set(BROUILLON, null);
+}
+/** Reprend le brouillon dans le modèle. Appelée au démarrage (definitif = false : le brouillon reste, car le fichier
+    peut être lu juste après et remplacer l'état, par exemple quand Edge redemande l'accès), puis après le premier
+    chargement du fichier (definitif : le brouillon est effacé). Jamais pendant qu'une note est ouverte. */
+let brouillonAnnonce = false;
+function brouillonReprendre(definitif) {
+  if ((typeof noteOuverte !== 'undefined' && noteOuverte) || (MOBILE && $('#mNote') && $('#mNote').open)) return false;
+  const b = mstore.get(BROUILLON);
+  if (!b) return false;
+  if (definitif) mstore.set(BROUILLON, null);
+  const v = (b.text || '').replace(/^\s+|\s+$/g, '');
+  if (!v) return false;
+  if (!b.id) {
+    b.id = uid(); /* note neuve : un identifiant fixe, pour ne pas la créer deux fois */
+    if (!definitif) mstore.set(BROUILLON, b);
+  }
+  let n = notes.find(x => x.id === b.id);
+  if (n && n.text === v) {
+    mstore.set(BROUILLON, null); /* déjà dans Tâches */
+    return false;
+  }
+  snapshot();
+  if (n) n.text = v;
+  else notes.unshift((n = { id: b.id, at: b.at || nowStamp(), text: v }));
+  changed();
+  if (brouillonAnnonce) return true;
+  brouillonAnnonce = true;
+  const t = plainFmt(v.split('\n')[0]).trim(),
+    msg = 'Note en cours retrouvée et enregistrée\u00a0: «\u00a0' + (t.length > 40 ? t.slice(0, 40) + '…' : t) + '\u00a0»';
+  if (MOBILE && typeof mUndoToast === 'function') mUndoToast(msg);
+  else toast(msg + ' · Ctrl+Z pour annuler', 9000);
+  return true;
 }
 function applyModel(r) {
   const a = activeInfo();
@@ -20139,6 +20245,16 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-13 12:18',
+    type: 'web',
+    v: '3.16.12',
+    t: 'Une note ouverte ne se perd plus',
+    items: [
+      'PC\u00a0: quand le téléphone écrivait dans taches.md pendant que tu écrivais une note (par exemple en se mettant à jour), la page se redessinait et la note ouverte disparaissait avec son texte. Désormais, Tâches attend que la note soit refermée pour relire le fichier, puis fusionne les deux.',
+      'Ce que tu tapes dans une note est aussi gardé à mesure dans ce navigateur (ou dans l’appli). Si la page se recharge ou se ferme avant que tu refermes la note (bouton «\u00a0Recharger\u00a0», Edge fermé, appli fermée par Android), la note est reprise et enregistrée à la réouverture, avec un message.'
+    ]
+  },
   {
     d: '2026-11-13 12:02',
     type: 'web',
@@ -23687,6 +23803,25 @@ function mInitNotes() {
   $('#nText').addEventListener('input', mTaskPreview);
   $('#nText').addEventListener('input', mNoteMajTitre);
   $('#nText').addEventListener('input', mEdTitreEtat);
+  /* 3.16.12 : brouillon de la note en cours (appli fermée par Android avant l'enregistrement) */
+  {
+    let t = null;
+    const maj = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        const d = $('#mNote');
+        if (!d.open) return;
+        const src = mNoteSrc();
+        if (src) brouillonEcrire({ id: mNoteId, at: src.at, text: src.v });
+      }, 400);
+    };
+    $('#nText').addEventListener('input', maj);
+    $('#nTitle').addEventListener('input', maj);
+    $('#mNote').addEventListener('close', () => {
+      clearTimeout(t);
+      setTimeout(brouillonEffacer, 0); /* après l'enregistrement fait à la fermeture */
+    });
+  }
   $('#nTitle').addEventListener('input', () => {
     mNoteTitreTouche = true;
     mTaskPreview();
@@ -25795,7 +25930,10 @@ async function demarrerTaches() {
     fermeParRetour: d => (mBackClose = d.id === 'mNote'),
     tirerBloque: () => !!(typeof mDrag !== 'undefined' && mDrag),
     resume: m => 'faites ' + m.items.filter(x => x.kind === 't' && x.level === 0 && x.state === 'fait').length,
-    apresChargement: () => setTimeout(housekeeping, 0),
+    apresChargement: () => {
+      setTimeout(housekeeping, 0);
+      brouillonReprendre(true); /* 3.16.12 : de nouveau sur l'état lu dans le fichier, puis brouillon effacé */
+    },
     surEtat: () => {
       const avant = mName;
       mName = socle.nomFichier || (socle.enDirect ? 'taches.md' : null);
@@ -25825,6 +25963,9 @@ async function demarrerTaches() {
     liste: '#mList'
   });
   if (MOBILE) mRender();
+  /* 3.16.12 : une note restée ouverte quand la page s'est rechargée ou fermée. Au téléphone, le fichier est déjà lu ici :
+     reprise définitive ; au PC, Edge peut encore demander l'accès, le fichier sera lu ensuite (apresChargement). */
+  brouillonReprendre(MOBILE);
   /* 3.12 : au PC aussi, la fenêtre « Nouvelle version installée », fêtée dès l'ouverture (la copie est arrivée) */
   if (!MOBILE) {
     /* la toute première fois (rien de marqué vu sur ce PC) : pas de fenêtre, seulement la pastille de « Notes de version » */
