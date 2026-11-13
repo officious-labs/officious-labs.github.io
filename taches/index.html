@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113110443">
+<meta name="officious-page" content="20261113112738">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7375,6 +7375,69 @@ header .s-cherche input:not(:placeholder-shown) {
     animation: none;
   }
 }
+/* 3.17 : menu « Enregistrer la note sous… » (Word ou Markdown) */
+.menuEnreg {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  min-width: 15rem;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel, var(--bg));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: lienBulle 0.16s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+.menuEnreg .me-t {
+  padding: 0.25rem 0.55rem 0.35rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.menuEnreg button {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.55rem;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: var(--s-cur-pointer, pointer);
+}
+.menuEnreg button:hover,
+.menuEnreg button:focus-visible {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.menuEnreg button b {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 7px;
+  background: #2b579a;
+  color: #fff;
+  font-size: 0.85rem;
+}
+.menuEnreg button[data-k='md'] b {
+  background: color-mix(in srgb, var(--fg) 75%, transparent);
+  font-size: 0.72rem;
+}
+.menuEnreg button span {
+  display: flex;
+  flex-direction: column;
+}
+.menuEnreg small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .menuEnreg {
+    animation: none;
+  }
+}
 </style>
 </head>
 <body>
@@ -7529,7 +7592,7 @@ header .s-cherche input:not(:placeholder-shown) {
       <div class="ntool"><button type="button" id="nBold" class="ico" title="Gras" aria-label="Gras"><b>B</b></button><button type="button" id="nItal" class="ico" title="Italique" aria-label="Italique"><i>I</i></button><button type="button" id="nTitreH" class="ico" title="Niveau de titre (titre 1, 2, 3, puis texte)" aria-label="Niveau de titre"><b>T</b><sub></sub></button><button type="button" id="nBullet" class="ico" title="Liste à puces" aria-label="Liste à puces"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg></button><button type="button" id="nNum" class="ico" title="Liste numérotée" aria-label="Liste numérotée"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 7H20M10 12H20M10 17H20"/><text x="2.2" y="9.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">1</text><text x="2.2" y="14.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">2</text><text x="2.2" y="19.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">3</text></svg></button><span class="sp"></span><button type="button" id="nPaste" class="ico npaste" title="Coller le presse-papiers" aria-label="Coller le presse-papiers"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg><span>Coller</span></button></div>
       <input id="nTitle" class="ntitre" placeholder="Titre" aria-label="Titre de la note" enterkeyhint="next" autocomplete="off">
       <div id="nLinks"></div><div class="nwrap"><textarea id="nText" rows="6" placeholder="Ce qu’on vient de te dire…"></textarea><div id="nEd" class="ned" contenteditable="true" spellcheck="true" data-placeholder="Ce qu’on vient de te dire…" role="textbox" aria-multiline="true" aria-label="Texte de la note" hidden></div><button type="button" id="nCopy" class="ico ccopy" title="Copier la note" aria-label="Copier la note"><span class="i1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg></span><span class="i2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button></div>
-      <div class="nbar"><button type="button" id="nDel" class="ico adel" title="Supprimer la note" aria-label="Supprimer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg></button><button type="button" id="nArch" class="ico" title="Archiver la note" aria-label="Archiver la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.2"/><path d="M5 9v10h14V9M10 13h4"/></svg></button><button type="button" id="nMd" class="ico" title="Enregistrer sous… (fichier .md)" aria-label="Enregistrer la note sous un fichier .md"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10.5M7.5 10l4.5 4.5 4.5-4.5"/><path d="M5 16.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5"/></svg></button><button type="button" id="nCancel" class="ico" title="Annuler" aria-label="Annuler"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="sp"></span><span class="ntabs"><button type="button" class="ico" data-p="task" title="En faire une tâche" aria-label="En faire une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></svg></button><button type="button" class="ico" data-p="attach" title="Ajouter à une tâche" aria-label="Ajouter à une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button></span><button type="submit" class="ico ok" id="nOk" title="Enregistrer la note" aria-label="Enregistrer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+      <div class="nbar"><button type="button" id="nDel" class="ico adel" title="Supprimer la note" aria-label="Supprimer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg></button><button type="button" id="nArch" class="ico" title="Archiver la note" aria-label="Archiver la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.2"/><path d="M5 9v10h14V9M10 13h4"/></svg></button><button type="button" id="nMd" class="ico" title="Enregistrer sous… (Word ou Markdown)" aria-label="Enregistrer la note sous un fichier"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10.5M7.5 10l4.5 4.5 4.5-4.5"/><path d="M5 16.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5"/></svg></button><button type="button" id="nCancel" class="ico" title="Annuler" aria-label="Annuler"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="sp"></span><span class="ntabs"><button type="button" class="ico" data-p="task" title="En faire une tâche" aria-label="En faire une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></svg></button><button type="button" class="ico" data-p="attach" title="Ajouter à une tâche" aria-label="Ajouter à une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button></span><button type="submit" class="ico ok" id="nOk" title="Enregistrer la note" aria-label="Enregistrer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
       <div id="nTriage">
                 <div class="npanel" id="nTask" hidden>
           <div class="arow1"><select id="nSec" aria-label="Rubrique" title="Rubrique"></select><div class="aseg" id="nState"><button type="button" data-k="afaire" class="on" title="À faire" aria-label="À faire"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7.5" r="3.4"/><path d="M5 20.5c.6-4 3.4-6.5 7-6.5s6.4 2.5 7 6.5"/></svg></button><button type="button" data-k="attente" title="En attente" aria-label="En attente"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="2.2" rx="1" fill="currentColor" stroke="none"/><rect x="5" y="19.3" width="14" height="2.2" rx="1" fill="currentColor" stroke="none"/><path d="M7.5 4.7c0 3.5 3 5 3.6 7.3-.6 2.3-3.6 3.8-3.6 7.3M16.5 4.7c0 3.5-3 5-3.6 7.3.6 2.3 3.6 3.8 3.6 7.3"/><path d="M9 18.6c.8-1.6 2.2-2.3 3-2.3s2.2.7 3 2.3z" fill="currentColor" stroke="none"/></svg></button></div></div>
@@ -10674,7 +10737,7 @@ function annoncerMatin() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.18.0',
+  version: '1.18.1',
   demarrer,
   /* fichier */
   modifie,
@@ -14258,7 +14321,7 @@ function editNote(id, sansAnim) {
     I(
       '<path d="M10 7H20M10 12H20M10 17H20"/><text x="2.2" y="9.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">1</text><text x="2.2" y="14.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">2</text><text x="2.2" y="19.3" font-size="7.5" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" stroke="none">3</text>'
     ) +
-    '</button><button type="button" data-f="t" class="ftitre" title="Titre\u00a0: titre 1, puis 2, puis 3, puis texte (Ctrl+Alt+1, 2, 3\u202f; Ctrl+Alt+0\u00a0: texte\u202f; ou «\u00a0#\u00a0» en début de ligne)" aria-label="Niveau de titre">T<sub></sub></button><span class="sp"></span><span class="hint ent"><kbd>Entrée</kbd> enregistrer · <kbd>Maj+Entrée</kbd> à la ligne</span><button type="button" data-f="md" class="fmd" title="Enregistrer sous… (fichier .md)" aria-label="Enregistrer la note sous un fichier .md">' +
+    '</button><button type="button" data-f="t" class="ftitre" title="Titre\u00a0: titre 1, puis 2, puis 3, puis texte (Ctrl+Alt+1, 2, 3\u202f; Ctrl+Alt+0\u00a0: texte\u202f; ou «\u00a0#\u00a0» en début de ligne)" aria-label="Niveau de titre">T<sub></sub></button><span class="sp"></span><span class="hint ent"><kbd>Entrée</kbd> enregistrer · <kbd>Maj+Entrée</kbd> à la ligne</span><button type="button" data-f="md" class="fmd" title="Enregistrer sous… (document Word ou Markdown)" aria-label="Enregistrer la note sous un fichier">' +
     I('<path d="M12 4v10.5M7.5 10l4.5 4.5 4.5-4.5"/><path d="M5 16.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5"/>') +
     '</button><button type="button" data-f="x" class="fx" title="Quitter sans enregistrer (Échap)">' +
     I('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>') +
@@ -14276,8 +14339,8 @@ function editNote(id, sansAnim) {
       return ed.blur();
     }
     if (f === 'md') {
-      /* 3.15 : la note telle qu'elle est à l'écran (titre et texte en cours), sans la refermer */
-      return noteEnregistrerSous(noteAssemblee(ti.value, edToNote(ed), auto0 && !titreTouche), n.links, n.at);
+      /* 3.15 : la note telle qu'elle est à l'écran (titre et texte en cours), sans la refermer ; 3.17 : Word ou Markdown */
+      return menuEnregistrer(b, () => noteAssemblee(ti.value, edToNote(ed), auto0 && !titreTouche), n.links, n.at);
     }
     hist.push(true);
     if (f === 'l') edToggleList(ed);
@@ -14594,7 +14657,7 @@ function editNote(id, sansAnim) {
     clearTimeout(brT);
     brT = setTimeout(() => {
       if (!fini) brouillonEcrire({ id: n.id, at: n.at, text: courant() });
-    }, 400);
+    }, 2000); /* 2 s après la dernière modification (demande de François, 3.17) */
   };
   const obs = new MutationObserver(brouillonMaj);
   obs.observe(ed, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
@@ -18964,7 +19027,7 @@ function editing() {
 }
 /* ---- brouillon de la note en cours (3.16.12) ----
    Ce qu'on tape dans une note n'entre dans le modèle (et dans taches.md) qu'à sa fermeture. En attendant, une copie
-   est gardée à chaque frappe dans ce navigateur ; si la page se recharge ou se ferme avant (bouton « Recharger »,
+   est gardée dans ce navigateur, 2 s après la dernière modification (3.17 ; 0,4 s en 3.16.12) ; si la page se recharge ou se ferme avant (bouton « Recharger »,
    Edge fermé, appli tuée par Android), la note est reprise et enregistrée à la réouverture. */
 const BROUILLON = 'taches-brouillon-note';
 function brouillonEcrire(b) {
@@ -20245,6 +20308,17 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-13 12:29',
+    type: 'web',
+    v: '3.17.13',
+    t: 'Enregistrer une note en document Word',
+    items: [
+      'Notes\u00a0: le bouton ⤓ propose maintenant «\u00a0Document Word (.docx)\u00a0» ou «\u00a0Texte Markdown (.md)\u00a0». Le document Word reprend le titre de la note, les titres de section, les listes à puces et numérotées, le gras, l’italique et les liens (cliquables), avec les liens et pièces jointes de la note à la fin.',
+      'Au téléphone, l’enregistrement en Word demande le Compagnon 3.0.135 ou plus (menu ⋮ pour le mettre à jour)\u00a0; le Markdown marche avec celui que tu as.',
+      'Le brouillon d’une note ouverte est gardé 2\u00a0secondes après ta dernière frappe (au lieu de 0,4\u00a0s).'
+    ]
+  },
   {
     d: '2026-11-13 12:18',
     type: 'web',
@@ -23813,7 +23887,7 @@ function mInitNotes() {
         if (!d.open) return;
         const src = mNoteSrc();
         if (src) brouillonEcrire({ id: mNoteId, at: src.at, text: src.v });
-      }, 400);
+      }, 2000);
     };
     $('#nText').addEventListener('input', maj);
     $('#nTitle').addEventListener('input', maj);
@@ -23892,7 +23966,7 @@ function mInitNotes() {
   $('#nMd').onclick = () => {
     /* 3.15 : enregistrer la note sous un fichier .md (fenêtre « Enregistrer sous » d'Android) ; la note reste ouverte */
     const src = mNoteSrc();
-    if (src) noteEnregistrerSous(src.v, src.n && src.n.links, src.at);
+    if (src) menuEnregistrer($('#nMd'), () => (mNoteSrc() || src).v, src.n && src.n.links, src.at); /* 3.17 : Word ou Markdown */
   };
   $('#nArch').onclick = () => {
     const id = mNoteId;
@@ -25770,6 +25844,293 @@ function signalerPJOutlook(dt) {
       ),
     400
   );
+}
+/* ---------- enregistrer une note en document Word (.docx) (3.17) ----------
+   Sans bibliothèque : un .docx est une archive zip de fichiers XML. L'archive est écrite sans compression (Word
+   l'accepte), avec son CRC-32. Le document reprend la note telle qu'elle s'affiche : titre de la note (style
+   « Titre »), titres de section (« Titre 1 » à « Titre 3 »), puces et listes numérotées (vraies listes Word, sous-
+   niveaux compris), gras, italique, liens cliquables ; liens et pièces jointes de la note listés à la fin. */
+
+const CRC_T = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(b) {
+  let c = 0xffffffff;
+  for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+/** Archive zip sans compression : [{nom, texte}] → Uint8Array. */
+function zipStocke(fichiers) {
+  const enc = new TextEncoder(),
+    parts = [],
+    central = [];
+  let pos = 0;
+  const d = new Date(),
+    heure = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+    jour = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const f of fichiers) {
+    const nom = enc.encode(f.nom),
+      data = enc.encode(f.texte),
+      crc = crc32(data),
+      loc = new DataView(new ArrayBuffer(30));
+    loc.setUint32(0, 0x04034b50, true);
+    loc.setUint16(4, 20, true);
+    loc.setUint16(6, 0x0800, true); /* noms en UTF-8 */
+    loc.setUint16(8, 0, true); /* sans compression */
+    loc.setUint16(10, heure, true);
+    loc.setUint16(12, jour, true);
+    loc.setUint32(14, crc, true);
+    loc.setUint32(18, data.length, true);
+    loc.setUint32(22, data.length, true);
+    loc.setUint16(26, nom.length, true);
+    loc.setUint16(28, 0, true);
+    const cen = new DataView(new ArrayBuffer(46));
+    cen.setUint32(0, 0x02014b50, true);
+    cen.setUint16(4, 20, true);
+    cen.setUint16(6, 20, true);
+    cen.setUint16(8, 0x0800, true);
+    cen.setUint16(10, 0, true);
+    cen.setUint16(12, heure, true);
+    cen.setUint16(14, jour, true);
+    cen.setUint32(16, crc, true);
+    cen.setUint32(20, data.length, true);
+    cen.setUint32(24, data.length, true);
+    cen.setUint16(28, nom.length, true);
+    cen.setUint32(42, pos, true);
+    parts.push(new Uint8Array(loc.buffer), nom, data);
+    central.push(new Uint8Array(cen.buffer), nom);
+    pos += 30 + nom.length + data.length;
+  }
+  const taille = central.reduce((s, x) => s + x.length, 0),
+    fin = new DataView(new ArrayBuffer(22));
+  fin.setUint32(0, 0x06054b50, true);
+  fin.setUint16(8, fichiers.length, true);
+  fin.setUint16(10, fichiers.length, true);
+  fin.setUint32(12, taille, true);
+  fin.setUint32(16, pos, true);
+  const tout = [...parts, ...central, new Uint8Array(fin.buffer)],
+    out = new Uint8Array(tout.reduce((s, x) => s + x.length, 0));
+  let o = 0;
+  for (const x of tout) out.set(x, o), (o += x.length);
+  return out;
+}
+const xmlEsc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const W_NS =
+  'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+
+/** Le document Word d'une note : Uint8Array du .docx. */
+function noteDocx(text, links) {
+  const rels = [];
+  const lien = url => {
+    const id = 'rIdL' + (rels.length + 1);
+    rels.push('<Relationship Id="' + id + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="' + xmlEsc(isRel(url) ? encodeURI(url) : url) + '" TargetMode="External"/>');
+    return id;
+  };
+  /* une ligne (Markdown de la note) → runs Word, par le même rendu que l'écran (fmtLigne) */
+  const runs = src => {
+    const tpl = document.createElement('template');
+    tpl.innerHTML = fmtLigne(src);
+    let x = '';
+    const marche = (n, b, i, a) => {
+      if (n.nodeType === 3) {
+        if (!n.nodeValue) return;
+        const r =
+          '<w:r>' + (b || i || a ? '<w:rPr>' + (a ? '<w:rStyle w:val="Lienhypertexte"/>' : '') + (b ? '<w:b/>' : '') + (i ? '<w:i/>' : '') + '</w:rPr>' : '') +
+          '<w:t xml:space="preserve">' + xmlEsc(n.nodeValue) + '</w:t></w:r>';
+        x += r;
+        return;
+      }
+      const t = n.nodeName;
+      if (t === 'A') {
+        const avant = x;
+        x = '';
+        n.childNodes.forEach(c => marche(c, b, i, true));
+        x = avant + '<w:hyperlink r:id="' + lien(n.getAttribute('href')) + '">' + x + '</w:hyperlink>';
+        return;
+      }
+      n.childNodes.forEach(c => marche(c, b || t === 'STRONG', i || t === 'EM', a));
+    };
+    tpl.content.childNodes.forEach(c => marche(c, false, false, false));
+    return x;
+  };
+  const para = (style, corps, num) =>
+    '<w:p>' + (style || num ? '<w:pPr>' + (style ? '<w:pStyle w:val="' + style + '"/>' : '') + (num ? '<w:numPr><w:ilvl w:val="' + num.lv + '"/><w:numId w:val="' + num.id + '"/></w:numPr>' : '') + '</w:pPr>' : '') + corps + '</w:p>';
+
+  const p = notePartie((text || '').replace(/\s+$/, '')),
+    ls = p.corps.replace(/^\s+|\s+$/g, '').split('\n'),
+    nums = numerote(genresLignes(ls));
+  let corps = '';
+  if (p.titre) corps += para('Titre', runs(p.titre));
+  /* chaque liste numérotée (numéro 1 au premier niveau) repart à 1 : une instance de numérotation par liste */
+  let numListe = 2;
+  const numIds = [];
+  ls.forEach((l, k) => {
+    const m = RX_LI.exec(l),
+      o = !m && RX_OL.exec(l),
+      h = m || o ? 0 : hLevel(l);
+    if (m) corps += para('Paragraphedeliste', runs(m[2]), { id: 1, lv: liLevel(m[1]) });
+    else if (o) {
+      const lv = liLevel(o[1]);
+      if (nums[k] === 1) numIds[lv] = numListe++;
+      corps += para('Paragraphedeliste', runs(o[3]), { id: numIds[lv] || (numIds[lv] = numListe++), lv });
+    } else if (h) corps += para('Titre' + h, runs(sansDieses(l)));
+    else corps += para('', runs(l));
+  });
+  if (links && links.length) {
+    corps += para('Titre2', '<w:r><w:t>Liens et pièces jointes</w:t></w:r>');
+    for (const l of links) {
+      const lab = (l.label || labelOf(l.url)).replace(/[\[\]]/g, '');
+      corps += para('Paragraphedeliste', '<w:hyperlink r:id="' + lien(l.url) + '"><w:r><w:rPr><w:rStyle w:val="Lienhypertexte"/></w:rPr><w:t xml:space="preserve">' + xmlEsc(lab) + '</w:t></w:r></w:hyperlink>', { id: 1, lv: 0 });
+    }
+  }
+  const document_ =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ' + W_NS + '><w:body>' + corps +
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  const titre = (id, nom, taille, couleur, avant) =>
+    '<w:style w:type="paragraph" w:styleId="' + id + '"><w:name w:val="' + nom + '"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="' + avant + '" w:after="80"/>' +
+    (id === 'Titre' ? '' : '<w:outlineLvl w:val="' + (+id.slice(-1) - 1) + '"/>') + '</w:pPr><w:rPr><w:b/><w:color w:val="' + couleur + '"/><w:sz w:val="' + taille + '"/><w:szCs w:val="' + taille + '"/></w:rPr></w:style>';
+  const styles =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ' + W_NS + '>' +
+    '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="fr-FR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
+    titre('Titre', 'Title', 40, '1F1F1F', 0) + titre('Titre1', 'heading 1', 32, '1F1F1F', 280) + titre('Titre2', 'heading 2', 27, '1F1F1F', 220) + titre('Titre3', 'heading 3', 23, '2E6B5A', 180) +
+    '<w:style w:type="paragraph" w:styleId="Paragraphedeliste"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="40"/><w:ind w:left="720"/><w:contextualSpacing/></w:pPr></w:style>' +
+    '<w:style w:type="character" w:styleId="Lienhypertexte"><w:name w:val="Hyperlink"/><w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/></w:rPr></w:style>' +
+    '</w:styles>';
+  const niveaux = (fmt, txt) =>
+    [0, 1, 2, 3]
+      .map(
+        lv =>
+          '<w:lvl w:ilvl="' + lv + '"><w:start w:val="1"/><w:numFmt w:val="' + fmt + '"/><w:lvlText w:val="' + txt(lv) + '"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="' + (720 + lv * 360) + '" w:hanging="360"/></w:pPr>' +
+          (fmt === 'bullet' ? '<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/></w:rPr>' : '') + '</w:lvl>'
+      )
+      .join('');
+  let numXml =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering ' + W_NS + '>' +
+    '<w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="hybridMultilevel"/>' + niveaux('bullet', lv => (lv % 2 ? '◦' : '•')) + '</w:abstractNum>' +
+    '<w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="hybridMultilevel"/>' + niveaux('decimal', lv => '%' + (lv + 1) + '.') + '</w:abstractNum>' +
+    '<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>';
+  for (let id = 2; id < numListe; id++)
+    numXml += '<w:num w:numId="' + id + '"><w:abstractNumId w:val="1"/>' + [0, 1, 2, 3].map(lv => '<w:lvlOverride w:ilvl="' + lv + '"><w:startOverride w:val="1"/></w:lvlOverride>').join('') + '</w:num>';
+  numXml += '</w:numbering>';
+  const docRels =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rIdS" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    '<Relationship Id="rIdN" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' +
+    rels.join('') + '</Relationships>';
+  return zipStocke([
+    {
+      nom: '[Content_Types].xml',
+      texte:
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/></Types>'
+    },
+    {
+      nom: '_rels/.rels',
+      texte:
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'
+    },
+    { nom: 'word/document.xml', texte: document_ },
+    { nom: 'word/styles.xml', texte: styles },
+    { nom: 'word/numbering.xml', texte: numXml },
+    { nom: 'word/_rels/document.xml.rels', texte: docRels }
+  ]);
+}
+const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+function b64(octets) {
+  let s = '';
+  for (let i = 0; i < octets.length; i += 0x8000) s += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function noteEnregistrerDocx(text, links, at) {
+  if (!(text || '').trim()) return toast('Note vide : rien à enregistrer');
+  const octets = noteDocx(text, links),
+    nom = noteNomFichier(text, at).replace(/\.md$/, '.docx');
+  if (typeof AND !== 'undefined' && AND) {
+    /* téléphone : fenêtre « Enregistrer sous » d'Android ; saveBytes du Compagnon (3.0.N, Tâches 3.17) */
+    try {
+      const r = await andCallRaw('saveBytes', JSON.stringify({ nom, type: DOCX_TYPE, base64: b64(octets) }));
+      toast('Document enregistré : ' + (r || nom));
+    } catch (e) {
+      if (/inconnue/.test(e.message)) toast('Pour enregistrer en Word au téléphone, mets d’abord le Compagnon à jour (menu ⋮)', 6000);
+      else if (!/annulé/.test(e.message)) toast('Enregistrement impossible : ' + e.message);
+    }
+    return;
+  }
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await showSaveFilePicker({
+        id: 'taches-note-md',
+        suggestedName: nom,
+        startIn: 'documents',
+        types: [{ description: 'Document Word', accept: { [DOCX_TYPE]: ['.docx'] } }]
+      });
+      const w = await h.createWritable();
+      await w.write(new Blob([octets], { type: DOCX_TYPE }));
+      await w.close();
+      toast('Note enregistrée dans « ' + h.name + ' »');
+    } catch (e) {
+      if (e.name !== 'AbortError') toast('Enregistrement impossible : ' + e.message);
+    }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([octets], { type: DOCX_TYPE }));
+  a.download = nom;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('Note téléchargée : ' + nom);
+}
+/** Bouton ⤓ d'une note : petit menu « Document Word » / « Markdown », au-dessus du bouton (une couche à la fois).
+    texte() : la note telle qu'elle est à l'écran au moment du choix. */
+function menuEnregistrer(btn, texte, links, at) {
+  const parent = btn.closest('dialog') || document.body;
+  const m = document.createElement('div');
+  m.className = 'menuEnreg';
+  m.setAttribute('role', 'menu');
+  m.innerHTML =
+    '<div class="me-t">Enregistrer la note sous…</div>' +
+    '<button type="button" role="menuitem" data-k="docx"><b>W</b><span>Document Word<small>.docx</small></span></button>' +
+    '<button type="button" role="menuitem" data-k="md"><b>M↓</b><span>Texte Markdown<small>.md</small></span></button>';
+  const echap = e => {
+    if (e.key !== 'Escape') return;
+    e.preventDefault();
+    e.stopPropagation();
+    fermer();
+  };
+  const fermer = () => {
+    m.remove();
+    document.removeEventListener('keydown', echap, true);
+    socle.finCouche();
+  };
+  m.onmousedown = e => e.preventDefault(); /* le curseur reste dans la note */
+  m.onclick = e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const v = texte();
+    fermer();
+    if (b.dataset.k === 'docx') noteEnregistrerDocx(v, links, at);
+    else noteEnregistrerSous(v, links, at);
+  };
+  parent.append(m);
+  const r = btn.getBoundingClientRect(),
+    w = m.offsetWidth,
+    h = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + 'px';
+  m.style.top = (r.top - h - 8 < 8 ? r.bottom + 8 : r.top - h - 8) + 'px';
+  socle.couche(m, fermer);
+  /* au PC, cliquer sur le voile ne doit pas faire quitter la note (le curseur reste dans l'éditeur) */
+  if (m.previousElementSibling && m.previousElementSibling.classList.contains('s-voile'))
+    m.previousElementSibling.addEventListener('mousedown', e => e.preventDefault());
+  document.addEventListener('keydown', echap, true); /* Échap ferme le menu, pas la note */
 }
 /* ---------- Tâches sur le socle Officine (3.0, 24/10/2026) ----------
    Le socle (dossier socle/, version figée) lit, fusionne et écrit taches.md, au PC comme dans le Compagnon Officine.
