@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113115837">
+<meta name="officious-page" content="20261113161302">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7452,6 +7452,21 @@ html:has(.inote.plein) {
 .inote.plein .links {
   overscroll-behavior: contain;
 }
+/* 3.18 : ligne de suite d'un élément de liste (sans numéro ni puce), alignée sous le texte de l'élément */
+.inote .tx > div.su.sb,
+.mnotec .tx > div.su.sb,
+.inote .ned > div.s[data-p='b'] {
+  padding-left: calc(1.05em + var(--lv, 0) * 1.15em);
+}
+.inote .tx > div.su.so,
+.mnotec .tx > div.su.so,
+.inote .ned > div.s[data-p='o'],
+#nEd > div.s[data-p='o'] {
+  padding-left: calc(1.55em + var(--lv, 0) * 1.15em);
+}
+#nEd > div.s[data-p='b'] {
+  padding-left: calc(1.1em + var(--lv, 0) * 1.2em);
+}
 </style>
 </head>
 <body>
@@ -13142,7 +13157,8 @@ const RX_OL = /^(\s*)(\d{1,3})[.)] (.*)$/;
 function estListe(l) {
   return RX_LI.test(l || '') || RX_OL.test(l || '');
 }
-/** Numéros d'une suite de lignes {k: 'b' (puce) | 'o' (numéro) | '' (autre), lv} ; 0 hors liste numérotée. */
+/** Numéros d'une suite de lignes {k: 'b' (puce) | 'o' (numéro) | 's' (ligne de suite, 3.18) | '' (autre), lv} ;
+    0 hors liste numérotée. Une ligne de suite ne coupe pas la numérotation. */
 function numerote(L) {
   const cpt = [],
     typ = [];
@@ -13152,6 +13168,7 @@ function numerote(L) {
       return 0;
     }
     cpt.length = typ.length = lv + 1;
+    if (k === 's') return 0;
     if (k === 'b') {
       typ[lv] = 'b';
       return 0;
@@ -13161,13 +13178,31 @@ function numerote(L) {
     return cpt[lv];
   });
 }
-/** Lignes du fichier → genre et niveau, pour numerote(). */
+/** Lignes du fichier → genre et niveau, pour numerote(). Ligne de suite (3.18) : une ligne en retrait, juste sous un
+    élément de liste (ou sous une autre ligne de suite) ; elle appartient à cet élément (même niveau, p : sa sorte). */
 function genresLignes(ls) {
+  let prec = null;
   return ls.map(l => {
     const m = RX_LI.exec(l),
       o = !m && RX_OL.exec(l);
-    return m ? { k: 'b', lv: liLevel(m[1]) } : o ? { k: 'o', lv: liLevel(o[1]) } : { k: '', lv: 0 };
+    let g;
+    if (m) g = { k: 'b', lv: liLevel(m[1]) };
+    else if (o) g = { k: 'o', lv: liLevel(o[1]) };
+    else if (prec && prec.k && /^[ \t]+\S/.test(l) && !hLevel(l.trim())) g = { k: 's', lv: prec.lv, p: prec.k === 's' ? prec.p : prec.k };
+    else g = { k: '', lv: 0 };
+    prec = g;
+    return g;
   });
+}
+/** Lignes de suite rattachées à leur élément (une ligne par élément, texte joint par une espace) : pour en faire une tâche. */
+function joindreSuites(ls) {
+  const g = genresLignes(ls),
+    out = [];
+  ls.forEach((l, i) => {
+    if (g[i].k === 's' && out.length) out[out.length - 1] += ' ' + l.trim();
+    else out.push(l);
+  });
+  return out;
 }
 /* liens internet dans les notes (3.16) : adresses en http(s):// ou www., cliquables à l'affichage, soulignées dans
    l'éditeur (Ctrl+clic, ou la bulle « Ouvrir » quand le curseur est dessus) ; le fichier garde l'adresse telle quelle */
@@ -13295,6 +13330,9 @@ function edPremiereLigne(root) {
 function edLigneTexte(d) {
   const h = edH(d);
   const k = edListe(d);
+  /* 3.18 : ligne de suite, en retrait sous le texte de son élément (largeur de « 1. » ou de « - », data-w) */
+  if (d.classList.contains('s'))
+    return ('  '.repeat(edLv(d)) + ' '.repeat(+d.dataset.w || 2) + d.textContent).replace(/\u00a0/g, ' ').replace(/\s+$/, '');
   return ((k ? '  '.repeat(edLv(d)) + (k === 'o' ? (d.dataset.n || 1) + '. ' : '- ') : h ? '#'.repeat(h) + ' ' : '') + d.textContent)
     .replace(/\u00a0/g, ' ')
     .replace(/\s+$/, '');
@@ -13303,10 +13341,15 @@ function noteView(t) {
   /* une ligne par bloc, comme dans l'éditeur : mêmes puces, même titre */
   const ls = (t || '').split('\n'),
     multi = noteTitled(ls),
-    nums = numerote(genresLignes(ls));
+    gs = genresLignes(ls),
+    nums = numerote(gs);
   return ls
     .map((l, k) => {
       if (multi && k === 1) return ''; /* 3.9 : la ligne vide qui sépare le titre du corps ne s'affiche pas */
+      if (gs[k].k === 's') {
+        const lv = gs[k].lv;
+        return '<div class="su s' + gs[k].p + (lv ? ' l' + lv : '') + '">' + (fmtLigne(l.trim()) || '<br>') + '</div>';
+      }
       const m = RX_LI.exec(l),
         o = !m && RX_OL.exec(l),
         lv = m ? liLevel(m[1]) : o ? liLevel(o[1]) : 0,
@@ -13334,7 +13377,13 @@ function noteHtml(t, title) {
       h += '<' + tag + '>';
     }
   };
+  const gs = genresLignes(ls);
   ls.forEach((l, k) => {
+    /* 3.18 : ligne de suite, dans le même élément, après un retour à la ligne */
+    if (gs[k].k === 's' && /<\/li>$/.test(h)) {
+      h = h.slice(0, -5) + '<br>' + fmt(l.trim()) + '</li>';
+      return;
+    }
     const m = RX_LI.exec(l),
       o = !m && RX_OL.exec(l);
     if (m || o) {
@@ -13381,8 +13430,7 @@ const isBullet = l => /^\s*(?:[-*•]|\d{1,3}[.)])\s+/.test(l),
   unBullet = l => l.replace(/^\s*(?:[-*•]|\d{1,3}[.)])\s+/, '').trim();
 /* note → tâche : 1re ligne = intitulé, lignes à puces = sous-tâches, le reste = commentaire */
 function noteSplit(text) {
-  const ls = (text || '')
-    .split('\n')
+  const ls = joindreSuites((text || '').split('\n')) /* 3.18 : une ligne de suite reste dans sa sous-tâche */
     .map(l => l.replace(/\s+$/, ''))
     .filter(l => l.trim());
   const rest = ls.slice(1);
@@ -13829,9 +13877,11 @@ function edLineHtml(src) {
 }
 function noteToEd(text) {
   const ls = (text || '').split('\n'),
-    nums = numerote(genresLignes(ls));
+    gs = genresLignes(ls),
+    nums = numerote(gs);
   return ls
     .map((l, i) => {
+      if (gs[i].k === 's') return '<div class="s' + (gs[i].lv ? ' l' + gs[i].lv : '') + '" data-p="' + gs[i].p + '">' + edLineHtml(l.trim()) + '</div>';
       const m = RX_LI.exec(l),
         o = !m && RX_OL.exec(l),
         lv = m ? liLevel(m[1]) : o ? liLevel(o[1]) : 0,
@@ -13852,11 +13902,24 @@ function edListe(d) {
 function edRenum(root) {
   if (!root || !root.children) return;
   const ls = [...root.children],
-    nums = numerote(ls.map(d => ({ k: edListe(d), lv: edLv(d) })));
+    nums = numerote(ls.map(d => ({ k: d.classList.contains('s') ? 's' : edListe(d), lv: edLv(d) })));
+  let parent = null; /* 3.18 : l'élément auquel appartient une ligne de suite (sa sorte, la largeur de sa marque) */
   ls.forEach((d, i) => {
     if (nums[i]) {
       if (d.dataset.n !== String(nums[i])) d.dataset.n = nums[i];
     } else if (d.dataset.n) delete d.dataset.n;
+    const k = edListe(d);
+    if (k) parent = { k, w: k === 'o' ? String(nums[i]).length + 2 : 2 };
+    else if (d.classList.contains('s')) {
+      if (!parent) {
+        d.classList.remove('s', 'l1', 'l2', 'l3'); /* plus d'élément au-dessus : du texte */
+        delete d.dataset.p;
+        delete d.dataset.w;
+        return;
+      }
+      if (d.dataset.p !== parent.k) d.dataset.p = parent.k;
+      if (d.dataset.w !== String(parent.w)) d.dataset.w = parent.w;
+    } else parent = null;
   });
 }
 function edToNote(root) {
@@ -14050,7 +14113,7 @@ function edToggleList(root) {
   ls.forEach(d => {
     if (!on) return edSetLv(d, -1);
     if (d.classList.contains('b')) return;
-    d.classList.remove('o');
+    d.classList.remove('o', 's');
     edSetLv(d, edLv(d));
   });
 }
@@ -14061,7 +14124,7 @@ function edToggleNum(root) {
   const on = !ls.every(d => d.classList.contains('o'));
   ls.forEach(d => {
     if (!on) return edSetLv(d, -1);
-    d.classList.remove('b', 'h1', 'h2', 'h3');
+    d.classList.remove('b', 's', 'h1', 'h2', 'h3');
     d.classList.add('o');
   });
   edRenum(root);
@@ -14073,9 +14136,9 @@ function edLv(d) {
 }
 function edSetLv(d, lv) {
   d.classList.remove('l1', 'l2', 'l3');
-  if (lv < 0) d.classList.remove('b', 'o');
+  if (lv < 0) d.classList.remove('b', 'o', 's');
   else {
-    d.classList.remove('h1', 'h2', 'h3');
+    d.classList.remove('h1', 'h2', 'h3', 's');
     if (!d.classList.contains('o')) d.classList.add('b'); /* une ligne numérotée garde son numéro (3.16) */
     if (lv) d.classList.add('l' + lv);
   }
@@ -14090,7 +14153,7 @@ function edH(d) {
 function edSetH(d, n) {
   d.classList.remove('h1', 'h2', 'h3');
   if (n) {
-    d.classList.remove('b', 'o', 'l1', 'l2', 'l3');
+    d.classList.remove('b', 'o', 's', 'l1', 'l2', 'l3');
     d.classList.add('h' + n);
   }
   edRenum(d.parentNode);
@@ -14108,6 +14171,32 @@ function edTitre(root, n) {
 function edApresEntree(root, avant) {
   const L = edLine(root);
   if (L && avant && edH(avant) && L !== avant && !L.textContent.trim()) edSetH(L, 0);
+}
+/** 3.18 : une ligne de l'éditeur devient ligne de suite de l'élément du dessus (Retour arrière au début d'un élément,
+    Maj+Entrée au PC). Faux s'il n'y a pas d'élément de liste juste au-dessus (la ligne reste ce qu'elle est). */
+function edEnSuite(d) {
+  const p = d.previousElementSibling;
+  if (!p || !(edListe(p) || p.classList.contains('s'))) return false;
+  const lv = Math.min(edLv(d), edLv(p));
+  d.classList.remove('b', 'o', 'h1', 'h2', 'h3', 'l1', 'l2', 'l3');
+  d.classList.add('s');
+  if (lv) d.classList.add('l' + lv);
+  edRenum(d.parentNode);
+  return true;
+}
+/** 3.18 : Entrée sur une ligne de suite : l'élément suivant (même sorte, même niveau) ; sur une ligne de suite vide :
+    elle redevient du texte (fin de la liste). nouvelle : la ligne créée par Entrée. */
+function edApresSuite(root, avant, nouvelle) {
+  if (!nouvelle || nouvelle === avant) return;
+  const p = avant.dataset.p || 'b',
+    lv = edLv(avant);
+  nouvelle.classList.remove('s');
+  delete nouvelle.dataset.p;
+  delete nouvelle.dataset.w;
+  nouvelle.classList.add(p);
+  nouvelle.classList.remove('l1', 'l2', 'l3');
+  if (lv) nouvelle.classList.add('l' + lv);
+  edRenum(root);
 }
 /** Le curseur est-il au tout début de la ligne (sans sélection) ? */
 function edAuDebut(line) {
@@ -14539,9 +14628,15 @@ function editNote(id, sansAnim) {
       return;
     }
     if (e.key === 'Enter' && e.shiftKey) {
-      /* pas de saut de ligne à l'intérieur d'une ligne : une nouvelle ligne, comme Entrée */
+      /* pas de saut de ligne à l'intérieur d'une ligne : une nouvelle ligne, comme Entrée ; 3.18 : dans une liste, une
+         ligne de suite (même élément, sans nouveau numéro) */
       e.preventDefault();
+      const L0 = edLine(ed),
+        dansListe = L0 && (edListe(L0) || L0.classList.contains('s'));
+      hist.push(true);
       document.execCommand('insertParagraph');
+      const L1 = edLine(ed);
+      if (dansListe && L1 && L1 !== L0) edEnSuite(L1);
       return;
     }
     if (e.key === 'Tab') {
@@ -14568,23 +14663,36 @@ function editNote(id, sansAnim) {
       }
       return;
     }
+    /* 3.18 : ligne de suite. Entrée : l'élément suivant (sur une ligne de suite vide : du texte, fin de la liste) ;
+       Retour arrière au début : elle rejoint la ligne du dessus (comportement ordinaire du navigateur) */
+    if (line && line.classList.contains('s')) {
+      if (e.key === 'Enter' && !e.isComposing) {
+        e.preventDefault();
+        hist.push(true);
+        if (!line.textContent.trim()) {
+          line.classList.remove('s', 'l1', 'l2', 'l3');
+          delete line.dataset.p;
+          delete line.dataset.w;
+          edRenum(ed);
+          return;
+        }
+        document.execCommand('insertParagraph');
+        edApresSuite(ed, line, edLine(ed));
+      }
+      return;
+    }
     if (!line || !edListe(line)) return;
-    /* Entrée sur une puce vide : un cran plus haut, puis fin de la liste ; Retour arrière au début d'une puce : pareil */
+    /* Entrée sur une puce vide : un cran plus haut, puis fin de la liste. Retour arrière au début d'un élément (3.18) :
+       il devient la suite de l'élément du dessus (sans numéro ni puce) ; le premier élément d'une liste remonte d'un
+       cran, puis redevient du texte (comme avant) */
     if (e.key === 'Enter' && !e.shiftKey && !line.textContent.trim()) {
       e.preventDefault();
+      hist.push(true);
       edSetLv(line, edLv(line) - 1);
-    } else if (e.key === 'Backspace') {
-      const s = getSelection(),
-        r = s.rangeCount && s.getRangeAt(0);
-      if (r && r.collapsed) {
-        const pre = document.createRange();
-        pre.selectNodeContents(line);
-        pre.setEnd(r.startContainer, r.startOffset);
-        if (!pre.toString().length) {
-          e.preventDefault();
-          edSetLv(line, edLv(line) - 1);
-        }
-      }
+    } else if (e.key === 'Backspace' && edAuDebut(line)) {
+      e.preventDefault();
+      hist.push(true);
+      if (!edEnSuite(line)) edSetLv(line, edLv(line) - 1);
     }
   };
   /* 3.6 : la note se referme quand la main quitte la feuille (clic à côté, Tab dehors), ou par ✓, Ctrl+Entrée,
@@ -20323,6 +20431,17 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-11-13 17:21',
+    type: 'web',
+    v: '3.18.17',
+    t: 'À la ligne dans un élément de liste',
+    items: [
+      'Notes, listes numérotées ou à puces\u00a0: pour aller à la ligne sans changer de numéro, fais Entrée puis Retour arrière (effacer)\u00a0: le nouveau numéro disparaît et la ligne devient la suite de l’élément du dessus, alignée sous son texte. Au PC, Maj+Entrée le fait d’un coup.',
+      'Entrée au bout de cette ligne passe à l’élément suivant\u00a0; Retour arrière à son début la recolle à la ligne du dessus. Le premier élément d’une liste garde l’ancien comportement (il redevient du texte).',
+      'La suite reste dans son élément à la copie vers Word, Outlook ou Teams, dans le document Word, et quand la note devient une tâche.'
+    ]
+  },
+  {
     d: '2026-11-13 13:05',
     type: 'web',
     v: '3.17.16',
@@ -24431,6 +24550,23 @@ function mInitNoteRiche() {
         return;
       }
     }
+    /* 3.18 : ligne de suite. Entrée : l'élément suivant (vide : du texte, fin de la liste) ; Retour arrière au début :
+       elle rejoint la ligne du dessus (le navigateur s'en charge) */
+    if (line && line.classList.contains('s') && (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak')) {
+      e.preventDefault();
+      mEdHist.push(true);
+      if (!line.textContent.trim()) {
+        line.classList.remove('s', 'l1', 'l2', 'l3');
+        delete line.dataset.p;
+        delete line.dataset.w;
+        edRenum(ed);
+      } else {
+        document.execCommand('insertParagraph');
+        edApresSuite(ed, line, edLine(ed));
+      }
+      mEdVersTexte();
+      return;
+    }
     if (line && edListe(line)) {
       if ((e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') && !line.textContent.trim()) {
         e.preventDefault();
@@ -24439,21 +24575,14 @@ function mInitNoteRiche() {
         mEdVersTexte();
         return;
       }
-      if (e.inputType === 'deleteContentBackward') {
-        const s = getSelection(),
-          r = s.rangeCount && s.getRangeAt(0);
-        if (r && r.collapsed) {
-          const pre = document.createRange();
-          pre.selectNodeContents(line);
-          pre.setEnd(r.startContainer, r.startOffset);
-          if (!pre.toString().length) {
-            e.preventDefault();
-            mEdHist.push(true);
-            edSetLv(line, edLv(line) - 1);
-            mEdVersTexte();
-            return;
-          }
-        }
+      /* 3.18 (idée de François) : Retour arrière au début d'un élément, il devient la suite de l'élément du dessus
+         (même numéro) ; le premier élément d'une liste remonte d'un cran, puis redevient du texte */
+      if (e.inputType === 'deleteContentBackward' && edAuDebut(line)) {
+        e.preventDefault();
+        mEdHist.push(true);
+        if (!edEnSuite(line)) edSetLv(line, edLv(line) - 1);
+        mEdVersTexte();
+        return;
       }
     }
     if (e.inputType === 'insertLineBreak') {
@@ -26011,7 +26140,13 @@ function noteDocx(text, links) {
   /* chaque liste numérotée (numéro 1 au premier niveau) repart à 1 : une instance de numérotation par liste */
   let numListe = 2;
   const numIds = [];
+  const gs = genresLignes(ls);
   ls.forEach((l, k) => {
+    /* 3.18 : ligne de suite : retour à la ligne dans le paragraphe de son élément (même numéro) */
+    if (gs[k].k === 's' && corps.endsWith('</w:p>')) {
+      corps = corps.slice(0, -6) + '<w:r><w:br/></w:r>' + runs(l.trim()) + '</w:p>';
+      return;
+    }
     const m = RX_LI.exec(l),
       o = !m && RX_OL.exec(l),
       h = m || o ? 0 : hLevel(l);
