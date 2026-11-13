@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113112738">
+<meta name="officious-page" content="20261113114421">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7437,6 +7437,16 @@ header .s-cherche input:not(:placeholder-shown) {
   .menuEnreg {
     animation: none;
   }
+}
+/* 3.17.14 (demande de François) : note ouverte au PC, la molette ne fait défiler que la note ; arrivée au bout, la page
+   derrière ne bouge pas (une couche à la fois, comme les fenêtres du socle : html:has(dialog:modal)) */
+html:has(.inote.plein) {
+  overflow: hidden;
+}
+.inote.plein,
+.inote.plein .ned,
+.inote.plein .links {
+  overscroll-behavior: contain;
 }
 </style>
 </head>
@@ -20308,6 +20318,15 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-13 12:52',
+    type: 'web',
+    v: '3.17.14',
+    t: 'La molette reste dans la note',
+    items: [
+      'PC\u00a0: quand une note est ouverte, la molette ne fait défiler que la note. Arrivée au bout, la page derrière ne bouge plus (avant, elle prenait le relais). Elle défile de nouveau dès que la note est refermée.'
+    ]
+  },
   {
     d: '2026-11-13 12:29',
     type: 'web',
