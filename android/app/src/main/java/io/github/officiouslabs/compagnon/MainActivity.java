@@ -65,6 +65,7 @@ public abstract class MainActivity extends Activity implements Pont.Ecran {
     private String texteEnAttente = null;
     private int pjEnCours = -1, copieEnCours = -1;
     private String pjNom = null, copieTexte = null;
+    private byte[] copieOctets = null;
     private ValueCallback<Uri[]> fichierPage = null;
 
     private WebView web;
@@ -242,6 +243,10 @@ public abstract class MainActivity extends Activity implements Pont.Ecran {
                 return true;
             case "saveAs":
                 // « Télécharger une copie » : la WebView ignore les téléchargements ; fenêtre « Enregistrer sous » d'Android
+                runOnUiThread(() -> enregistrerCopie(id, arg));
+                return true;
+            case "saveBytes":
+                // même fenêtre, pour un fichier binaire ({nom, type, base64}) : un document Word, par exemple (Tâches 3.17)
                 runOnUiThread(() -> enregistrerCopie(id, arg));
                 return true;
             case "saveAttachment":
@@ -459,6 +464,7 @@ public abstract class MainActivity extends Activity implements Pont.Ecran {
             if (copieEnCours != -1) repondre(copieEnCours, false, "annulé");
             copieEnCours = id;
             copieTexte = o.optString("texte");
+            copieOctets = o.has("base64") ? android.util.Base64.decode(o.getString("base64"), android.util.Base64.DEFAULT) : null;
             Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             i.addCategory(Intent.CATEGORY_OPENABLE);
             i.setType(o.optString("type", "text/markdown"));
@@ -466,6 +472,7 @@ public abstract class MainActivity extends Activity implements Pont.Ecran {
             startActivityForResult(i, ENREGISTRER_COPIE);
         } catch (Exception e) {
             copieEnCours = -1;
+            copieOctets = null;
             repondre(id, false, message(e));
         }
     }
@@ -473,15 +480,17 @@ public abstract class MainActivity extends Activity implements Pont.Ecran {
     private void resultatCopie(int res, Intent data) {
         final int id = copieEnCours;
         final String texte = copieTexte;
+        final byte[] octets = copieOctets;
         copieEnCours = -1;
         copieTexte = null;
+        copieOctets = null;
         if (id == -1) return;
         if (res != RESULT_OK || data == null || data.getData() == null) { repondre(id, false, "annulé"); return; }
         final Uri u = data.getData();
         io.execute(() -> {
             try (OutputStream o = getContentResolver().openOutputStream(u, "wt")) {
                 if (o == null) throw new Exception("écriture impossible");
-                o.write((texte == null ? "" : texte).getBytes(StandardCharsets.UTF_8));
+                o.write(octets != null ? octets : (texte == null ? "" : texte).getBytes(StandardCharsets.UTF_8));
                 repondre(id, true, nomDocument(u, "copie"));
             } catch (Exception e) {
                 repondre(id, false, message(e));

@@ -41,7 +41,7 @@ import java.util.concurrent.Executors;
  * Contrat : request(id, méthode, argument) ; la réponse revient par window.compagnonReply(id, ok, valeur).
  * Méthodes sans écran : name, local, read, write, spRead, spWrite, spCreate, spList, spRecycle, spUpload, dropKept,
  * outils, afficherOutil, version, versionNom, checkUpdate, mode, synchroFinie, synchroMatin.
- * Méthodes de l'écran : pick, create, spLogin, paste, copy, haptic, print, saveAs, saveAttachment, saveAttachmentAs,
+ * Méthodes de l'écran : pick, create, spLogin, paste, copy, haptic, print, saveAs, saveBytes, saveAttachment, saveAttachmentAs,
  * sendToOneDrive, keepFile, openAttachment, discardFile, update.
  * Les erreurs portent un code en tête (connexion:, introuvable:, conflit:, http:, reseau:, perdu:, ecran:).
  */
@@ -52,7 +52,7 @@ final class Pont {
     static final String HOTE = "officious-labs.github.io";
     static final String DEPOT = "https://github.com/officious-labs/officious-labs.github.io/releases/download/android/";
     private static final Set<String> A_ECRAN = new HashSet<>(Arrays.asList("pick", "create", "spLogin", "paste", "copy",
-            "haptic", "print", "saveAs", "saveAttachment", "saveAttachmentAs", "sendToOneDrive", "keepFile",
+            "haptic", "print", "saveAs", "saveBytes", "saveAttachment", "saveAttachmentAs", "sendToOneDrive", "keepFile",
             "openAttachment", "discardFile", "update"));
 
     final Context ctx;
