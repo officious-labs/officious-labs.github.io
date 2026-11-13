@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261109202924">
+<meta name="officious-page" content="20261113103512">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7236,6 +7236,65 @@ header .s-cherche input:not(:placeholder-shown) {
 #mNote #nText[hidden] {
   display: none;
 }
+/* 3.15 : niveaux de titre dans les notes (« # », « ## », « ### » dans le fichier), à l'affichage et dans l'éditeur */
+.inote .tx > div.nh,
+.mnotec .tx > div.nh,
+.ned > div.h1,
+.ned > div.h2,
+.ned > div.h3 {
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--fg);
+}
+.inote .tx > div.nh1,
+.mnotec .tx > div.nh1,
+.ned > div.h1 {
+  font-size: 1.28em;
+  margin: 0.35em 0 0.1em;
+}
+.inote .tx > div.nh2,
+.mnotec .tx > div.nh2,
+.ned > div.h2 {
+  font-size: 1.12em;
+  margin: 0.3em 0 0.08em;
+}
+.inote .tx > div.nh3,
+.mnotec .tx > div.nh3,
+.ned > div.h3 {
+  font-size: 1em;
+  margin: 0.25em 0 0.05em;
+  color: var(--accent);
+}
+.inote .tx > div.nh:first-child,
+.mnotec .tx > div.nh:first-child,
+.ned > div:is(.h1, .h2, .h3):first-child {
+  margin-top: 0;
+}
+/* bouton « T » : le niveau de la ligne du curseur en indice (T1, T2, T3) */
+.inote.editing .fmtb .ftitre,
+#nTitreH {
+  font-weight: 700;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.inote.editing .fmtb .ftitre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.inote.editing .fmtb .ftitre sub,
+#nTitreH sub {
+  font-size: 0.62em;
+  line-height: 1;
+  vertical-align: -0.25em;
+  font-family: system-ui, sans-serif;
+  margin-left: 0.05em;
+}
+.inote.editing .fmtb .ftitre.on,
+#nTitreH.on {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
 </style>
 </head>
 <body>
@@ -7387,10 +7446,10 @@ header .s-cherche input:not(:placeholder-shown) {
   <dialog id="mNote">
     <form method="dialog" id="nForm">
       <p class="ameta" id="nMeta"></p>
-      <div class="ntool"><button type="button" id="nBold" class="ico" title="Gras" aria-label="Gras"><b>B</b></button><button type="button" id="nItal" class="ico" title="Italique" aria-label="Italique"><i>I</i></button><button type="button" id="nBullet" class="ico" title="Liste à puces" aria-label="Liste à puces"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg></button><span class="sp"></span><button type="button" id="nPaste" class="ico npaste" title="Coller le presse-papiers" aria-label="Coller le presse-papiers"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg><span>Coller</span></button></div>
+      <div class="ntool"><button type="button" id="nBold" class="ico" title="Gras" aria-label="Gras"><b>B</b></button><button type="button" id="nItal" class="ico" title="Italique" aria-label="Italique"><i>I</i></button><button type="button" id="nTitreH" class="ico" title="Niveau de titre (titre 1, 2, 3, puis texte)" aria-label="Niveau de titre"><b>T</b><sub></sub></button><button type="button" id="nBullet" class="ico" title="Liste à puces" aria-label="Liste à puces"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg></button><span class="sp"></span><button type="button" id="nPaste" class="ico npaste" title="Coller le presse-papiers" aria-label="Coller le presse-papiers"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg><span>Coller</span></button></div>
       <input id="nTitle" class="ntitre" placeholder="Titre" aria-label="Titre de la note" enterkeyhint="next" autocomplete="off">
       <div id="nLinks"></div><div class="nwrap"><textarea id="nText" rows="6" placeholder="Ce qu’on vient de te dire…"></textarea><div id="nEd" class="ned" contenteditable="true" spellcheck="true" data-placeholder="Ce qu’on vient de te dire…" role="textbox" aria-multiline="true" aria-label="Texte de la note" hidden></div><button type="button" id="nCopy" class="ico ccopy" title="Copier la note" aria-label="Copier la note"><span class="i1"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg></span><span class="i2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button></div>
-      <div class="nbar"><button type="button" id="nDel" class="ico adel" title="Supprimer la note" aria-label="Supprimer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg></button><button type="button" id="nArch" class="ico" title="Archiver la note" aria-label="Archiver la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.2"/><path d="M5 9v10h14V9M10 13h4"/></svg></button><button type="button" id="nCancel" class="ico" title="Annuler" aria-label="Annuler"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="sp"></span><span class="ntabs"><button type="button" class="ico" data-p="task" title="En faire une tâche" aria-label="En faire une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></svg></button><button type="button" class="ico" data-p="attach" title="Ajouter à une tâche" aria-label="Ajouter à une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button></span><button type="submit" class="ico ok" id="nOk" title="Enregistrer la note" aria-label="Enregistrer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+      <div class="nbar"><button type="button" id="nDel" class="ico adel" title="Supprimer la note" aria-label="Supprimer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg></button><button type="button" id="nArch" class="ico" title="Archiver la note" aria-label="Archiver la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.2"/><path d="M5 9v10h14V9M10 13h4"/></svg></button><button type="button" id="nMd" class="ico" title="Enregistrer sous… (fichier .md)" aria-label="Enregistrer la note sous un fichier .md"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10.5M7.5 10l4.5 4.5 4.5-4.5"/><path d="M5 16.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5"/></svg></button><button type="button" id="nCancel" class="ico" title="Annuler" aria-label="Annuler"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="sp"></span><span class="ntabs"><button type="button" class="ico" data-p="task" title="En faire une tâche" aria-label="En faire une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></svg></button><button type="button" class="ico" data-p="attach" title="Ajouter à une tâche" aria-label="Ajouter à une tâche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button></span><button type="submit" class="ico ok" id="nOk" title="Enregistrer la note" aria-label="Enregistrer la note"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
       <div id="nTriage">
                 <div class="npanel" id="nTask" hidden>
           <div class="arow1"><select id="nSec" aria-label="Rubrique" title="Rubrique"></select><div class="aseg" id="nState"><button type="button" data-k="afaire" class="on" title="À faire" aria-label="À faire"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7.5" r="3.4"/><path d="M5 20.5c.6-4 3.4-6.5 7-6.5s6.4 2.5 7 6.5"/></svg></button><button type="button" data-k="attente" title="En attente" aria-label="En attente"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="2.2" rx="1" fill="currentColor" stroke="none"/><rect x="5" y="19.3" width="14" height="2.2" rx="1" fill="currentColor" stroke="none"/><path d="M7.5 4.7c0 3.5 3 5 3.6 7.3-.6 2.3-3.6 3.8-3.6 7.3M16.5 4.7c0 3.5-3 5-3.6 7.3.6 2.3 3.6 3.8 3.6 7.3"/><path d="M9 18.6c.8-1.6 2.2-2.3 3-2.3s2.2.7 3 2.3z" fill="currentColor" stroke="none"/></svg></button></div></div>
@@ -12914,6 +12973,19 @@ function fmtView(t) {
 /* une note de plusieurs lignes : la première fait office de titre (elle devient l'intitulé si la note devient tâche) */
 /* puce d'une ligne de note : « - texte », et sous-puces par retrait de deux espaces (niveaux 0 à 3) */
 const RX_LI = /^(\s*)[-*•] (.*)$/;
+/* niveaux de titre dans une note (3.15) : « # », « ## », « ### » en début de ligne, comme en Markdown ; au-delà
+   (« #### »), la ligne reste du texte. Une ligne est un titre ou une puce, pas les deux. */
+const RX_H = /^(#{1,3}) (.*)$/,
+  RX_H_ALL = /^#{1,3} /gm;
+/** Niveau de titre d'une ligne du fichier (1 à 3), 0 sinon. */
+function hLevel(l) {
+  const m = RX_H.exec(l || '');
+  return m ? m[1].length : 0;
+}
+/** Une ligne sans ses marques de titre. */
+function sansDieses(l) {
+  return (l || '').replace(/^#{1,3} /, '');
+}
 function liLevel(ind) {
   return Math.min(3, Math.floor(ind.replace(/\t/g, '  ').length / 2));
 }
@@ -12927,13 +12999,13 @@ function noteTitled(ls) {
    Dans taches.md, rien de nouveau : un titre, c'est la première ligne suivie d'une ligne vide (noteTitled). */
 function notePartie(text) {
   const ls = (text || '').split('\n');
-  if (noteTitled(ls)) return { titre: ls[0].trim(), corps: ls.slice(2).join('\n').replace(/^\s*\n/, '') };
+  if (noteTitled(ls)) return { titre: sansDieses(ls[0].trim()), corps: ls.slice(2).join('\n').replace(/^\s*\n/, '') };
   return { titre: '', corps: text || '' };
 }
 /** Titre tiré du corps : sa première ligne non vide, si ce n'est pas une puce. */
 function titreAuto(corps) {
   const l = (corps || '').split('\n').find(x => x.trim());
-  return l && !RX_LI.test(l) ? l.trim() : '';
+  return l && !RX_LI.test(l) ? sansDieses(l.trim()) : '';
 }
 /** Texte enregistré. auto : titre tiré du corps (sa première ligne devient le titre, sans être répétée). */
 function noteAssemblee(titre, corps, auto) {
@@ -12942,17 +13014,25 @@ function noteAssemblee(titre, corps, auto) {
     const ls = corps.split('\n'),
       l = ls[0] || '';
     if (!l.trim() || RX_LI.test(l)) return corps;
-    const reste = ls.slice(1).join('\n').replace(/^(\s*\n)+/, '').replace(/\s+$/, '');
-    return reste ? l.trim() + '\n\n' + reste : l.trim();
+    const reste = ls.slice(1).join('\n').replace(/^(\s*\n)+/, '').replace(/\s+$/, ''),
+      t1 = sansDieses(l.trim()); /* 3.15 : un titre de section en tête devient le titre de la note */
+    return reste ? t1 + '\n\n' + reste : t1;
   }
-  titre = (titre || '').replace(/^\s*[-*•]\s+/, '').replace(/\s+/g, ' ').trim();
+  titre = sansDieses((titre || '').replace(/^\s*[-*•]\s+/, '').trim()).replace(/\s+/g, ' ').trim();
   if (!titre) return corps;
   return corps ? titre + '\n\n' + corps : titre;
 }
 /** Première ligne non vide de l'éditeur, comme dans le fichier (« - » pour une puce). */
 function edPremiereLigne(root) {
-  for (const d of root.children) if (d.textContent.trim()) return (d.classList.contains('b') ? '- ' : '') + d.textContent.replace(/\u00a0/g, ' ');
+  for (const d of root.children) if (d.textContent.trim()) return edLigneTexte(d);
   return '';
+}
+/** Une ligne de l'éditeur, au format du fichier : « - » des puces (deux espaces par niveau), « # » des titres. */
+function edLigneTexte(d) {
+  const h = edH(d);
+  return ((d.classList.contains('b') ? '  '.repeat(edLv(d)) + '- ' : h ? '#'.repeat(h) + ' ' : '') + d.textContent)
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+$/, '');
 }
 function noteView(t) {
   /* une ligne par bloc, comme dans l'éditeur : mêmes puces, même titre */
@@ -12963,9 +13043,12 @@ function noteView(t) {
       if (multi && k === 1) return ''; /* 3.9 : la ligne vide qui sépare le titre du corps ne s'affiche pas */
       const m = RX_LI.exec(l),
         lv = m ? liLevel(m[1]) : 0,
-        h = escHtml(m ? m[2] : l).replace(RX_B, '<strong>$1</strong>').replace(RX_I, '$1<em>$2</em>');
+        hn = m || (k === 0 && multi) ? 0 : hLevel(l),
+        h = escHtml(m ? m[2] : sansDieses(l))
+          .replace(RX_B, '<strong>$1</strong>')
+          .replace(RX_I, '$1<em>$2</em>');
       return (
-        '<div class="' + (m ? 'li' + (lv ? ' l' + lv : '') : '') + (k === 0 && multi ? ' nt1' : '') + '">' + (h || '<br>') + '</div>'
+        '<div class="' + (m ? 'li' + (lv ? ' l' + lv : '') : '') + (hn ? 'nh nh' + hn : '') + (k === 0 && multi ? ' nt1' : '') + '">' + (h || '<br>') + '</div>'
       );
     })
     .join('');
@@ -12989,14 +13072,16 @@ function noteHtml(t, title) {
       return;
     }
     to(0);
+    const hn = k === 0 && multi ? 0 : hLevel(l);
     if (!l.trim()) h += '<div><br></div>';
-    else h += '<div>' + (k === 0 && multi && title ? '<strong>' + fmt(l) + '</strong>' : fmt(l)) + '</div>';
+    else if (hn) h += '<h' + hn + '>' + fmt(sansDieses(l)) + '</h' + hn + '>';
+    else h += '<div>' + (k === 0 && multi && title ? '<strong>' + fmt(sansDieses(l)) + '</strong>' : fmt(l)) + '</div>';
   });
   to(0);
   return h;
 }
 function plainFmt(s) {
-  return (s || '').replace(RX_B, '$1').replace(RX_I, '$1$2');
+  return (s || '').replace(RX_H_ALL, '').replace(RX_B, '$1').replace(RX_I, '$1$2');
 }
 function wrapSel(ta, m) {
   const v = ta.value,
@@ -13042,6 +13127,7 @@ function noteSplit(text) {
       .map(l => Math.min(5, 1 + liLevel(/^\s*/.exec(l)[0]))),
     note: rest
       .filter(l => !isBullet(l))
+      .map(sansDieses) /* 3.15 : un titre de section devient une ligne du commentaire */
       .join('\n')
       .trim()
   };
@@ -13149,6 +13235,22 @@ function toggleBullet(ta) {
     ta.setRangeText('- ', ls, ls);
     ta.setSelectionRange(p + 2, p + 2);
   }
+  ta.focus();
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+/** Champ simple (repli du téléphone) : la ligne du curseur passe au niveau de titre suivant (texte → # → ## → ### → texte). */
+function toggleHeading(ta) {
+  const v = ta.value,
+    p = ta.selectionStart,
+    ls = v.lastIndexOf('\n', p - 1) + 1,
+    le = v.indexOf('\n', p) < 0 ? v.length : v.indexOf('\n', p),
+    line = v.slice(ls, le),
+    m = /^(#{1,3} |\s*[-*•] )?/.exec(line)[0],
+    h = hLevel(line),
+    nv = h === 3 ? '' : '#'.repeat(h + 1) + ' ';
+  ta.setRangeText(nv, ls, ls + m.length);
+  const q = Math.max(ls + nv.length, p - m.length + nv.length);
+  ta.setSelectionRange(q, q);
   ta.focus();
   ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
@@ -13407,15 +13509,18 @@ function noteToEd(text) {
     .split('\n')
     .map(l => {
       const m = RX_LI.exec(l),
-        lv = m ? liLevel(m[1]) : 0;
-      return '<div' + (m ? ' class="b' + (lv ? ' l' + lv : '') + '"' : '') + '>' + edLineHtml(m ? m[2] : l) + '</div>';
+        lv = m ? liLevel(m[1]) : 0,
+        hn = m ? 0 : hLevel(l);
+      return (
+        '<div' + (m ? ' class="b' + (lv ? ' l' + lv : '') + '"' : hn ? ' class="h' + hn + '"' : '') + '>' + edLineHtml(m ? m[2] : hn ? sansDieses(l) : l) + '</div>'
+      );
     })
     .join('');
 }
 function edToNote(root) {
   edNorm(root);
   return [...root.children]
-    .map(d => ((d.classList.contains('b') ? '  '.repeat(edLv(d)) + '- ' : '') + d.textContent).replace(/ /g, ' ').replace(/\s+$/, ''))
+    .map(edLigneTexte)
     .join('\n')
     .replace(/^\s+|\s+$/g, '');
 }
@@ -13598,7 +13703,7 @@ function edToggleList(root) {
   const ls = edLinesInSel(root);
   if (!ls.length) return;
   const on = !ls.every(d => d.classList.contains('b'));
-  ls.forEach(d => (on ? d.classList.add('b') : edSetLv(d, -1)));
+  ls.forEach(d => (on ? d.classList.contains('b') || edSetLv(d, 0) : edSetLv(d, -1)));
 }
 /* niveau d'une puce dans l'éditeur (classes l1 à l3) ; -1 : plus une puce */
 function edLv(d) {
@@ -13609,9 +13714,47 @@ function edSetLv(d, lv) {
   d.classList.remove('l1', 'l2', 'l3');
   if (lv < 0) d.classList.remove('b');
   else {
+    d.classList.remove('h1', 'h2', 'h3');
     d.classList.add('b');
     if (lv) d.classList.add('l' + lv);
   }
+}
+/* niveau de titre d'une ligne de l'éditeur (classes h1 à h3) ; 0 : texte ou puce */
+function edH(d) {
+  const m = /\bh([1-3])\b/.exec(d.className);
+  return m ? +m[1] : 0;
+}
+/** Titre de niveau n (1 à 3) sur une ligne ; 0 : texte. Une puce qui devient titre perd sa puce. */
+function edSetH(d, n) {
+  d.classList.remove('h1', 'h2', 'h3');
+  if (n) {
+    d.classList.remove('b', 'l1', 'l2', 'l3');
+    d.classList.add('h' + n);
+  }
+}
+/** Bouton « T » (3.15) : texte → titre 1 → titre 2 → titre 3 → texte ; n donné (Ctrl+Alt+1…) : ce niveau, ou le
+    retirer s'il y est déjà. Toutes les lignes sélectionnées prennent le niveau qui suit celui de la première. */
+function edTitre(root, n) {
+  const ls = edLinesInSel(root);
+  if (!ls.length) return;
+  const h0 = edH(ls[0]),
+    v = n == null ? (h0 + 1) % 4 : n === h0 ? 0 : n;
+  ls.forEach(d => edSetH(d, v));
+}
+/** Entrée en fin de titre : la ligne suivante est du texte (comme dans Word). Appelée juste après la nouvelle ligne. */
+function edApresEntree(root, avant) {
+  const L = edLine(root);
+  if (L && avant && edH(avant) && L !== avant && !L.textContent.trim()) edSetH(L, 0);
+}
+/** Le curseur est-il au tout début de la ligne (sans sélection) ? */
+function edAuDebut(line) {
+  const s = getSelection(),
+    r = s.rangeCount && s.getRangeAt(0);
+  if (!line || !r || !r.collapsed) return false;
+  const pre = document.createRange();
+  pre.selectNodeContents(line);
+  pre.setEnd(r.startContainer, r.startOffset);
+  return !pre.toString().length;
 }
 /* Tab : sous-puce (jusqu'à un cran sous la ligne du dessus) ; Maj+Tab : remonter d'un cran */
 function edIndent(root, dir) {
@@ -13657,13 +13800,32 @@ function edNorm(root) {
     s0.addRange(r);
   }
   for (const d of root.children) {
+    /* 3.15 : « # », « ## », « ### » suivis d'une espace en début de ligne : un titre */
+    const hm = /^(#{1,3})[ \u00a0]/.exec(d.textContent);
+    if (hm && !edH(d) && !d.classList.contains('b')) {
+      const w = document.createTreeWalker(d, NodeFilter.SHOW_TEXT);
+      let f = w.nextNode();
+      while (f && !f.nodeValue) f = w.nextNode();
+      if (f && f.nodeValue.startsWith(hm[0])) {
+        f.nodeValue = f.nodeValue.slice(hm[0].length);
+        edSetH(d, hm[1].length);
+        if (!d.textContent) d.innerHTML = '<br>';
+        const r = document.createRange();
+        r.setStart(f.isConnected ? f : d.firstChild, 0);
+        r.collapse(true);
+        const s = getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      }
+      continue;
+    }
     if (!/^[-*•][ \u00a0]/.test(d.textContent)) continue;
     const w = document.createTreeWalker(d, NodeFilter.SHOW_TEXT);
     let f = w.nextNode();
     while (f && !f.nodeValue) f = w.nextNode();
     if (f && /^[-*•][ \u00a0]/.test(f.nodeValue)) {
       f.nodeValue = f.nodeValue.slice(2);
-      d.classList.add('b');
+      edSetLv(d, 0);
       if (!d.textContent) d.innerHTML = '<br>';
       const r = document.createRange();
       r.setStart(f.isConnected ? f : d.firstChild, 0);
@@ -13783,7 +13945,9 @@ function editNote(id) {
     I(
       '<circle cx="5" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/>'
     ) +
-    '</button><span class="sp"></span><span class="hint ent"><kbd>Entrée</kbd> enregistrer · <kbd>Maj+Entrée</kbd> à la ligne</span><button type="button" data-f="x" class="fx" title="Quitter sans enregistrer (Échap)">' +
+    '</button><button type="button" data-f="t" class="ftitre" title="Titre\u00a0: titre 1, puis 2, puis 3, puis texte (Ctrl+Alt+1, 2, 3\u202f; Ctrl+Alt+0\u00a0: texte\u202f; ou «\u00a0#\u00a0» en début de ligne)" aria-label="Niveau de titre">T<sub></sub></button><span class="sp"></span><span class="hint ent"><kbd>Entrée</kbd> enregistrer · <kbd>Maj+Entrée</kbd> à la ligne</span><button type="button" data-f="md" class="fmd" title="Enregistrer sous… (fichier .md)" aria-label="Enregistrer la note sous un fichier .md">' +
+    I('<path d="M12 4v10.5M7.5 10l4.5 4.5 4.5-4.5"/><path d="M5 16.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5"/>') +
+    '</button><button type="button" data-f="x" class="fx" title="Quitter sans enregistrer (Échap)">' +
     I('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>') +
     '</button><button type="button" data-f="ok" class="fok" title="Enregistrer (Ctrl+Entrée, ou Entrée sur une note d’une ligne) · Échap : annuler">' +
     I('<path d="M5 12.5l4.5 4.5L19 7.5"/>') +
@@ -13798,16 +13962,30 @@ function editNote(id) {
       cancelled = true;
       return ed.blur();
     }
+    if (f === 'md') {
+      /* 3.15 : la note telle qu'elle est à l'écran (titre et texte en cours), sans la refermer */
+      return noteEnregistrerSous(noteAssemblee(ti.value, edToNote(ed), auto0 && !titreTouche), n.links, n.at);
+    }
     hist.push(true);
     if (f === 'l') edToggleList(ed);
+    else if (f === 't') edTitre(ed);
     else edFmt(ed, f);
     ed.focus();
+    titreEtat();
   };
   c.append(bar);
   /* note d'une ligne : rappeler ce que fait Entrée (voir onkeydown) */
   const ent = bar.querySelector('.ent'),
+    tb = bar.querySelector('.ftitre'),
+    titreEtat = () => {
+      /* 3.15 : le bouton « T » montre le niveau de la ligne du curseur (T1, T2, T3) */
+      const L = edLine(ed),
+        h = L ? edH(L) : 0;
+      tb.classList.toggle('on', !!h);
+      tb.querySelector('sub').textContent = h || '';
+    },
     entSync = () => {
-      ent.classList.toggle('on', ed.children.length === 1 && !ed.children[0].classList.contains('b'));
+      ent.classList.toggle('on', ed.children.length === 1 && !ed.children[0].classList.contains('b') && !edH(ed.children[0]));
       majTitre();
     };
   entSync();
@@ -13844,6 +14022,7 @@ function editNote(id) {
       selPlace();
       if (!ed._comp) edAct(ed);
       entSync();
+      titreEtat();
     });
   document.addEventListener('selectionchange', onSel);
   let cancelled = false;
@@ -13920,6 +14099,14 @@ function editNote(id) {
       ed.blur();
       return;
     }
+    /* 3.15 : Ctrl+Alt+1, 2, 3 : titre de ce niveau ; Ctrl+Alt+0 : texte (par la touche physique : AZERTY sans Maj) */
+    if ((e.ctrlKey || e.metaKey) && e.altKey && /^(Digit|Numpad)[0-3]$/.test(e.code)) {
+      e.preventDefault();
+      hist.push(true);
+      edTitre(ed, +e.code.slice(-1));
+      titreEtat();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       const k = e.key.toLowerCase();
       if (k === 'b' || k === 'i') {
@@ -13941,7 +14128,7 @@ function editNote(id) {
     }
     /* note d'une seule ligne : Entrée l'enregistre ; Maj+Entrée en fait un titre et ouvre une ligne dessous
        (ensuite, Entrée crée des lignes comme d'habitude). Une puce seule reste une liste : Entrée continue la liste. */
-    if (e.key === 'Enter' && !e.isComposing && ed.children.length === 1 && !ed.children[0].classList.contains('b')) {
+    if (e.key === 'Enter' && !e.isComposing && ed.children.length === 1 && !ed.children[0].classList.contains('b') && !edH(ed.children[0])) {
       e.preventDefault();
       if (e.shiftKey) {
         /* 3.6 : le titre a son champ ; Maj+Entrée va simplement à la ligne */
@@ -13964,6 +14151,22 @@ function editNote(id) {
       return;
     }
     const line = edLine(ed);
+    /* 3.15 : Entrée en fin de titre, la ligne suivante est du texte ; Retour arrière au début d'un titre : du texte */
+    if (line && edH(line)) {
+      if (e.key === 'Enter' && !e.isComposing) {
+        e.preventDefault();
+        hist.push(true);
+        document.execCommand('insertParagraph');
+        edApresEntree(ed, line);
+        titreEtat();
+      } else if (e.key === 'Backspace' && edAuDebut(line)) {
+        e.preventDefault();
+        hist.push(true);
+        edSetH(line, 0);
+        titreEtat();
+      }
+      return;
+    }
     if (!line || !line.classList.contains('b')) return;
     /* Entrée sur une puce vide : un cran plus haut, puis fin de la liste ; Retour arrière au début d'une puce : pareil */
     if (e.key === 'Enter' && !e.shiftKey && !line.textContent.trim()) {
@@ -14099,6 +14302,71 @@ async function copyText(v, b, note = true) {
   clearTimeout(b._t);
   b._t = setTimeout(() => b.classList.remove('done'), 1400);
   toast('Note copiée');
+}
+/* ---------- enregistrer une note sous un fichier .md (3.15) ----------
+   Le texte tel qu'il est dans taches.md (gras, italique, puces et titres en Markdown), le titre de la note en
+   « # Titre », les liens et pièces jointes en liste à la fin. La note reste dans l'appli. */
+function noteMarkdown(text, links) {
+  const p = notePartie((text || '').replace(/\s+$/, '')),
+    corps = p.corps.replace(/^\s+|\s+$/g, '');
+  let md = p.titre ? '# ' + p.titre + (corps ? '\n\n' + corps : '') : corps;
+  if (links && links.length)
+    md += (md ? '\n\n' : '') + links.map(l => '- [' + (l.label || labelOf(l.url)).replace(/[\[\]]/g, '') + '](<' + l.url + '>)').join('\n');
+  return md + '\n';
+}
+/** Nom de fichier proposé : le titre de la note (ou sa première ligne), sans les caractères refusés par Windows. */
+function noteNomFichier(text, at) {
+  const p = notePartie(text || ''),
+    t = plainFmt(p.titre || (p.corps.split('\n').find(l => l.trim()) || '').replace(/^\s*[-*•]\s+/, ''))
+      .replace(/[\\/:*?"<>|#\u0000-\u001f]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/[. ]+$/, '');
+  const court = t.length > 80 ? t.slice(0, 80).replace(/\s+\S*$/, '') || t.slice(0, 80) : t;
+  return (court || 'Note du ' + ((at || nowStamp()).slice(0, 10))) + '.md';
+}
+async function noteEnregistrerSous(text, links, at) {
+  if (!(text || '').trim()) return toast('Note vide\u00a0: rien à enregistrer');
+  const md = noteMarkdown(text, links),
+    nom = noteNomFichier(text, at);
+  if (typeof AND !== 'undefined' && AND) {
+    /* téléphone : fenêtre « Enregistrer sous » d'Android (méthode saveAs du Compagnon, celle de « Télécharger une copie ») */
+    try {
+      const r = await andCallRaw('saveAs', JSON.stringify({ nom, texte: md, type: 'text/markdown' }));
+      toast('Note enregistrée\u00a0: ' + (r || nom));
+    } catch (e) {
+      if (/inconnue/.test(e.message)) toast('Mets d’abord le Compagnon à jour (menu ⋮)');
+      else if (!/annulé/.test(e.message)) toast('Enregistrement impossible\u00a0: ' + e.message);
+    }
+    return;
+  }
+  if (window.showSaveFilePicker) {
+    /* PC (Edge) : la fenêtre « Enregistrer sous » de Windows ; elle se rouvre dans le dernier dossier choisi */
+    try {
+      const h = await showSaveFilePicker({
+        id: 'taches-note-md',
+        suggestedName: nom,
+        startIn: 'documents',
+        types: [{ description: 'Note Markdown', accept: { 'text/markdown': ['.md'] } }]
+      });
+      const w = await h.createWritable();
+      await w.write(new Blob([md], { type: 'text/markdown' }));
+      await w.close();
+      toast('Note enregistrée dans « ' + h.name + ' »');
+    } catch (e) {
+      if (e.name !== 'AbortError') toast('Enregistrement impossible\u00a0: ' + e.message);
+    }
+    return;
+  }
+  /* autre navigateur : un téléchargement */
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+  a.download = nom;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('Note téléchargée\u00a0: ' + nom);
 }
 function fmtStamp(at) {
   const [d, h] = at.split(' ');
@@ -19570,6 +19838,17 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-11-13 11:39',
+    type: 'web',
+    v: '3.15.10',
+    t: 'Titres dans les notes, enregistrer une note en .md',
+    items: [
+      'Notes\u00a0: trois niveaux de titre. Le bouton «\u00a0T\u00a0» de la barre fait passer la ligne du curseur en titre 1, puis 2, puis 3, puis la remet en texte\u00a0; il affiche le niveau de la ligne (T1, T2, T3). Au PC, aussi Ctrl+Alt+1, 2, 3 (Ctrl+Alt+0\u00a0: texte), ou «\u00a0#\u00a0», «\u00a0##\u00a0», «\u00a0###\u00a0» suivis d’une espace en début de ligne. Entrée au bout d’un titre continue en texte.',
+      'Une note copiée ou glissée vers Word, Outlook ou Teams y garde ses titres. Dans taches.md, ce sont des titres Markdown («\u00a0# Ordre du jour\u00a0»), lisibles dans le bloc-notes.',
+      'Enregistrer une note sous un fichier .md\u00a0: bouton ⤓ en bas de la note ouverte (PC et téléphone). Le nom proposé est le titre de la note\u00a0; le fichier reprend le titre, le texte mis en forme et les liens. La note reste dans Tâches.'
+    ]
+  },
+  {
     d: '2026-11-09 21:26',
     type: 'web',
     v: '3.14.9',
@@ -23094,6 +23373,7 @@ function mInitNotes() {
   $('#nMake').onclick = mNoteToTask;
   $('#nText').addEventListener('input', mTaskPreview);
   $('#nText').addEventListener('input', mNoteMajTitre);
+  $('#nText').addEventListener('input', mEdTitreEtat);
   $('#nTitle').addEventListener('input', () => {
     mNoteTitreTouche = true;
     mTaskPreview();
@@ -23110,12 +23390,19 @@ function mInitNotes() {
   for (const [id, f, k] of [
     ['#nBullet', ta => toggleBullet(ta), 'l'],
     ['#nBold', ta => wrapSel(ta, '**'), 'b'],
-    ['#nItal', ta => wrapSel(ta, '*'), 'i']
+    ['#nItal', ta => wrapSel(ta, '*'), 'i'],
+    ['#nTitreH', ta => toggleHeading(ta), 't']
   ]) {
     const b = $(id);
     b.onpointerdown = e => e.preventDefault();
     b.onmousedown = e => e.preventDefault();
-    b.onclick = () => (mNoteRiche() ? mEdFmt(k) : f($('#nText')));
+    b.onclick = () => {
+      if (mNoteRiche()) mEdFmt(k);
+      else {
+        f($('#nText'));
+        mEdTitreEtat();
+      }
+    };
   } /* le clavier reste ouvert */
   mInitNoteRiche();
   $('#nPaste').onpointerdown = e => e.preventDefault();
@@ -23152,6 +23439,11 @@ function mInitNotes() {
     changed();
     mRender();
     mUndoToast('Note supprimée');
+  };
+  $('#nMd').onclick = () => {
+    /* 3.15 : enregistrer la note sous un fichier .md (fenêtre « Enregistrer sous » d'Android) ; la note reste ouverte */
+    const src = mNoteSrc();
+    if (src) noteEnregistrerSous(src.v, src.n && src.n.links, src.at);
   };
   $('#nArch').onclick = () => {
     const id = mNoteId;
@@ -23467,7 +23759,7 @@ function mEdVersTexte() {
   const ed = $('#nEd'),
     t = $('#nText');
   const v = [...ed.children]
-    .map(d => ((d.classList.contains('b') ? '  '.repeat(edLv(d)) + '- ' : '') + d.textContent).replace(/ /g, ' ').replace(/\s+$/, ''))
+    .map(edLigneTexte)
     .join('\n')
     .replace(/^\s+|\s+$/g, '');
   if (t.value === v) return;
@@ -23506,8 +23798,10 @@ function mEdFmt(k) {
   if (!edSel(ed)) mNoteFocus(true);
   mEdHist.push(true);
   if (k === 'l') edToggleList(ed);
+  else if (k === 't') edTitre(ed);
   else edFmt(ed, k);
   mEdVersTexte();
+  mEdTitreEtat();
 }
 /** Coller (bouton de la barre) : du texte brut, ligne par ligne, là où est le curseur. */
 function mEdColler(txt) {
@@ -23521,6 +23815,16 @@ function mEdColler(txt) {
   edNorm(ed);
   edSync(ed);
   mEdVersTexte();
+}
+/** Le bouton « T » de la barre montre le niveau de titre de la ligne du curseur (3.15). */
+function mEdTitreEtat() {
+  const b = $('#nTitreH');
+  if (!b) return;
+  const L = mNoteRiche() ? edLine($('#nEd')) : null,
+    t = $('#nText'),
+    h = L ? edH(L) : mNoteRiche() ? 0 : hLevel(t.value.slice(t.value.lastIndexOf('\n', t.selectionStart - 1) + 1));
+  b.classList.toggle('on', !!h);
+  b.querySelector('sub').textContent = h || '';
 }
 function mInitNoteRiche() {
   const ed = $('#nEd');
@@ -23542,6 +23846,26 @@ function mInitNoteRiche() {
     /* Entrée sur une puce vide : un cran plus haut, puis fin de la liste (comme au PC). Par beforeinput : les claviers
        d'Android n'envoient pas toujours la touche Entrée. Retour arrière au début d'une puce : pareil. */
     const line = edLine(ed);
+    /* 3.15 : Entrée en fin de titre, la ligne suivante est du texte ; Retour arrière au début d'un titre : du texte */
+    if (line && edH(line)) {
+      if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+        e.preventDefault();
+        mEdHist.push(true);
+        document.execCommand('insertParagraph');
+        edApresEntree(ed, line);
+        mEdVersTexte();
+        mEdTitreEtat();
+        return;
+      }
+      if (e.inputType === 'deleteContentBackward' && edAuDebut(line)) {
+        e.preventDefault();
+        mEdHist.push(true);
+        edSetH(line, 0);
+        mEdVersTexte();
+        mEdTitreEtat();
+        return;
+      }
+    }
     if (line && line.classList.contains('b')) {
       if ((e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') && !line.textContent.trim()) {
         e.preventDefault();
@@ -23591,7 +23915,10 @@ function mInitNoteRiche() {
   });
   document.addEventListener('selectionchange', () => {
     if (ed.hidden || !$('#mNote').open || ed._comp) return;
-    requestAnimationFrame(() => edAct(ed));
+    requestAnimationFrame(() => {
+      edAct(ed);
+      mEdTitreEtat();
+    });
   });
   $('#oRiche').onchange = () => {
     mState.noteSimple = !$('#oRiche').checked;
