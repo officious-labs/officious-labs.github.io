@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261109202333">
+<meta name="officious-page" content="20261117195257">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -6583,6 +6583,8 @@ function evVide() {
     aDater: false /* date approximative : d1..d2 est une fenêtre (mois, période), pas la date */,
     taches: '' /* rétroplanning envoyé à Tâches : date de la manifestation à ce moment-là (jeton {tâches AAAA-MM-JJ}) */,
     autres: [],
+    lignes: [] /* 0.76 : lignes sous la manifestation qu'une version plus récente a écrites et que celle-ci ne connaît
+                  pas ; gardées telles quelles (avant 🕓), pour qu'une page en retard n'efface rien */,
     histoire: '' /* 0.71 : lignes « AAAA-MM-JJ HH:MM · ce qui s'est passé » (création, modifications), interne */
   };
 }
@@ -6618,6 +6620,10 @@ function parse(texte) {
     if (sous && ev) {
       const champ = { '↳': 'soustitre', '>': 'detail', '🔒': 'remarque', '👥': 'eleves', '🎟': 'pratique', '🕓': 'histoire' }[sous[1]];
       ev[champ] = ev[champ] ? ev[champ] + '\n' + sous[2] : sous[2];
+      continue;
+    }
+    if (ev && /^\s+\S/.test(l)) {
+      ev.lignes.push(l); /* inconnue, mais sous une manifestation : gardée telle quelle (0.76) */
       continue;
     }
     const m = l.match(RX_EV);
@@ -6772,6 +6778,7 @@ function ligneEv(e) {
   for (const l of (e.eleves || '').split('\n')) if (l.trim()) out.push('  👥 ' + l);
   for (const l of (e.pratique || '').split('\n')) if (l.trim()) out.push('  🎟 ' + l);
   for (const l of (e.remarque || '').split('\n')) if (l.trim()) out.push('  🔒 ' + l);
+  for (const l of e.lignes || []) out.push(l);
   for (const l of (e.histoire || '').split('\n')) if (l.trim()) out.push('  🕓 ' + l);
   return out;
 }
@@ -6824,7 +6831,8 @@ const CHAMPS = [
   'libelle',
   'aDater',
   'taches',
-  'autres'
+  'autres',
+  'lignes'
 ];
 const egal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 /** Historique fusionné : toutes les lignes des deux côtés, sans doublon, dans l'ordre du temps (0.71). */
@@ -8361,6 +8369,7 @@ function initListe() {
     const c = JSON.parse(JSON.stringify(e));
     c.id = idNouveau();
     c.histoire = '';
+    c.lignes = []; /* lignes inconnues (0.76) : leur sens est inconnu ici, on ne les recopie pas */
     noter(c, 'créée ' + appareil() + ', copie de ' + citer(e.titre) + (e.d1 ? ' du ' + libCourt(e.d1) : ''));
     doc.evts.push(c);
     changed();
@@ -10251,6 +10260,14 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-17 22:30',
+    v: '0.76.10',
+    t: 'Préparer la suite',
+    items: [
+      'Saison garde désormais les lignes qu’il ne connaît pas sous une manifestation, au lieu de les effacer en enregistrant. Rien ne change à l’écran\u00a0: c’est le préalable à la préparation des manifestations (la liste à vérifier), en cours de conception.'
+    ]
+  },
   {
     d: '2026-11-09 21:22',
     v: '0.75.9',
