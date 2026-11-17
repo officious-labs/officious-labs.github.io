@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261113170737">
+<meta name="officious-page" content="20261117194738">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -11230,6 +11230,9 @@ function normalize() {
       if (it.state === 'attente') {
         if (!it.relance) it.relance = addDays(todayISO(), RELANCE_JOURS);
       } else delete it.relance;
+      /* remise dans « À faire » : elle n'attend plus personne (3.19). En « Fait », la personne reste : décochée, la
+         tâche retourne « En attente » (etatDecoche) */
+      if (it.state === 'afaire') delete it.waitFor;
     }
     maxNext = it.level + 1;
   }
@@ -11476,6 +11479,14 @@ function restoreFrom(from, to) {
 /* ---------- règles communes au PC et au téléphone : relances, échéances (urgente, bientôt), importance, patine,
    ordre d'affichage, affichage par échéance. Une règle se change ici, et vaut pour les deux écrans. ---------- */
 const RELANCE_JOURS = 7;
+/* étiquette décochée (ou rendue par l'historique) : elle repart d'où elle venait. Une personne attendue
+   ({attend …}, gardée en « Fait ») dit qu'elle était « En attente » ; sinon « À faire » (3.19) */
+function etatDecoche(it) {
+  return it.waitFor ? 'attente' : 'afaire';
+}
+function msgDecoche(it) {
+  return it.waitFor ? 'Remise « En attente » de ' + it.waitFor : 'Remise dans « À faire »';
+}
 function addDays(iso, n) {
   const d = new Date(iso + 'T12:00');
   d.setDate(d.getDate() + n);
@@ -15348,10 +15359,14 @@ function toggle(id, viaKey) {
   if (it.level > 0) {
     it.checked = !it.checked;
     msg = subSync(i);
-  } else it.state = it.state === 'fait' ? 'afaire' : 'fait';
+  } else {
+    const decoche = it.state === 'fait';
+    it.state = decoche ? etatDecoche(it) : 'fait';
+    if (decoche && it.state === 'attente') msg = msgDecoche(it);
+  }
   normalize();
   render();
-  if (it.level === 0 && it.state === 'afaire') flash(id); /* décochée : on la retrouve d'un coup d'œil */
+  if (it.level === 0 && it.state !== 'fait') flash(id); /* décochée : on la retrouve d'un coup d'œil */
   if (viaKey) focusItem(id);
   changed();
   if (msg) toast(msg + ' · Ctrl+Z pour annuler');
@@ -15461,6 +15476,8 @@ function restoreCore(eid, fromTrash) {
     level: x.level + base,
     checked: k === 0 ? false : !!x.checked
   }));
+  /* faite alors qu'elle attendait quelqu'un : elle revient « En attente » (3.19) */
+  if (!fromTrash && nouveaux[0] && nouveaux[0].level === 0) nouveaux[0].state = etatDecoche(nouveaux[0]);
   items.splice(insertAt, 0, ...nouveaux);
   restoreCore.last = nouveaux[0] && nouveaux[0].id; /* pour le retour visuel */
   if (fromTrash) trash = trash.filter(x => x.id !== eid);
@@ -19099,9 +19116,11 @@ function subSync(k) {
     return 'Toutes les sous-tâches sont faites : tâche faite';
   }
   if (!items[k].checked && P.state === 'fait') {
-    P.state = 'afaire';
+    P.state = etatDecoche(P);
     delete P.doneDate;
-    return 'Sous-tâche décochée : tâche remise à faire';
+    return P.state === 'attente'
+      ? 'Sous-tâche décochée : tâche remise « En attente » de ' + P.waitFor
+      : 'Sous-tâche décochée : tâche remise à faire';
   }
   return '';
 }
@@ -19797,7 +19816,7 @@ function mCard(i, withSec) {
   if (AND) {
     const k = document.createElement('button');
     k.className = 'mchk' + (it.state === 'fait' ? ' on' : '');
-    k.title = it.state === 'fait' ? 'Remettre à faire' : 'Marquer comme faite';
+    k.title = it.state === 'fait' ? (it.waitFor ? 'Remettre en attente' : 'Remettre à faire') : 'Marquer comme faite';
     k.onclick = ev => {
       ev.stopPropagation();
       const f = it.state === 'fait';
@@ -19806,9 +19825,9 @@ function mCard(i, withSec) {
       const go = () => mEdit(
         it.id,
         x => {
-          x.state = f ? 'afaire' : 'fait';
+          x.state = f ? etatDecoche(x) : 'fait';
         },
-        f ? 'Remise dans « À faire »' : 'Faite'
+        f ? msgDecoche(it) : 'Faite'
       );
       if (f) {
         go();
@@ -20445,6 +20464,17 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-17 21:00',
+    type: 'web',
+    v: '3.19.19',
+    t: 'Une tâche décochée retourne « En attente »',
+    items: [
+      'Une tâche que tu avais cochée alors qu’elle était «\u00a0En attente\u00a0» y revient quand tu la décoches, attribuée à la même personne, au lieu de tomber dans «\u00a0À faire\u00a0». La relance repart à dans 7 jours.',
+      'Pareil quand tu décoches une sous-tâche d’une tâche faite, et quand tu remets dans la liste une tâche de l’historique. Une tâche qui n’attendait personne revient toujours dans «\u00a0À faire\u00a0».',
+      'Au téléphone, la coche d’une telle tâche dit «\u00a0Remettre en attente\u00a0».'
+    ]
+  },
   {
     d: '2026-11-13 18:16',
     type: 'web',
