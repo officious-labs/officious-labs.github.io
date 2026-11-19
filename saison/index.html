@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261117195257">
+<meta name="officious-page" content="20261119121943">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2901,6 +2901,8 @@ dialog.completer {
   <button id="bMenu" class="icone" title="Fichier" aria-haspopup="menu">⋯</button>
   <div id="menu" class="menu" role="menu" hidden>
     <button data-act="ouvrir" role="menuitem">Ouvrir un fichier…</button>
+    <button data-act="passerpdf" role="menuitem" hidden>Passer au PDF…</button>
+    <button data-act="fusionner" role="menuitem" hidden>Fusionner une copie…</button>
     <button data-act="nouveau" role="menuitem">Enregistrer dans un nouveau fichier…</button>
     <button data-act="actualiser" role="menuitem" hidden>Actualiser</button>
     <button data-act="exporter" role="menuitem">Télécharger une copie</button>
@@ -2932,7 +2934,7 @@ dialog.completer {
   <div id="calendrier" hidden></div>
   <div id="vide" hidden>
     <p>Aucun planning ouvert.</p>
-    <p><button id="vOuvrir" class="primaire">Ouvrir planning.md</button> <button id="vNouveau">Commencer un nouveau planning</button></p>
+    <p><button id="vOuvrir" class="primaire">Ouvrir le fichier de suivi</button> <button id="vNouveau">Commencer un nouveau planning</button></p>
   </div>
 </main>
 
@@ -3123,7 +3125,12 @@ const C = {
   savedAt: 0,
   saveErr: null,
   forcer: false /* « Écrire quand même » : passe outre une fois les gardes contre la perte (16-synchro.js) */,
-  nouveau: false /* fichier qu'on vient de créer : sa lecture vide est normale */
+  nouveau: false /* fichier qu'on vient de créer : sa lecture vide est normale */,
+  /* fichiers discrets (1.19, 25-pdf.js) : format du fichier de travail, tel qu'on l'a lu ('md' ou 'pdf') ; on écrit
+     dans ce format */
+  format: null,
+  illisible: '' /* nom d'un fichier de travail PDF dont les données sont introuvables : on n'y écrit plus rien */,
+  remplace: '' /* nom du fichier qui remplace le fichier de travail (réglage « remplacé par ») : on n'y écrit plus rien */
 };
 /* synchro du matin (1.17, 24-matin.js) : mode : la page a été ouverte par le Compagnon dans sa vue invisible ;
    b : bilan en cours (rempli par chargerTel, syncSave, relever, le dépôt des pages) */
@@ -3444,9 +3451,9 @@ const ICONE_OK =
 
 const AIDE_EN_LIGNE = () =>
   'Elle permet au Compagnon du téléphone de lire et d’écrire le fichier directement sur OneDrive, et d’y déposer ' +
-  A.page +
+  nomPage() +
   ' pour ce PC. Ouvre le dossier de ' +
-  A.fichier +
+  nomDonnees() +
   ' sur OneDrive dans le navigateur, et colle ici l’adresse de la barre d’adresse (celle du dossier suffit).';
 function creerInterface() {
   const corps = document.body;
@@ -3471,17 +3478,20 @@ function creerInterface() {
     const ab = ajoute(
       `<div id="s-acces" class="s-alerte" role="alert" hidden>
         <span class="s-acces-txt"></span>
-        <span class="s-alerte-b"><button class="s-primaire" data-a="reprendre">Reprendre</button><button data-a="ouvrir">Ouvrir…</button></span>
+        <span class="s-alerte-b"><button class="s-primaire" data-a="reprendre">Reprendre</button><button data-a="ouvrir">Ouvrir…</button><button data-a="copie" hidden>Enregistrer la copie de secours…</button></span>
       </div>`
     );
     if (tete) tete.before(ab);
     else corps.prepend(ab);
     $s('[data-a=reprendre]', ab).onclick = () => reprendrePc();
     $s('[data-a=ouvrir]', ab).onclick = () => ouvrir();
+    /* 1.19 : PDF sans données (enregistré par un autre logiciel ?) : la copie de secours dans un nouveau fichier */
+    $s('[data-a=copie]', ab).onclick = () =>
+      nouveauFichier(null, sansExt(nomDonnees()) + ' (copie de secours)' + (C.format === 'pdf' ? '.pdf' : '.md'));
   }
   ajoute(
     `<dialog id="s-enligne" class="s-dialogue s-plein" aria-label="Adresse en ligne">
-      <h2>Adresse en ligne de ${A.fichier}</h2>
+      <h2 id="s-elTitre">Adresse en ligne de ${A.fichier}</h2>
       <p id="s-elAide" class="s-aide">${AIDE_EN_LIGNE()}</p>
       <input id="s-elAdresse" placeholder="https://…sharepoint.com/personal/…/Documents/…" spellcheck="false" autocomplete="off">
       <p id="s-elApercu" class="s-aide"></p>
@@ -3496,6 +3506,8 @@ function creerInterface() {
       <form method="dialog" class="s-pied"><button value="non" class="s-primaire" id="s-forcerNon">Attendre</button> <button id="s-forcerOk" value="oui">Envoyer cette fois</button></form>
     </dialog>`
   );
+  /* 1.19 : questions du socle (« Fusionner une copie… », « Passer au PDF… ») : 26-discrets.js */
+  ajoute('<dialog id="s-question" class="s-dialogue" aria-label="Question"><form method="dialog"></form></dialog>');
   ajoute(
     `<dialog id="s-nouveautes" class="s-dialogue" aria-label="Nouveautés">
       <h2>Nouveautés</h2>
@@ -3716,8 +3728,7 @@ function etat() {
 function initEnLigne() {
   const champ = $s('#s-elAdresse'),
     apercu = $s('#s-elApercu');
-  const lire = () =>
-    adresseFichier(champ.value, (fichierPc.handle && fichierPc.handle.name) || (AND && tel.nom) || A.fichier);
+  const lire = () => adresseFichier(champ.value, C.remplace || nomDonnees());
   champ.oninput = () => {
     const u = lire();
     apercu.textContent = !champ.value.trim()
@@ -3736,19 +3747,29 @@ function initEnLigne() {
     if (u === reglage('en ligne')) return;
     if (A.avantModif) A.avantModif();
     fixeReglage('en ligne', u);
+    tel.directRate = false; /* 1.19 : une nouvelle adresse mérite un nouvel essai d'accès direct */
     modifie();
     toast(u ? 'Adresse enregistrée : le téléphone lira le fichier en ligne' : 'Adresse retirée');
   };
 }
-/** Fenêtre de l'adresse en ligne ; « tel » : juste après le choix d'un fichier OneDrive au téléphone. */
+/** Fenêtre de l'adresse en ligne ; « tel » : juste après le choix d'un fichier OneDrive au téléphone ;
+    'remplace' (1.19) : le fichier lu a été remplacé (« Passer au PDF… » au PC) : coller l'adresse du nouveau. */
 function reglerEnLigne(tel) {
   if (!C.ouvert && !tel) return toast('Ouvre d’abord le fichier');
-  $s('#s-elAide').textContent = tel
+  $s('#s-elTitre').textContent = 'Adresse en ligne de ' + (C.remplace || nomDonnees());
+  $s('#s-elAide').textContent =
+    tel === 'remplace'
+      ? 'Ce fichier a été remplacé par ' +
+        C.remplace +
+        '\u00a0: rien n’y est enregistré. Ouvre le dossier de ' +
+        C.remplace +
+        ' sur OneDrive dans le navigateur, au PC ou au téléphone, et colle ici l’adresse de la barre d’adresse (celle du dossier suffit).'
+      : tel
     ? 'Pour que le téléphone lise toujours la dernière version de ' +
-      A.fichier +
+      nomDonnees() +
       ' (l’appli OneDrive rend parfois un fichier vide ou ancien), colle l’adresse en ligne de son dossier : ouvre le dossier sur OneDrive dans le navigateur, au PC ou au téléphone, et copie la barre d’adresse. Elle est déjà dans le fichier si elle a été réglée au PC : dans ce cas, annule.'
     : AIDE_EN_LIGNE();
-  $s('#s-elAdresse').value = reglage('en ligne');
+  $s('#s-elAdresse').value = tel === 'remplace' ? '' : reglage('en ligne');
   $s('#s-elApercu').textContent = '';
   $s('#s-enligne').showModal();
 }
@@ -3959,11 +3980,13 @@ const pcBackend = {
   async read() {
     const f = await fichierPc.handle.getFile();
     fichierPc.mod = f.lastModified;
-    return await f.text();
+    return lireDonnees(await f.text(), fichierPc.handle.name);
   },
   async write(t) {
+    gardeEcriture();
+    const donnees = ecrireDonnees(t, fichierPc.handle.name);
     const w = await fichierPc.handle.createWritable();
-    await w.write(t);
+    await w.write(donnees);
     await w.close();
     fichierPc.mod = (await fichierPc.handle.getFile()).lastModified;
   },
@@ -3975,9 +3998,12 @@ const pcBackend = {
 /* ---- Compagnon ---- */
 const tel = { nom: '', local: false /* fichier du téléphone, pas de OneDrive */, directRate: false, etag: '' };
 const andBackend = {
-  read: () => andCall('read'),
-  fresh: () => andCall('read', 'frais') /* demande d'abord à OneDrive sa dernière version */,
-  write: t => andCall('write', t)
+  read: async () => lireDonnees(await andCall('read'), tel.nom),
+  fresh: async () => lireDonnees(await andCall('read', 'frais'), tel.nom) /* demande d'abord à OneDrive sa dernière version */,
+  async write(t) {
+    gardeEcriture();
+    return andCall('write', ecrireDonnees(t, tel.nom));
+  }
 };
 /** Appel OneDrive en accès direct : si la session a expiré, connexion (au premier plan seulement) puis nouvel essai. */
 async function spCall(m, arg) {
@@ -3995,17 +4021,130 @@ const spBackend = {
   async read() {
     const r = JSON.parse(await spCall('spRead', adresseEnLigne()));
     tel.etag = r.etag || '';
-    return r.text;
+    return lireDonnees(r.text, nomDonnees());
   },
   fresh() {
     return this.read();
   },
   async write(t) {
     /* l'ETag de la dernière lecture empêche d'écraser une version arrivée entre-temps (« conflit » → relire, fusionner) */
-    tel.etag = (await spCall('spWrite', JSON.stringify({ url: adresseEnLigne(), text: t, etag: tel.etag }))) || '';
+    gardeEcriture();
+    const text = ecrireDonnees(t, nomDonnees());
+    tel.etag = (await spCall('spWrite', JSON.stringify({ url: adresseEnLigne(), text, etag: tel.etag }))) || '';
   },
   direct: true
 };
+/* ---- fichiers discrets (1.19) : le format du fichier de travail, au plus près des backends ----
+   Chaque lecture du fichier de travail passe par lireDonnees (le PDF est déballé, son format retenu dans C.format),
+   chaque écriture par ecrireDonnees (remballé dans le format lu, page refaite par A.pdf). Tout le reste du socle
+   (base de la fusion, échos, « issu de », copie de secours, éléments) ne voit que le texte des données. */
+
+/** Nom du fichier de travail tel qu'il est vraiment (« Suivi tâches et régie.pdf », « taches.md »). */
+function nomDonnees() {
+  if (!AND) return fichierPc.handle ? fichierPc.handle.name : (C.format === 'pdf' && A.fichierPdf) || A.fichier;
+  const u = adresseEnLigne();
+  if (u && !tel.directRate && !tel.local)
+    try {
+      return decodeURIComponent(u.split('/').pop());
+    } catch (e) {}
+  return tel.nom || (C.format === 'pdf' && A.fichierPdf) || A.fichier;
+}
+/** Nom de la page déposée pour le PC : « … (version web).html » quand le fichier de travail est en PDF (A.pagePdf). */
+function nomPage() {
+  return C.format === 'pdf' && A.pagePdf ? A.pagePdf : A.page;
+}
+function sansExt(nom) {
+  return String(nom || '')
+    .split('/')
+    .pop()
+    .replace(/\.[^.]+$/, '');
+}
+/** Description de la page du PDF : A.pdf(modèle), complétée du titre (le nom du fichier, comme un export) et de la date. */
+function docPour(texte, nom) {
+  let d = null;
+  try {
+    d = A.pdf ? A.pdf(A.parse(texte)) : null;
+  } catch (e) {
+    journal('page du PDF', { erreur: String(e.message || e).slice(0, 60) });
+  }
+  d = Object.assign({}, d || {});
+  if (!d.titre) d.titre = sansExt(nom || nomDonnees());
+  if (!(d.date instanceof Date)) d.date = maintenant();
+  return d;
+}
+function erreurCode(code, msg, k) {
+  const e = new Error(code + ':' + msg);
+  e[k] = true;
+  return e;
+}
+/** Contenu lu du fichier de travail → texte des données. Retient le format ; refuse (erreur) un PDF sans données lisibles
+    (enregistré par un autre logiciel ?) et un fichier marqué « remplacé par » : on n'y écrira plus rien. */
+function lireDonnees(brut, nom) {
+  brut = brut == null ? '' : String(brut);
+  let t;
+  try {
+    t = deballer(brut);
+  } catch (e) {
+    if (!C.illisible) {
+      journal('PDF sans données', { fichier: nom, cause: e.raison || e.message });
+      if (AND)
+        toast(
+          A.titre + ' ne trouve plus ses données dans ' + nom + ' (enregistré par un autre logiciel\u00a0?)\u00a0: rien n’est enregistré. Tes modifications restent sur le téléphone.',
+          'Enregistrer une copie',
+          exporter,
+          12000
+        );
+    }
+    C.illisible = nom;
+    C.format = 'pdf';
+    throw erreurCode('illisible', 'données introuvables dans ' + nom, 'illisible');
+  }
+  C.format = t != null || (!brut.trim() && /\.pdf$/i.test(nom || '')) ? 'pdf' : 'md';
+  if (t == null) t = brut;
+  if (C.illisible) journal('données retrouvées', { fichier: nom });
+  if (C.illisible || C.remplace) setTimeout(etat, 0); /* bandeau, ligne d'état : l'accès est revenu */
+  C.illisible = '';
+  const par = remplacePar(t);
+  if (par) {
+    if (C.remplace !== par) {
+      journal('fichier remplacé', { fichier: nom, par });
+      if (AND && !matin.mode && !matin.actif) {
+        C.remplace = par;
+        reglerEnLigne('remplace');
+      }
+    }
+    C.remplace = par;
+    throw erreurCode('remplace', 'fichier remplacé par ' + par, 'remplace');
+  }
+  C.remplace = '';
+  return t;
+}
+/** Réglage commun « remplacé par » (1.19, posé par « Passer au PDF… » dans l'ancien fichier). */
+function remplacePar(t) {
+  if (!t || !/rempla/.test(t)) return '';
+  try {
+    return A.reglage(A.parse(t), 'remplacé par') || '';
+  } catch (e) {
+    return '';
+  }
+}
+/** Texte des données → contenu à écrire, dans le format du fichier de travail. */
+function ecrireDonnees(texte, nom) {
+  const pdf = C.format ? C.format === 'pdf' : /\.pdf$/i.test(nom || '');
+  return pdf ? emballer(texte, docPour(texte, nom)) : texte;
+}
+/** Dernière garde : jamais d'écriture dans un PDF sans données, ni dans un fichier remplacé. */
+function gardeEcriture() {
+  if (C.illisible) throw erreurCode('illisible', 'données introuvables dans ' + C.illisible, 'illisible');
+  if (C.remplace) throw erreurCode('remplace', 'fichier remplacé par ' + C.remplace, 'remplace');
+}
+/** Message court (ligne d'état) pour ces deux refus ; null pour les autres erreurs. */
+function messageErreur(e) {
+  if (e && e.illisible) return 'données introuvables dans le PDF (enregistré par un autre logiciel\u00a0?), rien n’est enregistré';
+  if (e && e.remplace) return 'fichier remplacé par ' + C.remplace + ', rien n’est enregistré ici';
+  return null;
+}
+
 function backendTel() {
   if (adresseEnLigne() && !tel.directRate && !tel.local) return spBackend;
   return tel.nom ? andBackend : null;
@@ -4030,7 +4169,7 @@ function adresseFichier(saisie, nom) {
     .replace(/\/+$/, '');
   if (!/^https:\/\/[^/]+\.sharepoint\.com\/(personal|sites)\/[^/]+\/.+/i.test(u)) return '';
   u = decodeURI(u);
-  if (!/\.(md|txt)$/i.test(u)) u += '/' + (nom || A.fichier);
+  if (!/\.(md|txt|pdf)$/i.test(u)) u += '/' + (nom || nomDonnees());
   return encodeURI(u);
 }
 /** https://hôte/personal/x/… → https://hôte/personal/x (page où se connecter). */
@@ -4051,15 +4190,21 @@ async function lireVoisin(nom) {
   if (!voisinPossible()) throw new Error('indisponible:accès direct au téléphone seulement, aux heures de travail');
   try {
     const r = JSON.parse(await spCall('spRead', voisin(nom)));
-    return { texte: r.text, etag: r.etag || '' };
+    /* 1.19 : un voisin en PDF (archives) est déballé ; un PDF sans données lisibles : erreur « illisible: » */
+    const t = deballer(r.text);
+    return { texte: t == null ? r.text : t, etag: r.etag || '', pdf: t != null };
   } catch (e) {
     if (/^introuvable:/.test(e.message)) return null;
     throw e;
   }
 }
-/** Écrit un fichier voisin ; etag : celui de la lecture (conflit si changé entre-temps), null pour le créer. */
-async function ecrireVoisin(nom, texte, etag) {
+/** Écrit un fichier voisin ; etag : celui de la lecture (conflit si changé entre-temps), null pour le créer.
+    1.19 : un nom en « .pdf » (« Archives/Suivi tâches et régie 2025.pdf ») est emballé en PDF ; doc : description de
+    sa page (25-pdf.js), sinon une page avec le titre (le nom du fichier) et la date. */
+async function ecrireVoisin(nom, texte, etag, doc) {
   if (!voisinPossible()) throw new Error('indisponible:accès direct au téléphone seulement, aux heures de travail');
+  if (/\.pdf$/i.test(nom))
+    texte = emballer(texte, Object.assign({ titre: sansExt(nom), date: maintenant() }, doc || {}));
   const url = voisin(nom);
   if (etag == null) await spCall('spCreate', JSON.stringify({ url, text: texte }));
   else await spCall('spWrite', JSON.stringify({ url, text: texte, etag }));
@@ -4306,8 +4451,12 @@ async function syncSave() {
         ? 'fichier introuvable (déplacé ou renommé ?), rouvre-le'
         : err && err.refus
           ? 'rien n’a été écrit (voir le message)'
-          : sansCode(err);
-    if (err && err.refus) {
+          : messageErreur(err) || sansCode(err);
+    if (err && (err.illisible || err.remplace)) {
+      /* 1.19 : PDF sans données ou fichier remplacé ; dit et journalisé une fois, par lireDonnees (bandeau au PC,
+         message au téléphone), pas à chaque essai */
+      if (matin.b) matin.b.raison = C.saveErr;
+    } else if (err && err.refus) {
       if (matin.b) matin.b.raison = err.refus;
       journal('refus', { motif: err.refus.slice(0, 60) });
       toast(err.refus.charAt(0).toUpperCase() + err.refus.slice(1), 'Écrire quand même', forcerEcriture, 15000);
@@ -4424,11 +4573,16 @@ async function reprendre() {
     } else await chargerPc();
   } catch (e) {
     accesEchec(e);
-    toast('Impossible d’ouvrir le fichier : ' + e.message);
+    if (!messageErreur(e)) toast('Impossible d’ouvrir le fichier : ' + e.message); /* sinon le bandeau le dit (1.19) */
   }
   etat();
 }
-const TYPES = () => [{ description: 'Fichier ' + A.titre, accept: { 'text/markdown': ['.md', '.txt'] } }];
+/* 1.19 : le fichier de travail peut aussi être un PDF (fichiers discrets) */
+const TYPES = () => [
+  { description: 'Fichier ' + A.titre, accept: { 'text/markdown': ['.md', '.txt'], 'application/pdf': ['.pdf'] } }
+];
+const TYPE_PDF = { description: 'Document PDF', accept: { 'application/pdf': ['.pdf'] } },
+  TYPE_MD = { description: 'Fichier texte', accept: { 'text/markdown': ['.md', '.txt'] } };
 
 /** Ouvrir… : au PC, choisir le fichier (les modifications en attente y sont ajoutées) ; ailleurs, voir plus bas. */
 async function ouvrir() {
@@ -4459,19 +4613,24 @@ async function ouvrir() {
       }
     }
   } catch (e) {
-    if (e.name !== 'AbortError') toast(e.message);
+    if (e.name !== 'AbortError' && !messageErreur(e)) toast(e.message); /* PDF sans données, fichier remplacé : le bandeau */
   }
   etat();
 }
-/** Enregistrer dans un nouveau fichier (l'état affiché, ou un fichier neuf donné par l'outil). */
-async function nouveauFichier(modeleNeuf) {
+/** Enregistrer dans un nouveau fichier (l'état affiché, ou un fichier neuf donné par l'outil). nom : nom proposé ; son
+    extension décide du format (« .pdf » : PDF ; 1.19). */
+async function nouveauFichier(modeleNeuf, nom) {
   if (AND) return nouveauTel(modeleNeuf);
   if (!hasFS) {
     if (modeleNeuf) adopter(modeleNeuf);
     return;
   }
   try {
-    const h = await showSaveFilePicker({ suggestedName: A.fichier, types: TYPES() });
+    const propose = nom || (C.format === 'pdf' && A.fichierPdf) || A.fichier,
+      pdf = /\.pdf$/i.test(propose);
+    const h = await showSaveFilePicker({ suggestedName: propose, types: pdf ? [TYPE_PDF, TYPE_MD] : [TYPE_MD, TYPE_PDF] });
+    C.format = null; /* le format suit le nom choisi (fichier vide) */
+    C.illisible = C.remplace = '';
     fichierPc.handle = h;
     await idbSet('poignee', h).catch(() => {}); /* une poignée non gardée sera redemandée à la prochaine ouverture */
     fichierPc.perm = true;
@@ -4495,11 +4654,19 @@ function adopter(modele) {
   A.appliquer(modele);
   modifie();
 }
+/** « Télécharger une copie » : l'état affiché, au format du fichier de travail (PDF compris, 1.19). */
+function copieExportee() {
+  const t = A.serialize(A.etat());
+  if (C.format !== 'pdf') return { nom: A.fichier, texte: t, type: 'text/markdown' };
+  const nom = (nomDonnees().match(/\.pdf$/i) ? nomDonnees() : '') || A.fichierPdf || sansExt(A.fichier) + '.pdf';
+  return { nom, texte: emballer(t, docPour(t, nom)), type: 'application/pdf' };
+}
 async function exporter() {
+  const x = copieExportee();
   if (AND) {
     /* la WebView ignore les téléchargements : fenêtre « Enregistrer sous » d'Android (Compagnon 1.1) */
     try {
-      const nom = await andCallRaw('saveAs', JSON.stringify({ nom: A.fichier, texte: A.serialize(A.etat()) }));
+      const nom = await andCallRaw('saveAs', JSON.stringify(x));
       toast('Copie enregistrée : ' + nom);
     } catch (e) {
       if (/inconnue/.test(e.message)) toast('Mets d’abord l’appli à jour (menu ⋯)');
@@ -4508,21 +4675,28 @@ async function exporter() {
     return;
   }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([A.serialize(A.etat())], { type: 'text/markdown' }));
-  a.download = A.fichier;
+  a.href = URL.createObjectURL(new Blob([x.texte], { type: x.type }));
+  a.download = x.nom;
   a.click();
 }
 /** Navigateur sans accès aux fichiers : on ouvre une copie, gardée dans ce navigateur. */
 function ouvrirCopie() {
   const i = document.createElement('input');
   i.type = 'file';
-  i.accept = '.md,.txt,text/markdown,text/plain';
+  i.accept = '.md,.txt,.pdf,text/markdown,text/plain,application/pdf';
   i.onchange = async () => {
     const f = i.files[0];
     if (!f) return;
+    let t = await f.text();
+    try {
+      const d = deballer(t);
+      if (d != null) t = d;
+    } catch (e) {
+      return toast(f.name + '\u00a0: aucune donnée lisible dans ce PDF', null, null, 6000);
+    }
     if (C.ouvert && A.avantModif) A.avantModif();
     C.ouvert = true;
-    A.appliquer(A.parse(await f.text()));
+    A.appliquer(A.parse(t));
     C.baseText = null;
     C.dirty = false;
     mem.set(
@@ -4561,7 +4735,8 @@ async function brancherPc(h) {
       else await chargerPc();
     } catch (e) {
       accesEchec(e);
-      C.saveErr = e.name === 'NotFoundError' ? 'fichier introuvable (déplacé ou renommé ?), rouvre-le' : e.message;
+      C.saveErr =
+        e.name === 'NotFoundError' ? 'fichier introuvable (déplacé ou renommé ?), rouvre-le' : messageErreur(e) || e.message;
     }
   } else {
     fichierPc.perm = false;
@@ -4594,7 +4769,8 @@ function armerPremierGeste() {
 function accesPerdu() {
   if (AND || !hasFS || !fichierPc.handle) return '';
   if (!fichierPc.perm) return fichierPc.reponse === 'denied' ? 'refus' : 'permission';
-  return fichierPc.introuvable ? 'introuvable' : '';
+  /* 1.19 : fichier remplacé (« Passer au PDF… »), PDF sans données lisibles (enregistré par un autre logiciel ?) */
+  return fichierPc.introuvable ? 'introuvable' : C.remplace ? 'remplace' : C.illisible ? 'illisible' : '';
 }
 /** Une lecture ou une écriture a échoué : est-ce l'accès au fichier qui est perdu ? (premier échec en cours de session) */
 function accesEchec(e) {
@@ -4625,7 +4801,14 @@ function peindreAcces() {
     else
       journal(k === 'refus' && accesAvant ? 'accès au fichier refusé par Edge' : 'accès au fichier perdu', {
         fichier: nom,
-        cause: k === 'introuvable' ? 'fichier introuvable' : 'permission ' + (fichierPc.reponse || 'prompt')
+        cause:
+          k === 'introuvable'
+            ? 'fichier introuvable'
+            : k === 'remplace'
+              ? 'remplacé par ' + C.remplace
+              : k === 'illisible'
+                ? 'PDF sans données'
+                : 'permission ' + (fichierPc.reponse || 'prompt')
       });
     accesAvant = k;
   }
@@ -4637,7 +4820,11 @@ function peindreAcces() {
   const t1 =
     k === 'introuvable'
       ? A.titre + ' ne trouve plus ' + nom + ' (déplacé ou renommé\u00a0?)\u00a0: rien n’est lu ni enregistré.'
-      : A.titre + ' n’a plus accès à ' + nom + '\u00a0: rien n’est lu ni enregistré.';
+      : k === 'remplace'
+        ? 'Ce fichier a été remplacé par ' + C.remplace + '\u00a0: rien n’est lu ni enregistré dans ' + nom + '.'
+        : k === 'illisible'
+          ? A.titre + ' ne trouve plus ses données dans ' + nom + ' (enregistré par un autre logiciel\u00a0?)\u00a0: rien n’est enregistré.'
+          : A.titre + ' n’a plus accès à ' + nom + '\u00a0: rien n’est lu ni enregistré.';
   const t2 = !n
     ? ''
     : n === 1
@@ -4650,7 +4837,11 @@ function peindreAcces() {
       ? 'Edge a refusé\u00a0: clique sur «\u00a0Reprendre\u00a0» et réponds «\u00a0Autoriser\u00a0», ou rouvre le fichier par «\u00a0Ouvrir…\u00a0».'
       : k === 'introuvable'
         ? 'Rouvre-le par «\u00a0Ouvrir…\u00a0».'
-        : fichierPc.demandee
+        : k === 'remplace'
+          ? 'Ouvre ' + C.remplace + ' par «\u00a0Ouvrir…\u00a0».'
+          : k === 'illisible'
+            ? 'Le fichier n’est pas écrasé. Rouvre une version qui les a encore (historique des versions de OneDrive) par «\u00a0Ouvrir…\u00a0», ou enregistre la copie de secours dans un nouveau fichier.'
+            : fichierPc.demandee
           ? 'Clique sur «\u00a0Reprendre\u00a0», puis réponds «\u00a0Autoriser\u00a0» à Edge.'
           : '';
   const txt = $s('.s-acces-txt', b),
@@ -4659,8 +4850,9 @@ function peindreAcces() {
   txt.replaceChildren(fort);
   for (const t of [t2, t3]) if (t) txt.append(' ' + t);
   b.dataset.cas = k;
-  $s('[data-a=reprendre]', b).hidden = k === 'introuvable';
+  $s('[data-a=reprendre]', b).hidden = k !== 'permission' && k !== 'refus';
   $s('[data-a=ouvrir]', b).hidden = k === 'permission';
+  $s('[data-a=copie]', b).hidden = k !== 'illisible';
 }
 
 /* ---- dossier du fichier, au PC (1.7, 26/10/2026) : fichiers voisins (logo de l'affiche, pièces jointes) ----
@@ -4780,8 +4972,9 @@ async function deposerFichierVoisin(dossier, nom, donnees) {
    Au premier lancement, on choisit le fichier dans l'appli OneDrive ; dès que son réglage « en ligne » est connu,
    le Compagnon passe à l'accès direct. Ensuite : actualiser, ramasser les copies en double, envoyer quand même. */
 
-/** Lit le fichier et remplace l'état affiché (démarrage, choix du fichier, retour dans l'appli). */
-async function chargerTel(frais = true) {
+/** Lit le fichier et remplace l'état affiché (démarrage, choix du fichier, retour dans l'appli). tirer (1.19) : geste
+    « tirer pour actualiser » ou menu « Actualiser » : les copies en double sont ramassées sans la limite d'une heure. */
+async function chargerTel(frais = true, tirer = false) {
   C.backend = backendTel();
   if (!C.backend || horsHeures()) return etat();
   try {
@@ -4809,19 +5002,19 @@ async function chargerTel(frais = true) {
       C.savedAt = Date.now();
     }
     /* le fichier vient de révéler son adresse en ligne : on passe à l'accès direct */
-    if (C.backend === andBackend && adresseEnLigne() && !tel.directRate) return chargerTel(frais);
+    if (C.backend === andBackend && adresseEnLigne() && !tel.directRate) return chargerTel(frais, tirer);
   } catch (e) {
     if (C.backend === spBackend && /^(introuvable|adresse|http):/.test(e.message)) {
       tel.directRate = true;
       journal('accès direct impossible', { erreur: sansCode(e) });
       toast('Accès direct impossible (' + sansCode(e) + ') : lecture par l’appli OneDrive', null, null, 6000);
-      return chargerTel(frais);
+      return chargerTel(frais, tirer);
     }
-    if (!/^horsplage:/.test(e.message)) C.saveErr = sansCode(e);
+    if (!/^horsplage:/.test(e.message)) C.saveErr = messageErreur(e) || sansCode(e);
   }
   etat();
   /* synchro du matin : la suite (doublons, pages, A.apresLecture) est faite et attendue par synchroniserEtRendre */
-  if (C.backend === spBackend && !C.saveErr && !matin.actif) apresLecture().catch(() => {});
+  if (C.backend === spBackend && !C.saveErr && !matin.actif) apresLecture(null, tirer).catch(() => {});
 }
 /**
  * Après une lecture réussie en accès direct : ramasser les doublons, déposer la page pour le PC (et celles des autres
@@ -4829,8 +5022,8 @@ async function chargerTel(frais = true) {
  * bilan (synchro du matin, 1.17) : les pages des autres outils sont déposées sans la limite d'une fois par heure, et
  * le résultat va dans le bilan au lieu de surDepot (ni fenêtre ni message).
  */
-async function apresLecture(bilan) {
-  await ramasserDoublons().catch(() => {});
+async function apresLecture(bilan, tirer) {
+  await ramasserDoublons(!!tirer).catch(() => {});
   let r = false,
     autres = [],
     err = false;
@@ -4870,6 +5063,7 @@ async function choisirTel() {
     tel.nom = await andCall('pick');
     await majLocal();
     tel.directRate = false;
+    C.format = null;
     C.baseText = null;
     C.dirty = C.dirty && C.ouvert;
     await chargerTel();
@@ -4893,6 +5087,8 @@ async function nouveauTel(modeleNeuf) {
   }
   await majLocal();
   tel.directRate = false;
+  C.format = null;
+  C.illisible = C.remplace = '';
   C.baseText = null;
   C.nouveau = true;
   C.ouvert = true;
@@ -4930,10 +5126,11 @@ async function actualiser() {
   if (C.dirty) {
     await enregistrer();
     if (C.saveErr) return 'err';
+    if (AND) await ramasserDoublons(true).catch(() => {}); /* 1.19 : tirer ramasse les copies à chaque fois */
     toast('Enregistré');
     return 'ok';
   }
-  await (AND ? chargerTel(true) : checkExternal());
+  await (AND ? chargerTel(true, true) : checkExternal());
   return C.saveErr ? 'err' : 'ok';
 }
 
@@ -4995,10 +5192,20 @@ async function envoyerQuandMeme() {
   }
 }
 
-/* ---- copies en double : OneDrive en crée quand deux appareils écrivent en même temps (« planning-NOMPC.md »).
-   Au plus une fois par heure : fusion depuis leur version de départ (« issu de ») si on la connaît, puis corbeille
-   de OneDrive (Tâches 2.22.1). ---- */
-async function ramasserDoublons(force) {
+/* ---- copies en double : OneDrive en crée quand deux appareils écrivent en même temps (« planning-NOMPC.md »,
+   « Suivi concerts et manifestations-NOMPC.pdf » : même format que le fichier de travail).
+   Fusion depuis leur version de départ (« issu de ») si on la connaît, puis corbeille de OneDrive (Tâches 2.22.1).
+   1.19 (décisions de François du 18/11) : seulement les copies de plus d'une minute (au lieu de dix) ; au plus une fois
+   par heure à l'ouverture, au retour et à la synchro du matin, mais à chaque « tirer pour actualiser » (force). Une
+   copie PDF sans données lisibles n'est ni fusionnée ni mise à la corbeille. ---- */
+const DOUBLON_DELAI = 60e3;
+function ramasserDoublons(force) {
+  /* une seule à la fois : tirer pendant le ramassage de l'ouverture attend la fin, puis repasse */
+  const p = (ramasserDoublons.p || Promise.resolve()).catch(() => {}).then(() => ramasser(force));
+  ramasserDoublons.p = p;
+  return p;
+}
+async function ramasser(force) {
   if (!AND || horsHeures() || C.backend !== spBackend || !A.doublon) return 0;
   if (!force && Date.now() - mem.get('doublons', 0) < 3600e3) return 0;
   const dossier = adresseEnLigne().replace(/\/[^/]+$/, '');
@@ -5010,13 +5217,21 @@ async function ramasserDoublons(force) {
     throw e;
   }
   mem.set('doublons', Date.now());
-  const copies = liste.filter(f => A.doublon.test(f.name) && Date.now() - Date.parse(f.modified) > 600e3);
+  const copies = liste.filter(f => A.doublon.test(f.name) && Date.now() - Date.parse(f.modified) > DOUBLON_DELAI);
   let n = 0;
   for (const f of copies) {
     const url = dossier + '/' + encodeURIComponent(f.name);
-    await occupe('Rangement d’une copie en double…', async () => {
-      const txt = JSON.parse(await spCall('spRead', url)).text,
-        p = parentOf(txt),
+    const fait = await occupe('Rangement d’une copie en double…', async () => {
+      const brut = JSON.parse(await spCall('spRead', url)).text;
+      let txt;
+      try {
+        txt = deballer(brut);
+        if (txt == null) txt = brut;
+      } catch (e) {
+        journal('copie en double', { fichier: f.name, fusion: 'PDF sans données, laissée telle quelle' });
+        return false;
+      }
+      const p = parentOf(txt),
         anc = p && seenTexts.find(x => hash8(x) === p);
       if (anc) {
         const avant = A.serialize(A.etat());
@@ -5029,14 +5244,15 @@ async function ramasserDoublons(force) {
       }
       journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'version de départ inconnue' });
       await spCall('spRecycle', url);
+      return true;
     });
-    n++;
+    if (fait) n++;
   }
   if (n)
     toast(
       (n > 1 ? n + ' copies en double' : 'Une copie en double') +
         ' de ' +
-        A.fichier +
+        nomDonnees() +
         ' (créée' +
         (n > 1 ? 's' : '') +
         ' par OneDrive) fusionnée' +
@@ -5094,8 +5310,10 @@ async function verifierPage(force) {
 }
 
 /** Écrit une page dans un dossier OneDrive si celle qui s'y trouve est plus ancienne (jamais de retour en arrière).
-    Renvoie 'deposee', true (déjà à jour) ou false (le dossier a plus récent). */
-async function deposerUne(url, html, titre) {
+    Renvoie 'deposee', true (déjà à jour), false (le dossier a plus récent) ou 'absente' (creer faux et pas de page :
+    rien n'est créé). 1.19 : la page d'un autre outil n'est jamais créée, seulement remplacée ; sinon une adresse
+    ancienne (dossier « Tâches » renommé en « Suivi ») recréerait l'ancien dossier, que OneDrive crée avec le fichier. */
+async function deposerUne(url, html, titre, creer = true) {
   const moi = tamponDe(html);
   let cur = null,
     etag = '';
@@ -5106,6 +5324,7 @@ async function deposerUne(url, html, titre) {
   } catch (e) {
     if (!/^introuvable:/.test(e.message)) throw e;
   }
+  if (cur == null && !creer) return 'absente';
   const la = tamponDe(cur);
   if (la > moi) return false; /* le dossier a déjà plus récent */
   if (la === moi) return true;
@@ -5121,7 +5340,7 @@ async function deposerUne(url, html, titre) {
 async function deposerPage() {
   if (!AND || horsHeures() || C.backend !== spBackend) return false;
   const moi = monTampon(),
-    url = voisin(A.page);
+    url = voisin(nomPage()); /* 1.19 : « … (version web).html » quand le fichier de travail est en PDF */
   if (!moi || !url) return false;
   noterPage(url);
   if (mem.get('page-deposee') === moi && reglage('version') >= moi) return true;
@@ -5177,10 +5396,12 @@ async function deposerAutres(force) {
       if (!r.ok) continue;
       const html = await r.text();
       if (!tamponDe(html)) continue;
-      if ((await deposerUne(e.url, html, e.titre)) === 'deposee') {
+      const d = await deposerUne(e.url, html, e.titre, false);
+      if (d === 'deposee') {
         journal('page déposée', { outil: appli, tampon: tamponDe(html) });
         faits.push(e.titre);
-      }
+      } else if (d === 'absente')
+        journal('page non déposée', { outil: appli, raison: 'absente du dossier, rien n’est créé' });
     } catch (x) {
       journal('page non déposée', { outil: appli, erreur: sansCode(x) });
     }
@@ -5428,6 +5649,21 @@ function annoncerNouveautes() {
  *   aujourdhui, bilan (cet outil), tous, texte, ligne} ; « ligne » est prête à afficher (« Synchro du matin : 9 h 02,
  *   1 modification envoyée, page déposée pour le PC »), par exemple dans le menu.
  * Accès au fichier perdu au PC (1.18) : rien à fournir ; le bandeau se place avant A.entete.
+ * Fichiers discrets (1.19, 25-pdf.js, 26-discrets.js) : le fichier de travail peut être un vrai PDF. Le socle lit les deux
+ *   formats (« %PDF » en tête du contenu, quel que soit le nom) et écrit dans le format lu. Champs facultatifs :
+ *   fichierPdf   'Suivi tâches et régie.pdf'                nom proposé par « Passer au PDF… » (sinon fichier en .pdf)
+ *   pagePdf      'Suivi tâches et régie (version web).html'  page déposée pour le PC quand le fichier est en PDF
+ *   doublon      /^(taches|Suivi tâches et régie)-.+\.(md|pdf)$/   copies en double des deux formats
+ *   pdf(modele) → {titre?, date?, colonneChiffres?, blocs: [...]}   la page lisible, refaite à chaque écriture (sinon :
+ *                titre et date seuls) ; titre par défaut : le nom du fichier sans extension ; sortes de blocs : 'chiffre'
+ *                {libelle, valeur, retrait?}, 'section' {texte}, 'mois' {texte}, 'ligne' {cellules, largeurs?, aligne?
+ *                ('g', 'd', 'c'), gras?, gris?, retrait?}, 'texte' {texte, gris?, retrait?}, 'vide' {hauteur?} (25-pdf.js) ;
+ *   elementsNom  {un: 'manifestation', des: 'manifestations', feminin: true}   pour « 3 manifestations modifiées, 1
+ *                ajoutée » (« Fusionner une copie… ») ; sinon « élément » ;
+ *   dossier      true : l'outil se sert du dossier du fichier (pièces jointes) ; « Passer au PDF… » le fait rechoisir.
+ *   Au PC, dans le menu ⋯ de l'outil : socle.passerAuPdf() (« Passer au PDF… ») et socle.fusionnerCopie() (« Fusionner
+ *   une copie… »). socle.ecrireVoisin(nom, texte, etag, doc) emballe en PDF un nom en .pdf (archives) ; lireVoisin
+ *   déballe. socle.format ('md' | 'pdf'), socle.nomDonnees (nom réel du fichier), socle.pdf.{emballer, deballer, estPdf}.
  */
 async function demarrer(adaptateur) {
   A = adaptateur;
@@ -6219,10 +6455,683 @@ function annoncerMatin() {
     .finally(() => (annoncerMatin.p = null));
   return annoncerMatin.p;
 }
+/* socle/js/25-pdf.js : fichiers discrets (1.19, décision de François du 18/11/2026, docs/proposition-fichiers-discrets-2026-11-17.md).
+
+   Le fichier de données peut être un vrai PDF : une page lisible (document de travail sobre, Helvetica, rien
+   d'embarqué), et les données de l'outil, telles quelles, en texte, dans un flux que les lecteurs n'affichent pas,
+   rangé à l'endroit que la norme réserve aux données privées d'une application (/PieceInfo, au catalogue et à la
+   première page, clé « Classeur »).
+
+   - emballer(texte, doc) → chaîne PDF 1.4 valide, entièrement en UTF-8 (le Compagnon lit et écrit des chaînes
+     UTF-8 : aucun octet invalide). Structure en ASCII ; le texte affiché en WinAnsiEncoding, écrit en échappements
+     octaux (\351) ; décalages de la table xref comptés en octets UTF-8, recalculés à chaque écriture ;
+   - deballer(brut) → texte des données ; null si ce n'est pas un PDF ; erreur « illisible: » (e.illisible) si c'est
+     un PDF sans données lisibles (réécrit par un logiciel qui a compressé ou perdu le flux). La dernière occurrence
+     l'emporte (mises à jour incrémentales) ;
+   - estPdf(brut) : le contenu commence par « %PDF- » (après d'éventuels blancs ou une marque d'ordre des octets).
+   Aller-retour exact : deballer(emballer(x, doc)) === x pour tout texte bien formé (une moitié de paire de
+   substitution isolée, que ni TextEncoder ni Java ne savent écrire, devient U+FFFD).
+
+   doc : {titre, date (Date), blocs: [...]}, chaque bloc d'une de ces sortes :
+     {sorte: 'chiffre', libelle, valeur, retrait?}          une ligne par chiffre, même taille que le reste
+     {sorte: 'section', texte}                               intertitre de section (gras, filet fin dessous)
+     {sorte: 'mois', texte}                                  intertitre de mois (gras, plus petit)
+     {sorte: 'ligne', cellules: [...], largeurs?: [...], aligne?: ['g'|'d'|'c'], gras?, gris?, retrait?}
+                                                             ligne de tableau ; largeurs relatives ; coupe avec « … »
+     {sorte: 'texte', texte, gris?, retrait?}                paragraphe, coupé à la largeur
+     {sorte: 'vide', hauteur?}                               espace (10 pt par défaut)
+   Mise en page : A4 portrait, titre (gras, 16 pt), la date seule dessous (« 19 novembre 2026 »), puis les blocs ;
+   plusieurs pages si besoin (un intertitre ne reste jamais seul en bas de page) ; pied de page : le numéro seul.
+   Ni en-tête au-dessus du titre, ni case, ni grand chiffre, ni mention d'un automatisme (pas de /Producer ni de
+   /Creator). */
+
+const PDF_CLE = 'Classeur'; /* clé d'application du /PieceInfo : banale (un « classeur » de bureau) */
+/* largeurs AFM d'Helvetica et d'Helvetica-Bold (1/1000 de la taille), codes WinAnsi 32 à 255 */
+const PDF_LARG = [
+  '278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,0,556,0,222,556,333,1000,556,556,333,1000,667,333,1000,0,611,0,0,222,222,333,333,350,556,1000,333,1000,500,333,944,0,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500',
+  '278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,0,556,0,278,556,500,1000,556,556,333,1000,667,333,1000,0,611,0,0,278,278,500,500,350,556,1000,333,1000,556,333,944,0,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556'
+].map(l => l.split(',').map(Number));
+/* WinAnsiEncoding, codes 128 à 159 (le reste suit Latin-1) */
+const PDF_WIN = {
+  0x20ac: 0x80, 0x201a: 0x82, 0x0192: 0x83, 0x201e: 0x84, 0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87, 0x02c6: 0x88,
+  0x2030: 0x89, 0x0160: 0x8a, 0x2039: 0x8b, 0x0152: 0x8c, 0x017d: 0x8e, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93,
+  0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97, 0x02dc: 0x98, 0x2122: 0x99, 0x0161: 0x9a, 0x203a: 0x9b,
+  0x0153: 0x9c, 0x017e: 0x9e, 0x0178: 0x9f
+};
+/* hors WinAnsi : remplacements propres (espace fine insécable → espace insécable…) ; le reste, sans équivalent
+   (pictogrammes, emoji), est retiré */
+const PDF_SUBST = {
+  0x202f: '\u00a0', 0x2007: '\u00a0', 0x2060: '', 0x200b: '', 0x200c: '', 0x200d: '', 0xfeff: '', 0x00ad: '',
+  0x2002: ' ', 0x2003: ' ', 0x2004: ' ', 0x2005: ' ', 0x2006: ' ', 0x2008: ' ', 0x2009: ' ', 0x200a: ' ',
+  0x2010: '-', 0x2011: '-', 0x2012: '\u2013', 0x2015: '\u2014', 0x2212: '-', 0x2032: '\u2019', 0x2033: '\u201d',
+  0x2192: '->', 0x2190: '<-', 0x2264: '<=', 0x2265: '>=', 0x2248: '~'
+};
+
+function estPdf(brut) {
+  return /^[\s\ufeff]*%PDF-/.test(String(brut == null ? '' : brut).slice(0, 64));
+}
+
+/** Octets UTF-8 d'une chaîne bien formée. */
+function octets(s) {
+  let n = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c < 0x80) n += 1;
+    else if (c < 0x800) n += 2;
+    else if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length) {
+      n += 4;
+      i++;
+    } else n += 3;
+  }
+  return n;
+}
+/** Position dans s après n octets UTF-8 comptés depuis i, ou -1 si l'on tombe au milieu d'un caractère ou au bout. */
+function avancerOctets(s, i, n) {
+  let b = 0;
+  while (b < n && i < s.length) {
+    const c = s.charCodeAt(i);
+    if (c < 0x80) b += 1;
+    else if (c < 0x800) b += 2;
+    else if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length) {
+      b += 4;
+      i++;
+    } else b += 3;
+    i++;
+  }
+  return b === n ? i : -1;
+}
+/** Une moitié de paire de substitution isolée → U+FFFD (sinon TextEncoder et Java écriraient des octets différents). */
+function bienForme(s) {
+  return s.replace(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, '\ufffd');
+}
+
+/** Texte affiché → caractères WinAnsi (codes 0 à 255). */
+function versWinAnsi(s) {
+  let o = '';
+  for (const ch of String(s == null ? '' : s)) {
+    const c = ch.codePointAt(0);
+    if (c === 9 || c === 10 || c === 13) o += ' ';
+    else if (c in PDF_SUBST) o += versWinAnsi(PDF_SUBST[c]);
+    else if ((c >= 32 && c < 127) || (c >= 0xa0 && c <= 0xff)) o += ch;
+    else if (PDF_WIN[c]) o += String.fromCharCode(PDF_WIN[c]);
+    else {
+      /* lettre accentuée hors Latin-1 (ŏ, ș…) : la lettre de base */
+      const base = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (base && base !== ch && base.length < ch.length + 2) o += versWinAnsi(base);
+    }
+  }
+  return o;
+}
+function largeurPdf(w, gras, taille) {
+  const T = PDF_LARG[gras ? 1 : 0];
+  let n = 0;
+  for (let i = 0; i < w.length; i++) {
+    const c = w.charCodeAt(i);
+    if (c >= 32) n += T[c - 32] || 0;
+  }
+  return (n * taille) / 1000;
+}
+/** Coupe avec « … » pour tenir dans max points. */
+function couperPdf(w, gras, taille, max) {
+  if (largeurPdf(w, gras, taille) <= max) return w;
+  const pt = '\x85';
+  let a = 0,
+    b = w.length;
+  while (a < b) {
+    const m = (a + b + 1) >> 1;
+    if (largeurPdf(w.slice(0, m).trimEnd() + pt, gras, taille) <= max) a = m;
+    else b = m - 1;
+  }
+  return a ? w.slice(0, a).trimEnd() + pt : '';
+}
+/** Coupe un paragraphe en lignes de max points (aux espaces ; un mot trop long est coupé avec « … »). */
+function lignesPdf(w, gras, taille, max) {
+  const L = [];
+  let cur = '';
+  for (const mot of w.split(' ')) {
+    const essai = cur ? cur + ' ' + mot : mot;
+    if (largeurPdf(essai, gras, taille) <= max || !cur) cur = essai;
+    else {
+      L.push(cur);
+      cur = mot;
+    }
+  }
+  if (cur || !L.length) L.push(cur);
+  return L.map(l => couperPdf(l, gras, taille, max));
+}
+/** Chaîne littérale d'un contenu de page (caractères WinAnsi déjà) : tout ce qui n'est pas ASCII imprimable en octal. */
+function chainePdf(w) {
+  let o = '(';
+  for (let i = 0; i < w.length; i++) {
+    const c = w.charCodeAt(i);
+    if (c === 40 || c === 41 || c === 92) o += '\\' + w[i];
+    else if (c < 32 || c > 126) o += '\\' + c.toString(8).padStart(3, '0');
+    else o += w[i];
+  }
+  return o + ')';
+}
+/** Chaîne de texte du dictionnaire d'information : PDFDocEncoding (Latin-1 ici) en octal, sinon UTF-16BE en hexadécimal. */
+function textePdf(s) {
+  s = String(s == null ? '' : s);
+  if (/^[\x20-\x7e\u00a1-\u00ff]*$/.test(s)) return chainePdf(s);
+  let h = '<FEFF';
+  for (let i = 0; i < s.length; i++) h += s.charCodeAt(i).toString(16).padStart(4, '0').toUpperCase();
+  return h + '>';
+}
+function datePdf(d) {
+  const p = n => String(n).padStart(2, '0'),
+    z = -d.getTimezoneOffset(),
+    a = Math.abs(z);
+  return (
+    'D:' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) +
+    (z >= 0 ? '+' : '-') + p(Math.floor(a / 60)) + "'" + p(a % 60) + "'"
+  );
+}
+/** « 19 novembre 2026 », « 1er décembre 2026 » */
+function dateFrPdf(d) {
+  const j = d.getDate();
+  return (j === 1 ? '1er' : j) + NBSP + MOIS_S[d.getMonth()] + NBSP + d.getFullYear();
+}
+const nb = x => (Math.round(x * 100) / 100).toString();
+
+/* ---- mise en page ---- */
+const PDF_L = 595.28,
+  PDF_H = 841.89,
+  PDF_MG = 62,
+  PDF_HAUT = 64,
+  PDF_BAS = 66,
+  PDF_T = 10 /* taille du texte courant */,
+  PDF_IL = 14.2 /* interligne */,
+  PDF_ENCRE = 0.13,
+  PDF_GRIS = 0.42;
+
+function mettreEnPage(doc) {
+  const W = PDF_L - 2 * PDF_MG,
+    pages = [];
+  let ops = null,
+    y = 0,
+    enHaut = true;
+  const nouvelle = () => {
+    ops = [];
+    pages.push(ops);
+    y = PDF_H - PDF_HAUT;
+    enHaut = true;
+  };
+  const ecrire = (x, yy, w, gras, taille, gris) => {
+    if (!w) return;
+    ops.push(
+      nb(gris ? PDF_GRIS : PDF_ENCRE) + ' g BT /F' + (gras ? 2 : 1) + ' ' + nb(taille) + ' Tf ' + nb(x) + ' ' + nb(yy) + ' Td ' + chainePdf(w) + ' Tj ET'
+    );
+  };
+  /* h : hauteur du bloc ; suite : hauteur qui doit tenir avec lui (un intertitre ne reste pas seul en bas de page) */
+  const place = (h, suite) => {
+    if (!enHaut && y - h - (suite || 0) < PDF_BAS) nouvelle();
+  };
+  nouvelle();
+  y -= 16;
+  ecrire(PDF_MG, y, couperPdf(versWinAnsi(doc.titre), true, 16, W), true, 16);
+  y -= 19;
+  ecrire(PDF_MG, y, versWinAnsi(dateFrPdf(doc.date)), false, PDF_T, true);
+  y -= 12;
+  enHaut = false;
+  const net = s => versWinAnsi(s).replace(/ {2,}/g, ' ').trim();
+  for (const b of Array.isArray(doc.blocs) ? doc.blocs : []) {
+    if (!b || typeof b !== 'object') continue;
+    const x0 = PDF_MG + 14 * (+b.retrait || 0),
+      w0 = PDF_MG + W - x0;
+    switch (b.sorte) {
+      case 'section': {
+        const av = enHaut ? 0 : 16;
+        place(av + 20, PDF_IL * 2);
+        y -= av + (enHaut ? 4 : 0) + 11.5;
+        ecrire(x0, y, couperPdf(net(b.texte), true, 11.5, w0), true, 11.5);
+        ops.push('0.72 G 0.5 w ' + nb(x0) + ' ' + nb(y - 4.5) + ' m ' + nb(PDF_MG + W) + ' ' + nb(y - 4.5) + ' l S');
+        y -= 9;
+        break;
+      }
+      case 'mois': {
+        const av = enHaut ? 0 : 7;
+        place(av + PDF_IL, PDF_IL);
+        y -= av + PDF_IL;
+        ecrire(x0, y, couperPdf(net(b.texte), true, PDF_T, w0), true, PDF_T);
+        break;
+      }
+      case 'chiffre': {
+        place(PDF_IL);
+        y -= PDF_IL;
+        const xv = PDF_MG + W * (+doc.colonneChiffres || 0.5);
+        ecrire(x0, y, couperPdf(net(b.libelle), false, PDF_T, xv - x0 - 8), false, PDF_T, b.gris);
+        ecrire(xv, y, couperPdf(net(b.valeur), false, PDF_T, PDF_MG + W - xv), false, PDF_T, b.gris);
+        break;
+      }
+      case 'ligne': {
+        const C = Array.isArray(b.cellules) ? b.cellules : [];
+        if (!C.length) break;
+        place(PDF_IL);
+        y -= PDF_IL;
+        const lg = C.map((_, k) => Math.max(0, +(b.largeurs && b.largeurs[k]) || 1)),
+          tot = lg.reduce((a, v) => a + v, 0) || 1;
+        let x = x0;
+        C.forEach((cel, k) => {
+          const cw = (w0 * lg[k]) / tot,
+            max = cw - (k < C.length - 1 ? 8 : 0),
+            w = couperPdf(net(cel), !!b.gras, PDF_T, max),
+            al = (b.aligne && b.aligne[k]) || 'g',
+            lw = largeurPdf(w, !!b.gras, PDF_T);
+          ecrire(al === 'd' ? x + max - lw : al === 'c' ? x + (max - lw) / 2 : x, y, w, !!b.gras, PDF_T, b.gris);
+          x += cw;
+        });
+        break;
+      }
+      case 'texte':
+        for (const l of lignesPdf(net(b.texte), false, PDF_T, w0)) {
+          place(PDF_IL);
+          y -= PDF_IL;
+          ecrire(x0, y, l, false, PDF_T, b.gris);
+          enHaut = false;
+        }
+        break;
+      case 'vide': {
+        const h = +b.hauteur || 10;
+        if (!enHaut) y -= h;
+        break;
+      }
+      default:
+        continue;
+    }
+    enHaut = false;
+  }
+  /* pied de page : le numéro seul */
+  pages.forEach((p, k) => {
+    const w = String(k + 1);
+    p.push(nb(PDF_GRIS) + ' g BT /F1 9 Tf ' + nb((PDF_L - largeurPdf(w, false, 9)) / 2) + ' 34 Td ' + chainePdf(w) + ' Tj ET');
+  });
+  return pages;
+}
+
+/** Données (texte) + description de la page → PDF 1.4 complet, en UTF-8. */
+function emballer(texte, doc) {
+  texte = bienForme(String(texte == null ? '' : texte));
+  doc = Object.assign({}, doc || {});
+  doc.titre = String(doc.titre || 'Document');
+  if (!(doc.date instanceof Date) || isNaN(doc.date)) doc.date = maintenant();
+  const pages = mettreEnPage(doc),
+    quand = datePdf(maintenant()),
+    np = pages.length,
+    pi = '<< /' + PDF_CLE + ' << /LastModified (' + quand + ') /Private 5 0 R >> >>';
+  const O = [];
+  O[1] = '<< /Type /Catalog /Pages 2 0 R /PieceInfo ' + pi + ' >>';
+  O[2] = '<< /Type /Pages /Kids [' + pages.map((_, k) => 7 + 2 * k + ' 0 R').join(' ') + '] /Count ' + np + ' >>';
+  O[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+  O[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+  O[5] = '<< /Type /' + PDF_CLE + ' /Length ' + octets(texte) + ' >>\nstream\n' + texte + '\nendstream';
+  O[6] = '<< /Title ' + textePdf(doc.titre) + ' /CreationDate (' + quand + ') /ModDate (' + quand + ') >>';
+  pages.forEach((ops, k) => {
+    const c = ops.join('\n');
+    O[7 + 2 * k] =
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + nb(PDF_L) + ' ' + nb(PDF_H) + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' +
+      (8 + 2 * k) + ' 0 R' + (k ? '' : ' /LastModified (' + quand + ') /PieceInfo ' + pi) + ' >>';
+    O[8 + 2 * k] = '<< /Length ' + c.length + ' >>\nstream\n' + c + '\nendstream';
+  });
+  /* en-tête, puis une ligne de commentaire en caractères non ASCII (le fichier est binaire pour les logiciels PDF) */
+  const parts = ['%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n'],
+    offs = [];
+  let pos = octets(parts[0]);
+  for (let i = 1; i < O.length; i++) {
+    offs[i] = pos;
+    const s = i + ' 0 obj\n' + O[i] + '\nendobj\n';
+    parts.push(s);
+    pos += i === 5 ? octets(s) : s.length; /* seul le flux des données n'est pas en ASCII */
+  }
+  const id1 = hash8(doc.titre) + hash8(doc.titre + '|') + hash8('|' + doc.titre) + hash8(PDF_CLE + doc.titre),
+    id2 = hash8(texte) + hash8(quand) + hash8(texte + quand) + hash8(String(np));
+  let x = 'xref\n0 ' + O.length + '\n0000000000 65535 f \n';
+  for (let i = 1; i < O.length; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+  x += 'trailer\n<< /Size ' + O.length + ' /Root 1 0 R /Info 6 0 R /ID [<' + id1 + '> <' + id2 + '>] >>\nstartxref\n' + pos + '\n%%EOF\n';
+  parts.push(x);
+  return parts.join('');
+}
+
+/** Erreur « PDF sans données lisibles ». */
+function erreurPdf(raison) {
+  const e = new Error('illisible:' + raison);
+  e.illisible = true;
+  e.raison = raison;
+  return e;
+}
+/** PDF → texte des données ; null si ce n'est pas un PDF ; erreur (e.illisible) s'il n'y a plus de données lisibles. */
+function deballer(brut) {
+  if (!estPdf(brut)) return null;
+  const s = String(brut),
+    rx = /(\d+)\s+(\d+)\s+obj\s*<<((?:[^<>]|<(?!<)|>(?!>))*)>>\s*stream(\r\n|\n)/g;
+  /* longueur d'un flux : directe, ou objet indirect « n g obj 123 endobj » */
+  const longueur = dict => {
+    const m = /\/Length\s+(\d+)(?:\s+(\d+)\s+R)?/.exec(dict);
+    if (!m) return -1;
+    if (m[2] == null) return +m[1];
+    const r = new RegExp('(?:^|\\s)' + m[1] + '\\s+' + m[2] + '\\s+obj\\s*(\\d+)\\s*endobj', 'g');
+    let v = -1,
+      k;
+    while ((k = r.exec(s))) v = +k[1];
+    return v;
+  };
+  let dernier = null,
+    m;
+  while ((m = rx.exec(s))) {
+    const debut = rx.lastIndex,
+      n = longueur(m[3]),
+      fin = n >= 0 ? avancerOctets(s, debut, n) : -1,
+      bon = fin >= 0 && /^\s*endstream/.test(s.slice(fin, fin + 40));
+    if (/\/Type\s*\/Classeur(?![\w#])/.test(m[3]))
+      dernier = /\/Filter\b/.test(m[3]) ? { raison: 'données compressées' } : bon ? { texte: s.slice(debut, fin) } : { raison: 'flux des données abîmé' };
+    /* le contenu d'un flux (le nôtre compris) n'est jamais relu comme des objets */
+    if (bon) rx.lastIndex = fin;
+  }
+  if (!dernier) throw erreurPdf(s.includes('/' + PDF_CLE) ? 'données compressées ou déplacées' : 'aucune donnée');
+  if (dernier.raison) throw erreurPdf(dernier.raison);
+  return dernier.texte;
+}
+/* socle/js/26-discrets.js : fichiers discrets (1.19), ce qui se fait au PC.
+   - socle.passerAuPdf() : « Passer au PDF… » (menu ⋯ de l'outil), la bascule du fichier de travail en PDF ;
+   - socle.fusionnerCopie() : « Fusionner une copie… » (menu ⋯), une copie en double (PDF ou .md) fusionnée à la main.
+   Les deux passent par une fenêtre du socle (#s-question) : un clic sur ses boutons est le geste qu'Edge demande pour
+   ouvrir ses fenêtres de fichiers. */
+
+/** Fenêtre du socle : titre, paragraphes, boutons [[libellé, valeur, principal?]] ; promesse de la valeur choisie
+    ('' si refermée autrement : toucher à côté, Échap, bouton retour). */
+function question(titre, textes, boutons) {
+  const d = $s('#s-question'),
+    f = $s('form', d);
+  const h = document.createElement('h2');
+  h.textContent = titre;
+  const ps = textes.filter(Boolean).map(t => {
+    const p = document.createElement('p');
+    p.textContent = t;
+    return p;
+  });
+  const pied = document.createElement('div');
+  pied.className = 's-pied';
+  for (const [lib, val, principal] of boutons) {
+    const b = document.createElement('button');
+    b.textContent = lib;
+    b.value = val;
+    if (principal) b.className = 's-primaire';
+    pied.append(b, ' ');
+  }
+  f.replaceChildren(h, ...ps, pied);
+  d.setAttribute('aria-label', titre);
+  d.returnValue = '';
+  if (d.open) d.close();
+  d.showModal();
+  return new Promise(res => d.addEventListener('close', () => res(d.returnValue || ''), { once: true }));
+}
+
+/* ---- ce qu'apporte une copie : éléments (A.elements) modifiés, ajoutés, retirés ---- */
+function bilanEcarts(a, b) {
+  const x = elementsDe(a),
+    y = elementsDe(b),
+    r = { mod: 0, aj: 0, ret: 0 };
+  for (const [k, v] of y)
+    if (!x.has(k)) r.aj++;
+    else if (x.get(k) !== v) r.mod++;
+  for (const k of x.keys()) if (!y.has(k)) r.ret++;
+  return r;
+}
+/** « 3 manifestations modifiées, 1 ajoutée » (A.elementsNom : {un, des, feminin} ; sinon « élément ») */
+function texteEcarts(r) {
+  const n = A.elementsNom || { un: 'élément', des: 'éléments' },
+    e = n.feminin ? 'e' : '';
+  const L = [
+    [r.mod, 'modifié'],
+    [r.aj, 'ajouté'],
+    [r.ret, 'retiré']
+  ].filter(([k]) => k);
+  return L.map(
+    ([k, p], i) => k + NBSP + (i ? '' : (k > 1 ? n.des : n.un) + ' ') + p + e + (k > 1 ? 's' : '')
+  ).join(', ');
+}
+
+/** PC : choisir une copie (PDF ou .md), dire ce qu'elle apporte, la fusionner, enregistrer, puis proposer de la supprimer.
+    Version de départ inconnue (« issu de » absent ou jamais vu ici) : fusion prudente, à partir de rien, comme syncSave
+    sans base : ce que la copie a en plus est ajouté, rien n'est retiré, et en cas de différence la version du fichier de
+    travail est gardée (décision du 19/11 : plutôt que refuser, puisque rien ne peut s'y perdre). */
+async function fusionnerCopie() {
+  if (AND || !hasFS) return toast('«\u00a0Fusionner une copie…\u00a0» se fait au PC, dans Edge');
+  if (!pret() || !C.ouvert || accesPerdu()) return toast('Ouvre d’abord le fichier de travail');
+  let h;
+  try {
+    [h] = await showOpenFilePicker({ types: TYPES(), startIn: fichierPc.handle });
+  } catch (e) {
+    if (e.name !== 'AbortError') toast(e.message);
+    return;
+  }
+  try {
+    if (await h.isSameEntry(fichierPc.handle)) return toast('C’est le fichier de travail lui-même\u00a0: choisis la copie');
+  } catch (e) {}
+  let txt;
+  try {
+    const brut = await (await h.getFile()).text();
+    txt = deballer(brut);
+    if (txt == null) txt = brut;
+  } catch (e) {
+    return toast(h.name + '\u00a0: ' + (e.illisible ? 'aucune donnée lisible dans ce PDF' : e.message), null, null, 6000);
+  }
+  if (!txt.trim()) return toast(h.name + ' est vide\u00a0: rien à fusionner');
+  /* ce qui attend part d'abord : la fusion se fait sur le fichier tel qu'il est */
+  if (C.dirty) {
+    clearTimeout(modifie.t);
+    await enregistrer();
+    if (C.saveErr) return;
+  }
+  const p = parentOf(txt),
+    anc = !p ? null : C.baseText != null && hash8(C.baseText) === p ? C.baseText : seenTexts.find(x => hash8(x) === p) || null;
+  const avant = A.serialize(A.etat()),
+    r = fusionner(A.parse(anc != null ? anc : ''), A.parse(avant), A.parse(txt)),
+    nom = fichierPc.handle.name;
+  /* « issu de » reste celui du fichier de travail (syncSave le refait en écrivant) : pas une différence */
+  A.fixeReglage(r, 'issu de', A.reglage(A.parse(avant), 'issu de') || null);
+  const apres = A.serialize(r);
+  if (apres === avant) {
+    journal('copie à fusionner', { fichier: h.name, apport: 'rien' });
+    const v = await question(
+      'Fusionner une copie',
+      [h.name + ' n’apporte rien de plus que ' + nom + '.'],
+      [
+        ['Garder la copie', ''],
+        ['Supprimer la copie', 'suppr', true]
+      ]
+    );
+    if (v === 'suppr') await supprimerCopie(h);
+    return;
+  }
+  const ec = A.elements ? texteEcarts(bilanEcarts(avant, apres)) : '';
+  const v = await question(
+    'Fusionner une copie',
+    [
+      h.name + ' apporte\u00a0: ' + (ec || 'des modifications') + '.',
+      anc == null
+        ? 'Sa version de départ est inconnue\u00a0: fusion prudente, ce qu’elle a en plus est ajouté, rien n’est retiré, et en cas de différence la version de ' + nom + ' est gardée.'
+        : '',
+      anc != null && r.conflits
+        ? r.conflits + '\u00a0conflit' + (r.conflits > 1 ? 's' : '') + '\u00a0: la version de ' + nom + ' est gardée.'
+        : ''
+    ],
+    [
+      ['Annuler', ''],
+      ['Fusionner', 'ok', true]
+    ]
+  );
+  if (v !== 'ok') return;
+  if (A.avantModif) A.avantModif();
+  A.appliquer(r);
+  C.dirty = true;
+  C.rev++;
+  backup();
+  await syncSave();
+  journal('copie fusionnée', { fichier: h.name, depuis: anc != null ? 'version de départ' : 'rien', apport: ec || '?' });
+  if (C.saveErr) return toast('Fusionnée, mais pas encore enregistrée\u00a0: ' + C.saveErr, null, null, 6000);
+  const w = await question(
+    'Copie fusionnée',
+    ['Fusionnée et enregistrée dans ' + nom + '. Tu peux supprimer ' + h.name + '.'],
+    [
+      ['Garder la copie', ''],
+      ['Supprimer la copie', 'suppr', true]
+    ]
+  );
+  if (w === 'suppr') await supprimerCopie(h);
+}
+/** Supprime une copie choisie au PC : par sa poignée (Edge), sinon par le dossier autorisé (1.7) ; sinon, le dire. */
+async function supprimerCopie(h) {
+  try {
+    if (typeof h.remove === 'function') {
+      if (h.requestPermission && (await h.requestPermission({ mode: 'readwrite' })) !== 'granted') throw new Error('refus');
+      await h.remove();
+      journal('copie supprimée', { fichier: h.name });
+      return toast('Copie supprimée\u00a0: ' + h.name);
+    }
+  } catch (e) {}
+  try {
+    const d = await accesDossier(false),
+      chemin = d && (await d.resolve(h));
+    if (chemin && chemin.length) {
+      let r = d;
+      for (const x of chemin.slice(0, -1)) r = await r.getDirectoryHandle(x);
+      await r.removeEntry(chemin[chemin.length - 1]);
+      journal('copie supprimée', { fichier: h.name });
+      return toast('Copie supprimée\u00a0: ' + h.name);
+    }
+  } catch (e) {}
+  toast('Supprime-la à la main, dans l’Explorateur de fichiers\u00a0: ' + h.name, null, null, 8000);
+}
+
+/** L'outil se sert-il du dossier du fichier (pièces jointes, logo) ? A.dossier, ou un dossier déjà autorisé. */
+async function utiliseDossier() {
+  if (A.dossier || dossierPc.handle) return true;
+  try {
+    return !!(await idbGet('dossier'));
+  } catch (e) {
+    return false;
+  }
+}
+
+/** PC : « Passer au PDF… » (bascule du 3 ter). Enregistre ce qui attend, fait choisir le nouveau fichier (nom proposé :
+    A.fichierPdf), y écrit le PDF avec les données actuelles, repointe la page (poignée gardée), marque l'ancien fichier
+    (réglage commun « remplacé par » : plus aucune page n'y écrit), puis fait rechoisir le dossier si l'outil s'en sert.
+    Le réglage « en ligne » est retiré du nouveau fichier : il désignait l'ancien, et le téléphone y écrirait encore ;
+    c'est en recollant l'adresse du nouveau fichier, au téléphone, qu'il revient (décision du 19/11). */
+async function passerAuPdf() {
+  if (AND || !hasFS) return toast('«\u00a0Passer au PDF…\u00a0» se fait au PC, dans Edge');
+  if (!pret() || !C.ouvert || accesPerdu()) return toast('Ouvre d’abord le fichier de travail');
+  if (C.format === 'pdf') return toast(nomDonnees() + ' est déjà au format PDF');
+  const ancien = fichierPc.handle,
+    nomA = ancien.name,
+    nomN = A.fichierPdf || sansExt(nomA) + '.pdf',
+    dossier = await utiliseDossier();
+  const v = await question(
+    'Passer au PDF',
+    [
+      'Les données de ' + nomA + ' vont être enregistrées dans un nouveau fichier PDF (nom proposé\u00a0: ' + nomN + ').',
+      'L’ancien fichier est gardé, mais plus rien n’y sera enregistré\u00a0: tu le supprimeras quand le téléphone sera passé au nouveau.',
+      dossier ? 'Ensuite, tu choisiras le dossier du nouveau fichier.' : ''
+    ],
+    [
+      ['Annuler', ''],
+      ['Choisir l’emplacement…', 'ok', true]
+    ]
+  );
+  if (v !== 'ok') return;
+  if (C.dirty) {
+    clearTimeout(modifie.t);
+    await enregistrer();
+    if (C.saveErr || C.dirty) return toast('Rien n’a changé\u00a0: l’enregistrement dans ' + nomA + ' a échoué.', null, null, 6000);
+  }
+  let h;
+  try {
+    h = await showSaveFilePicker({ suggestedName: nomN, types: [TYPE_PDF], startIn: ancien });
+  } catch (e) {
+    if (e.name !== 'AbortError') toast(e.message);
+    return;
+  }
+  try {
+    if (await h.isSameEntry(ancien)) return toast('Choisis un nouveau fichier\u00a0: celui-ci est ' + nomA);
+  } catch (e) {}
+  if (!/\.pdf$/i.test(h.name)) return toast('Le nom du fichier doit finir par «\u00a0.pdf\u00a0»');
+  let t;
+  try {
+    /* ancien fichier relu juste avant : s'il a changé (téléphone), on fusionne d'abord */
+    if ((await pcBackend.read()) !== C.baseText) {
+      C.dirty = true;
+      await syncSave();
+      if (C.saveErr) throw new Error(C.saveErr);
+    }
+    const m = A.parse(A.serialize(A.etat()));
+    A.fixeReglage(m, 'en ligne', null);
+    A.fixeReglage(m, 'remplacé par', null);
+    if (C.baseText) A.fixeReglage(m, 'issu de', hash8(C.baseText));
+    t = A.serialize(m);
+    const w = await h.createWritable();
+    await w.write(emballer(t, docPour(t, h.name)));
+    await w.close();
+    if (deballer(await (await h.getFile()).text()) !== t) throw new Error('relecture du PDF différente');
+    /* l'ancien fichier, marqué : « remplacé par » (aucune page n'y écrira plus) */
+    const ma = A.parse(C.baseText || '');
+    A.fixeReglage(ma, 'remplacé par', h.name);
+    const wa = await ancien.createWritable();
+    await wa.write(A.serialize(ma));
+    await wa.close();
+  } catch (e) {
+    journal('passage au PDF', { erreur: String(e.message || e).slice(0, 60) });
+    etat();
+    return toast('Passage au PDF impossible\u00a0: ' + (e.message || e) + '. ' + nomA + ' reste le fichier de travail.', null, null, 8000);
+  }
+  /* la page travaille désormais dans le PDF */
+  fichierPc.handle = h;
+  await idbSet('poignee', h).catch(() => {});
+  fichierPc.perm = true;
+  fichierPc.reponse = 'granted';
+  fichierPc.introuvable = false;
+  fichierPc.mod = (await h.getFile()).lastModified;
+  C.format = 'pdf';
+  C.illisible = C.remplace = '';
+  C.baseText = t;
+  C.dirty = false;
+  C.saveErr = null;
+  A.appliquer(A.parse(t));
+  backup();
+  journal('passé au PDF', { de: nomA, vers: h.name });
+  etat();
+  /* le dossier (pièces jointes) : rien à faire si le nouveau fichier est dans le dossier déjà autorisé */
+  if (dossier) {
+    let dedans = false;
+    try {
+      const d = await accesDossier(false);
+      dedans = !!(d && (await d.resolve(h)) && (await d.resolve(h)).length === 1);
+    } catch (e) {}
+    if (!dedans) {
+      dossierPc.handle = null;
+      await idbSet('dossier', null).catch(() => {});
+      const c = await question(
+        'Dossier du fichier',
+        ['Choisis maintenant le dossier où tu as enregistré ' + h.name + ' (pièces jointes).'],
+        [
+          ['Plus tard', ''],
+          ['Choisir le dossier…', 'ok', true]
+        ]
+      );
+      if (c === 'ok') await accesDossier(true);
+    }
+  }
+  toast(
+    'Passé au PDF\u00a0: ' + h.name + '. Au téléphone, colle l’adresse en ligne du nouveau fichier quand il te la demandera.',
+    null,
+    null,
+    8000
+  );
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.18.0',
+  version: '1.19.0',
   demarrer,
   /* fichier */
   modifie,
@@ -6234,6 +7143,19 @@ return {
   actualiser,
   reglerEnLigne,
   reglerOutils,
+  /* fichiers discrets (1.19) : au PC, menu ⋯ de l'outil */
+  passerAuPdf,
+  fusionnerCopie,
+  /* emballer(texte, doc), deballer(brut), estPdf(brut) : 25-pdf.js */
+  pdf: { emballer, deballer, estPdf },
+  /* format du fichier de travail tel qu'il a été lu : 'md', 'pdf', ou null avant la première lecture */
+  get format() {
+    return C.format;
+  },
+  /* nom réel du fichier de travail (« Suivi tâches et régie.pdf »), pour les textes affichés */
+  get nomDonnees() {
+    return nomDonnees();
+  },
   /* état */
   get ouvert() {
     return C.ouvert;
@@ -6343,7 +7265,10 @@ return {
     accesPerdu,
     dossierPc,
     tel,
-    mem
+    mem,
+    nomPage,
+    deposerAutres,
+    lireDonnees
   }
 };
 })();
@@ -7926,7 +8851,7 @@ function majCreation() {
 }
 /** « Nouvelle date… » : une date vide (« Nouvelle date », date inconnue) dans la fiche de création. */
 function nouvelleDate() {
-  if (!socle.ouvert) return toast('Ouvre d’abord planning.md');
+  if (!socle.ouvert) return toast('Ouvre d’abord le fichier de suivi');
   ajouter({ titre: 'Nouvelle date', origine: 'par « Nouvelle date… »' }, true);
   $('#fTitre').select();
 }
@@ -8904,7 +9829,7 @@ function ligneModele(mot, etapes) {
   );
 }
 function ouvrirEtapes(nouveauMot) {
-  if (!socle.ouvert) return toast('Ouvre d’abord planning.md');
+  if (!socle.ouvert) return toast('Ouvre d’abord le fichier de suivi');
   const M = doc.reglages.filter(r => /^étapes\b/i.test(r.cle));
   let h = M.map(r =>
     ligneModele(
@@ -8957,7 +9882,7 @@ function initEtapes() {
     doc.reglages = [...autres, ...M.map(m => ({ cle: m.mot ? 'étapes ' + m.mot : 'étapes', val: m.et.join(' ; ') }))];
     changed();
     toutAfficher();
-    toast(M.length ? 'Modèles enregistrés dans planning.md' : 'Modèles retirés');
+    toast(M.length ? 'Modèles enregistrés dans ' + socle.nomDonnees : 'Modèles retirés');
   };
 }
 
@@ -9132,7 +10057,7 @@ async function chargerLogo(demander) {
   }
   logoEtat = 'absent';
   majBoutonLogo();
-  if (demander) toast('Pas de logo.png dans le dossier de planning.md', null, null, 5000);
+  if (demander) toast('Pas de logo.png dans le dossier de ' + socle.nomDonnees, null, null, 5000);
 }
 function majBoutonLogo() {
   const b = $('#affLogo');
@@ -9140,8 +10065,8 @@ function majBoutonLogo() {
   b.hidden = socle.AND || affFormat !== 'a3' || logoEtat === 'charge';
   b.title =
     logoEtat === 'absent'
-      ? 'Aucun fichier logo.png à côté de planning.md : dépose-le dans ce dossier, puis clique ici'
-      : 'Autoriser l’accès au dossier de planning.md, pour y lire logo.png (une seule fois)';
+      ? 'Aucun fichier logo.png à côté de ' + socle.nomDonnees + ' : dépose-le dans ce dossier, puis clique ici'
+      : 'Autoriser l’accès au dossier de ' + socle.nomDonnees + ', pour y lire logo.png (une seule fois)';
 }
 
 /* ---- A3 : la saison entière, une colonne par période (François, 18/10/2026) ---- */
@@ -10261,6 +11186,16 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-11-19 13:25',
+    v: '0.77.11',
+    t: 'Le PDF, en préparation',
+    items: [
+      'Saison sait maintenant lire et écrire un fichier PDF, en plus de planning.md\u00a0: il écrit dans le format qu’il a lu. Le PDF est une page lisible (la saison, les dates à venir par mois, version publique seulement) qui garde tes données dans le même fichier.',
+      'Rien ne change tant que tu ne bascules pas. N’utilise pas «\u00a0Passer au PDF…\u00a0» (menu ⋯, au PC) avant la bascule\u00a0: elle se fait au bureau, dans un ordre précis.',
+      '«\u00a0Fusionner une copie…\u00a0» (menu ⋯, au PC) fusionne une copie en double laissée par OneDrive, au format .md ou PDF, puis propose de la supprimer.'
+    ]
+  },
+  {
     d: '2026-11-17 22:30',
     v: '0.76.10',
     t: 'Préparer la suite',
@@ -10876,20 +11811,92 @@ function planningVide() {
   };
 }
 
+/* ---- page du PDF (socle 1.19, § 3 ter de la proposition « fichiers discrets ») ----
+   « Suivi concerts et manifestations » : sobre, sans en-tête, sans annexe, rien qui dise qu'elle est produite
+   automatiquement. Version publique seulement (estPublic, comme l'affiche et le mail « Demandez le programme ») :
+   ni interne, ni annulé, ni en attente, ni remarque, ni accompagnement. */
+/** Date courte pour une ligne de la liste : le mois est déjà dans l'intertitre (sauf si la date le franchit). */
+function datePdf(e) {
+  const a = jour(e.d1),
+    b = jour(e.d2 || e.d1),
+    m = d => MOIS_COURT[d.getMonth()];
+  const franchit = a.getMonth() !== b.getMonth();
+  if (e.semaine) return 'sem. du ' + quantieme(a) + (franchit ? ' ' + m(a) : '');
+  if (e.d1 === e.d2) return JOURS_C[a.getDay()] + ' ' + quantieme(a);
+  return franchit ? quantieme(a) + ' ' + m(a) + '–' + quantieme(b) + ' ' + m(b) : 'du ' + quantieme(a) + ' au ' + quantieme(b);
+}
+/** Heures en court (« 11 h–12 h 30 »), pour une colonne étroite ; l'horaire en toutes lettres tel quel. */
+function heuresPdf(e) {
+  if (e.horaire) return e.horaire;
+  if (!e.heures) return e.heureInconnue ? 'à préciser' : '';
+  return e.heures
+    .split(',')
+    .map(pl => pl.split('-').map(libH).join('–'))
+    .join(', ');
+}
+function pagePdf(m) {
+  const auj_ = auj(),
+    pub = m.evts.filter(estPublic).sort(ordre),
+    avenir = pub.filter(e => e.d2 >= auj_),
+    aConfirmer = avenir.filter(e => e.statut === 'à confirmer'),
+    tous = lieux(m),
+    prochaine = avenir[0];
+  const saison = ((m.titre || '').match(/\b(\d{4})-(\d{4})\b/) || [])[0] || (() => {
+    const d = jour(auj_),
+      a = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1;
+    return a + '-' + (a + 1);
+  })();
+  const blocs = [
+    { sorte: 'chiffre', libelle: 'Saison', valeur: saison },
+    { sorte: 'chiffre', libelle: 'Dates de la saison', valeur: String(pub.length) },
+    { sorte: 'chiffre', libelle: 'Dates à venir', valeur: String(avenir.length) },
+    { sorte: 'chiffre', libelle: 'Dates à confirmer', valeur: String(aConfirmer.length) },
+    {
+      sorte: 'chiffre',
+      libelle: 'Prochaine date',
+      valeur: prochaine ? typo(majuscule(libDate(prochaine)) + ' · ' + prochaine.titre) : 'aucune'
+    },
+    { sorte: 'section', texte: 'Dates à venir' }
+  ];
+  if (!avenir.length) blocs.push({ sorte: 'texte', texte: 'Aucune date à venir.', gris: true });
+  let mois = '';
+  for (const e of avenir) {
+    const d = e.d1 < auj_ ? auj_ : e.d1; /* une date en cours est rangée dans le mois courant */
+    const cle = d.slice(0, 7);
+    if (cle !== mois) {
+      mois = cle;
+      blocs.push({ sorte: 'mois', texte: majuscule(MOIS[+cle.slice(5) - 1]) + ' ' + cle.slice(0, 4) });
+    }
+    const L = e.lieu && (tous[e.lieu] || {}).nom;
+    blocs.push({
+      sorte: 'ligne',
+      cellules: [
+        datePdf(e),
+        typo(e.titre.replace(/\*/g, '')) + (e.statut === 'à confirmer' ? ' (à confirmer)' : ''),
+        typo(L || e.lieu || ''),
+        typo(heuresPdf(e))
+      ],
+      largeurs: [1.4, 4.0, 3.4, 2.0],
+      aligne: ['g', 'g', 'g', 'd']
+    });
+  }
+  return { colonneChiffres: 0.3, blocs };
+}
+
 function initBoutons() {
   $('#bAffiche').onclick = ouvrirAffiche;
   $('#bMail').onclick = ouvrirMail;
   $('#vOuvrir').onclick = () => socle.ouvrir();
   $('#vNouveau').onclick = () => socle.nouveauFichier(planningVide());
   if (AND) {
-    $('#vOuvrir').textContent = 'Choisir planning.md';
+    $('#vOuvrir').textContent = 'Choisir le fichier de suivi';
     $('#vNouveau').textContent = 'Créer un nouveau planning…';
     $('[data-act=ouvrir]').textContent = 'Choisir un autre fichier…';
     $('[data-act=actualiser]').hidden = false;
     $('[data-act=outils]').hidden = false;
     $('[data-act=horsheures]').hidden = false;
   } else if (!hasFS) {
-    $('#vOuvrir').textContent = 'Ouvrir une copie de planning.md';
+    $('#vOuvrir').textContent = 'Ouvrir une copie du fichier de suivi';
     $('[data-act=ouvrir]').textContent = 'Ouvrir une copie…';
     $('[data-act=nouveau]').hidden = true;
   }
@@ -10905,6 +11912,9 @@ function initBoutons() {
     ev.stopPropagation();
     if (!menu.hidden) return fermerMenu();
     $('[data-act=horsheures]').setAttribute('aria-checked', String(socle.synchroLibre));
+    /* fichiers discrets (socle 1.19) : au PC seulement ; « Passer au PDF… » tant que le fichier est en .md */
+    $('[data-act=passerpdf]').hidden = AND || !hasFS || !socle.ouvert || socle.format !== 'md';
+    $('[data-act=fusionner]').hidden = AND || !hasFS || !socle.ouvert;
     menu.hidden = false;
     socle.couche(menu, fermerMenu);
     /* dernier passage de la synchro du matin (socle 1.18) : lu à chaque ouverture, caché s'il n'y en a pas */
@@ -10934,6 +11944,8 @@ function initBoutons() {
     fermerMenu();
     ({
       ouvrir: () => socle.ouvrir(),
+      passerpdf: () => socle.passerAuPdf(),
+      fusionner: () => socle.fusionnerCopie(),
       nouveau: () => socle.nouveauFichier(),
       exporter: () => socle.exporter(),
       retrouver: ouvrirRetrouver,
@@ -11025,7 +12037,11 @@ socle.demarrer({
   titre: 'Saison',
   fichier: 'planning.md',
   page: 'saison.html',
-  doublon: /^planning-.+\.md$/,
+  fichierPdf: 'Suivi concerts et manifestations.pdf',
+  pagePdf: 'Suivi concerts et manifestations (version web).html',
+  doublon: /^(planning|Suivi concerts et manifestations)-.+\.(md|pdf)$/,
+  elementsNom: { un: 'manifestation', des: 'manifestations', feminin: true },
+  pdf: pagePdf,
   parse,
   serialize,
   merge3,
