@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261121075934">
+<meta name="officious-page" content="20261121102040">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3091,7 +3091,8 @@ dialog.bilans[open] {
   flex-direction: column;
   gap: 0.7rem;
 }
-#bilPeriode {
+#bilPeriode,
+#bilLibelle {
   min-width: 0;
   max-width: 100%;
   border: 1px solid var(--filet);
@@ -3099,7 +3100,7 @@ dialog.bilans[open] {
   padding: 0.3rem 0.5rem;
   background: var(--papier);
 }
-#bilInternesW[hidden] {
+#bilLibelle[hidden] {
   display: none;
 }
 #bilApercu {
@@ -3133,9 +3134,6 @@ dialog.bilans .mail-pied {
 }
 dialog.bilans .mail-pied .aide {
   flex: 1 1 14rem;
-}
-#bilInternesW input {
-  width: auto; /* la règle des fenêtres du socle met les champs en pleine largeur */
 }
 /* aperçu : le tableau tient dans la fenêtre (colonnes aux largeurs prévues, mots coupés au besoin) */
 #bilApercu table {
@@ -3190,6 +3188,87 @@ dialog.bilans .mail-pied .aide {
     width: 1.65rem;
     height: 1.65rem;
   }
+}
+
+/* ---------- 0.79 : diffusion, libellés, familles de lieux ---------- */
+.t-hors {
+  /* pas sur l'affiche : une vraie manifestation, seulement absente du public ; gris discret, pas la prune de l'équipe */
+  background: transparent;
+  color: var(--gris);
+  border: 1px solid var(--filet);
+}
+.diff-aide {
+  margin: -0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--gris);
+}
+.diff-aide[hidden] {
+  display: none;
+}
+.diff-aide .lien {
+  font-size: inherit;
+}
+.lib-et {
+  /* libellé : petite étiquette sobre (ni couleur de lieu, ni couleur d'équipe) */
+  display: inline-block;
+  font:
+    500 0.72em/1 Inter,
+    sans-serif;
+  color: var(--gris);
+  border: 1px solid var(--filet);
+  border-radius: 4px;
+  padding: 0.2em 0.45em 0.25em;
+  vertical-align: 0.1em;
+  white-space: nowrap;
+}
+#fLibs[hidden] {
+  display: none;
+}
+#fLibs .lib-et {
+  font-size: 0.82rem;
+  background: var(--papier);
+  cursor: var(--s-cur-pointer);
+}
+#fLibs .lib-et.pose {
+  color: var(--encre);
+  border-color: var(--gris);
+}
+#fLibs .lib-et.propose {
+  border-style: dashed;
+  color: var(--accent);
+}
+.lieu-prop .lib-et {
+  flex: none;
+  font-size: 0.85rem;
+}
+ul.lx-fam li {
+  grid-template-columns: minmax(5.5rem, max-content) 1fr auto;
+}
+.lx-membres {
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--gris);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* deux lignes au plus ; la liste entière en info-bulle */
+}
+.lx-aide {
+  margin: 0.3rem 0;
+}
+.lx-propose {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: var(--gris);
+}
+.lx-propose button {
+  margin-left: 0.3rem;
+}
+.lx-ajout.lx-fam-ajout {
+  grid-template-columns: 1fr auto;
+}
+#lieuxF .lx-fam .pastille.lx-p {
+  font-weight: 700;
 }
 </style>
 </head>
@@ -3290,12 +3369,21 @@ dialog.bilans .mail-pied .aide {
       <button data-v="">Confirmé</button><button data-v="à confirmer">À confirmer</button><button data-v="en attente">En attente</button><button data-v="annulé">Annulé</button>
     </div>
   </div>
-  <label class="champ type-champ">Type<select id="fType" title="Pour les bilans (menu ⋯ → Bilans…) ; sans choix, Saison le devine d’après le titre et le lieu"></select></label>
-  <label class="coche"><input id="fInterne" type="checkbox"> Réservé à l’équipe (ni affiches, ni « Demandez le programme »)</label>
+  <div class="champ">Diffusion
+    <div id="fDiffusion" class="bascule large" role="group" aria-label="Diffusion">
+      <button data-v="" title="Partout : affiches, « Demandez le programme », page du PDF">Public</button><button data-v="hors" title="Une vraie manifestation, mais ni sur les affiches publiques, ni dans « Demandez le programme », ni sur la page du PDF ; partout ailleurs (liste, calendrier, version équipe, mails d’équipe), et comptée dans les bilans">Pas sur l’affiche</button><button data-v="interne" title="Réservée à l’équipe : ni affiches publiques, ni « Demandez le programme »">Équipe seulement</button>
+    </div>
+  </div>
+  <p class="diff-aide" id="fDiffAide" hidden><span>Elle compte dans les bilans : « Pas sur l’affiche » serait peut-être plus juste.</span> <button type="button" class="lien" id="fDiffHors">Basculer</button></p>
+  <label class="champ type-champ">Type<select id="fType" title="Pour les bilans (menu ⋯ → Bilans…) ; sans choix, Saison le devine d’après le titre, le lieu et la diffusion"></select></label>
+  <div class="champ">Libellés
+    <div id="fLibs" class="puces libs"></div>
+    <div class="lieu-champ"><input id="fLibAjout" placeholder="Ajouter un libellé : CHAM, Orchestre…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lieuProp" aria-label="Ajouter un libellé" maxlength="40"></div>
+  </div>
   <!-- trois blocs (19/10/2026) : ce qui est au-dessus va partout ; puis le public, masqué pour une manifestation
        réservée à l'équipe ; puis l'équipe -->
   <fieldset id="fPublic" class="public">
-    <legend>Pour « Demandez le programme »</legend>
+    <legend id="fPublicTitre">Pour « Demandez le programme »</legend>
     <label class="champ">Descriptif<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
     <label class="champ">Élèves concernés<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
     <div class="champ">Infos pratiques<div id="fTarifs" class="puces tarifs" role="group" aria-label="Infos pratiques toutes faites"></div><textarea id="fPratique" rows="2" aria-label="Infos pratiques" placeholder="Ou écris-les toi-même (Entrée pour aller à la ligne)"></textarea></div>
@@ -3393,9 +3481,10 @@ dialog.bilans .mail-pied .aide {
     <div id="bilSorte" class="bascule" role="group" aria-label="Bilan">
       <button data-s="types" aria-pressed="true" title="Nombre de manifestations par type">Par type</button>
       <button data-s="ccas" aria-pressed="false" title="Manifestations faites avec le CCAS (Conciergerie), avec l’organisation">CCAS</button>
+      <button data-s="libelle" aria-pressed="false" title="Manifestations qui portent un libellé (CHAM…)">Par libellé</button>
     </div>
     <select id="bilPeriode" aria-label="Période"></select>
-    <label class="coche" id="bilInternesW"><input id="bilInternes" type="checkbox"> avec celles réservées à l’équipe</label>
+    <select id="bilLibelle" aria-label="Libellé" hidden></select>
   </div>
   <div id="bilApercu"></div>
   <div class="mail-pied">
@@ -3413,9 +3502,10 @@ dialog.bilans .mail-pied .aide {
   <div id="lxListe"></div>
   <form id="lxAjout" class="lx-ajout" autocomplete="off">
     <input id="lxCle" placeholder="Nom court (pastille)" aria-label="Nom court du nouveau lieu" maxlength="40">
-    <input id="lxNom" placeholder="Nom complet : École, Jules Ferry" aria-label="Nom complet du nouveau lieu">
+    <input id="lxNom" placeholder="Nom complet : École Jules Ferry" aria-label="Nom complet du nouveau lieu">
     <button class="primaire">Ajouter</button>
   </form>
+  <div id="lxFamilles"></div>
   <div id="lxLibres"></div>
 </dialog>
 
@@ -3440,7 +3530,7 @@ dialog.bilans .mail-pied .aide {
       <tr><th>Remarque</th><td>✓</td><td class="non">—</td><td>✓</td><td class="non">—</td></tr>
     </tbody>
   </table>
-  <p class="aide">L’export « Complet » reprend tout. Avant d’envoyer « Demandez le programme », chaque date doit avoir date, heure, lieu, titre, descriptif, élèves concernés et infos pratiques ; un sous-titre qui parle d’élèves compte pour « élèves concernés ». Une manifestation « réservée à l’équipe » n’apparaît ni sur les affiches ni dans « Demandez le programme ».</p>
+  <p class="aide">L’export « Complet » reprend tout. Avant d’envoyer « Demandez le programme », chaque date doit avoir date, heure, lieu, titre, descriptif, élèves concernés et infos pratiques ; un sous-titre qui parle d’élèves compte pour « élèves concernés ». Une manifestation « Pas sur l’affiche » ou « Équipe seulement » (Diffusion, dans la fiche) n’apparaît ni sur les affiches publiques ni dans « Demandez le programme ».</p>
   <h3>Recherche</h3>
   <p class="aide">Le champ en haut (la loupe au téléphone) filtre la liste, le calendrier et le mini-mois à chaque lettre. L’affiche et les mails ne sont jamais filtrés.</p>
   <h3>Saisie rapide</h3>
@@ -7783,7 +7873,7 @@ function libHeures(s) {
 
 /**
  * Typographie française d'un texte saisi (Imprimerie nationale) : insécables avant « : » et dans les guillemets,
- * fines avant ; ! ?, heures « 20h30 » ou « 20 h 30 » → « 20 h 30 » en espaces fines, « n°1 » → « n° 1 », apostrophe typographique.
+ * fines avant ; ! ?, heures « 20h30 » ou « 20 h 30 » → « 20 h 30 » en espaces fines, « n°1 » et « no 1 » → « n° 1 », apostrophe typographique.
  * Idempotente : l'appliquer deux fois ne change rien.
  */
 function typo(s) {
@@ -7795,11 +7885,19 @@ function typo(s) {
     .replace(/\b(\d{1,2})[ \u00a0\u202f]?h\b(?![ \u00a0\u202f]?\d)/g, '$1' + FINE + 'h')
     .replace(/(\d)[ \u00a0\u202f]?€/g, '$1' + NBSP + '€')
     .replace(/\b[nN]° ?(\d)/g, (m, d) => m[0] + '°' + NBSP + d)
+    /* « no 5 », « No 12 » (0.79) : le mot entier, suivi d'une espace et d'un chiffre, est un numéro ; jamais « no » ailleurs
+       (« no future », « piano 3 », « nos 2 », « Nono 2 ») */
+    .replace(/(?<![\p{L}\p{N}_])([nN])o[ \u00a0\u202f](?=\d)/gu, '$1°' + NBSP)
     .replace(/[   ]*([;!?])/g, (m, p, i, all) => (i === 0 ? p : FINE + p))
     .replace(/(\S)[   ]*:(?=\s|$)/g, '$1' + NBSP + ':')
     .replace(/«[   ]*/g, '«' + NBSP)
     .replace(/[   ]*»/g, NBSP + '»')
     .replace(/ {2,}/g, ' ');
+}
+/** Pour un texte sans exposant possible (PDF en Helvetica, 0.79) : « n° » → « nº » (indicateur ordinal U+00BA, qui
+ *  existe en WinAnsi), le plus proche du « o » en exposant. */
+function numeroTexte(s) {
+  return String(s || '').replace(/(?<![\p{L}\p{N}_])([nN])°/gu, '$1º');
 }
 /* 02-modele.js : lecture et écriture de planning.md, fusion à trois voies. Voir docs/modele.md. */
 
@@ -7857,8 +7955,13 @@ const TYPES = [
   ['concert', 'Concerts et représentations', 'Concert ou représentation'],
   ['audition', 'Auditions', 'Audition'],
   ['école', 'Conservatoire à l’école', 'Conservatoire à l’école'],
-  ['autre', 'Autres interventions', 'Autre intervention']
+  ['autre', 'Autres interventions', 'Autre intervention'],
+  /* 0.79 (François : « ce qui est purement de l’ordre de l’organisation ne doit pas rentrer dans le bilan ») : réunions,
+     rentrée, examens… ; jamais compté, quelle que soit la diffusion */
+  ['organisation', 'Organisation, hors bilan', 'Organisation, hors bilan']
 ];
+/** Types comptés dans les bilans (tous sauf l'organisation). */
+const TYPES_COMPTES = TYPES.filter(t => t[0] !== 'organisation');
 /* ligne d'événement : la zone des heures accepte n'importe quoi jusqu'au « · » (18/10/2026 : une heure écrite
    « 14h-14h45et15h15-16h » rendait la ligne illisible, et l'événement disparaissait du fichier à l'écriture suivante) */
 const RX_EV = /^- (\d{4}-\d{2}-\d{2}|\?)(?:\.\.(\d{4}-\d{2}-\d{2}))?(?: ([^·]*?))? · (.*)$/;
@@ -7930,9 +8033,12 @@ function evVide() {
     accomp: '',
     statut: '',
     interne: false,
+    horsAffiche: false /* 0.79 : jeton {hors affiche} : une vraie manifestation, absente de tout ce qui est public
+                          (affiches publiques, « Demandez le programme », page du PDF), présente dans l'interne */,
     semaine: false,
     libelle: '',
     aDater: false /* date approximative : d1..d2 est une fenêtre (mois, période), pas la date */,
+    libelles: [] /* 0.79 : jeton {libellés CHAM ; Orchestre} : étiquettes libres (bilans « Par libellé ») */,
     type: '' /* 0.78 : jeton {type …} tel qu'écrit (« audition »), '' = deviné ; voir typeDe */,
     taches: '' /* rétroplanning envoyé à Tâches : date de la manifestation à ce moment-là (jeton {tâches AAAA-MM-JJ}) */,
     autres: [],
@@ -8014,6 +8120,10 @@ function parse(texte) {
       else if (t === 'semaine') ev.semaine = true;
       else if (t === 'heure ?') ev.heureInconnue = true;
       else if (t === 'interne') ev.interne = true;
+      else if (t === 'hors affiche') ev.horsAffiche = true;
+      else if ((k = t.match(/^libellés (.+)$/))) {
+        for (const x of k[1].split(';').map(x => x.trim()).filter(Boolean)) if (!ev.libelles.includes(x)) ev.libelles.push(x);
+      }
       else if (t === 'à dater') ev.aDater = true;
       else if ((k = t.match(/^tâches (\d{4}-\d{2}-\d{2})$/))) ev.taches = k[1];
       else if ((k = t.match(/^type (\S.*)$/))) ev.type = k[1].trim();
@@ -8123,7 +8233,9 @@ function ligneEv(e) {
   if (e.accomp) j.push('accompagnement ' + e.accomp);
   if (e.statut) j.push(e.statut);
   if (e.interne) j.push('interne');
+  if (e.horsAffiche) j.push('hors affiche');
   if (e.type) j.push('type ' + e.type);
+  if (e.libelles && e.libelles.length) j.push('libellés ' + e.libelles.join(' ; '));
   if (e.taches) j.push('tâches ' + e.taches);
   j.push(...e.autres);
   j.push('id ' + e.id);
@@ -8182,11 +8294,13 @@ const CHAMPS = [
   'accomp',
   'statut',
   'interne',
+  'horsAffiche',
   'semaine',
   'libelle',
   'aDater',
   'taches',
   'type',
+  'libelles',
   'autres',
   'lignes'
 ];
@@ -8200,8 +8314,21 @@ function unionHistoire(a, b) {
     .join('\n');
 }
 function cleReglage(r) {
-  /* une période ou un lieu s'identifie par son nom ; les autres réglages par leur clé */
-  return r.cle === 'période' || r.cle === 'lieu' ? r.cle + ':' + r.val.split(' = ')[0] : r.cle;
+  /* une période ou un lieu s'identifie par son nom, une famille de lieux par son mot de tête (0.79), un libellé par
+     lui-même ; les autres réglages par leur clé */
+  if (r.cle === 'période' || r.cle === 'lieu') return r.cle + ':' + r.val.split(' = ')[0];
+  if (r.cle === 'famille') return 'famille:' + plat(r.val.split(' · ')[0]).trim();
+  if (r.cle === 'libellé') return 'libellé:' + plat(r.val).trim();
+  return r.cle;
+}
+/** Fusion d'un ensemble (libellés, 0.79) : ce qu'un côté a ajouté est gardé, ce qu'un côté a retiré est retiré ;
+ *  jamais de conflit. Ordre : celui de cet appareil, puis les ajouts du fichier. */
+function fusionEnsemble(b, m, t) {
+  b = b || [];
+  m = m || [];
+  t = t || [];
+  const retire = x => b.includes(x) && (!m.includes(x) || !t.includes(x));
+  return [...new Set([...m, ...t])].filter(x => !retire(x));
 }
 
 /**
@@ -8226,6 +8353,10 @@ function merge3(B, M, T) {
       for (const c of CHAMPS) {
         const vb = eb ? eb[c] : undefined;
         if (egal(em[c], et[c])) continue;
+        if (c === 'libelles') {
+          r[c] = fusionEnsemble(eb && eb[c], em[c], et[c]);
+          continue;
+        }
         if (eb && egal(em[c], vb)) r[c] = et[c];
         else if (eb && egal(et[c], vb)) r[c] = em[c];
         else conflits++;
@@ -8290,25 +8421,82 @@ function estDatee(e) {
 }
 /** Rien n'est annoncé au public sans date (François, 19/10/2026). */
 function estPublic(e) {
-  return estDatee(e) && !e.interne && e.statut !== 'annulé' && e.statut !== 'en attente';
+  return estDatee(e) && !e.interne && !e.horsAffiche && e.statut !== 'annulé' && e.statut !== 'en attente';
 }
 
 /* ---- type d'une manifestation (0.78) ---- */
 
 const plat = s => sansAccents(String(s || '')).toLowerCase();
-/** Type deviné d'après le titre et le lieu (jamais écrit dans le fichier). */
+/* ---- familles de lieux (0.79) ----
+   François : « je me vois très bien écrire "École Jean Jaurès" […] la liste est finie : c'est simplement toute la liste
+   des écoles primaires de Lucé ». Réglage « - famille : École · sarcelle » : tout lieu (du référentiel ou tapé en toutes
+   lettres) dont le nom complet commence par le mot « École » (accents et majuscules ignorés, mot entier) prend la
+   couleur de la famille. La règle « texte avant la virgule » reste, pour les fichiers d'avant. */
+/** Familles déclarées : [{nom, couleur}], dans l'ordre des réglages. */
+function familles(d) {
+  return d.reglages
+    .filter(r => r.cle === 'famille')
+    .map(r => r.val.match(/^(.*?)(?: · (\S+))?$/))
+    .filter(m => m && m[1].trim())
+    .map(m => ({ nom: m[1].trim(), couleur: m[2] || 'gris' }));
+}
+/** Le nom commence-t-il par le mot (ou les mots) de tête ? (« École Jean Jaurès », « École, Paul Bert » → « École ») */
+function commencePar(nom, tete) {
+  const n = plat(nom).replace(/\s+/g, ' ').trim(),
+    t = plat(tete).replace(/\s+/g, ' ').trim();
+  return !!t && n.startsWith(t) && !/[a-z0-9]/.test(n.charAt(t.length));
+}
+/** Famille d'un nom de lieu (la plus longue tête l'emporte), ou null. */
+function familleDe(nom, d) {
+  d = d || (typeof doc !== 'undefined' ? doc : null);
+  if (!nom || !d || !d.reglages) return null;
+  return familles(d).filter(f => commencePar(nom, f.nom)).sort((a, b) => b.nom.length - a.nom.length)[0] || null;
+}
+
+/* ---- libellés (0.79) ----
+   François : « il faudrait aussi lister toutes les manifestations qui font participer des CHAM. Et ça ne peut pas être
+   un type à part, il faudrait un système de libellés ». Jeton {libellés CHAM ; Orchestre} sur la manifestation ;
+   réglages « - libellé : CHAM », un par ligne, dans l'ordre (la liste connue). */
+/** Libellés connus : ceux des réglages, puis ceux des manifestations qui n'y sont pas (ordre d'apparition). */
+function libellesConnus(d) {
+  const L = d.reglages.filter(r => r.cle === 'libellé').map(r => r.val.trim()).filter(Boolean);
+  for (const e of d.evts) for (const x of e.libelles || []) if (!L.some(y => plat(y) === plat(x))) L.push(x);
+  return L;
+}
+/** Le texte mentionne-t-il le libellé, en mot entier (accents et majuscules ignorés) ? */
+function mentionne(texte, lib) {
+  const t = ' ' + plat(texte).replace(/[^a-z0-9]+/g, ' ') + ' ',
+    l = plat(lib).replace(/[^a-z0-9]+/g, ' ').trim();
+  return !!l && t.includes(' ' + l + ' ');
+}
+/** Libellés connus que la manifestation mentionne (titre, sous-titre, élèves concernés) sans les porter : proposés. */
+function libellesProposes(e, d) {
+  const txt = [e.titre, e.soustitre, e.eleves].join(' ');
+  return libellesConnus(d).filter(l => !(e.libelles || []).some(x => plat(x) === plat(l)) && mentionne(txt, l));
+}
+
+/** Type deviné d'après le titre, le lieu et la diffusion (jamais écrit dans le fichier). Ordre des règles :
+ *  1. organisation franche (réunion, conseil de classe, jury, déménagement) ;
+ *  2. audition ; 3. école (lieu, famille ou titre) ; 4. concert, spectacle… ;
+ *  5. organisation du calendrier (rentrée, début ou fin des cours, examens, évaluations, écrits de FM, inscriptions), sauf « portes
+ *     ouvertes » ; 6. réservé à l'équipe sans autre indice → organisation ; sinon « autre ». */
 function typeDevine(e) {
   /* le lieu : son texte, et son nom complet s'il est au référentiel (« Paul Bert » = « École, Paul Bert ») */
   const ref = e.lieu && typeof doc !== 'undefined' && doc.reglages ? lieux(doc)[e.lieu] : null;
+  const fam = e.lieu ? familleDe(ref ? ref.nom : e.lieu) : null;
   const t = plat(e.titre),
-    l = plat(e.lieu + ' ' + (ref ? ref.nom : ''));
+    l = plat(e.lieu + ' ' + (ref ? ref.nom : '') + ' ' + (fam ? fam.nom : ''));
+  if (/\b(reunions?|conseils? (de classe|d.etablissement|pedagogiques?|de cycle|de departement|de discipline)|jurys?|demenagement)\b/.test(t))
+    return 'organisation';
   if (/\baudition/.test(t)) return 'audition';
   /* une école (lieu ou titre), sauf l'« École du spectateur » ; les concerts des CHAM restent des concerts */
   const ecole = /\b(ecoles?|maternelle|elementaire|groupe scolaire|scolaires?|periscolaire)\b/;
   if ((ecole.test(l) || ecole.test(t.replace(/ecole du spectateur/g, ''))) && !/\bcham\b/.test(t)) return 'école';
   if (/\b(concerts?|spectacles?|representations?|recitals?|carte blanche|comedie musicale|theatr\w*|opera|samedis musicaux|cabaret|bal)\b/.test(t))
     return 'concert';
-  return 'autre';
+  if (/\b(rentree|(debut|fin|reprise) des cours|examens?|evaluations?|inscriptions?|reinscriptions?|ecrits de (fm|formation musicale))\b/.test(t) && !/portes ouvertes/.test(t))
+    return 'organisation';
+  return e.interne ? 'organisation' : 'autre';
 }
 /** {cle, devine} : le type écrit (premier mot du jeton, s'il est connu), sinon le type deviné. */
 function typeDe(e) {
@@ -8368,11 +8556,19 @@ const setStatus = () => socle.etat();
 function esc(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 }
-/** Texte saisi → HTML : typographie française, *italique*, 1re / 2e / 1er en exposant. */
+/** Texte saisi → HTML : typographie française, *italique*, 1re / 2e / 1er et « no » en exposant. */
 function rich(s) {
-  return esc(typo(s || ''))
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/\b(\d+)(res?|ers?|es?)\b/g, '$1<sup>$2</sup>');
+  return supNumero(
+    esc(typo(s || ''))
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/\b(\d+)(res?|ers?|es?)\b/g, '$1<sup>$2</sup>')
+  );
+}
+/** « n° » et « N° » (signe degré, ce qu'écrit typo, « no 5 » compris) → n et un « o » en exposant (0.79, François :
+ *  « que toute application corrige "n°" en "no" avec le "o" en exposant (mais pas "nº") »). Le « nº » (indicateur
+ *  ordinal, U+00BA) est laissé tel quel. Sur du HTML déjà échappé. */
+function supNumero(h) {
+  return h.replace(/(?<![\p{L}\p{N}_])([nN])°/gu, '$1<sup>o</sup>');
 }
 /** Texte sur plusieurs lignes (sous-titre, 0.63) : chaque retour à la ligne est gardé. */
 function richLignes(s) {
@@ -8393,7 +8589,14 @@ function lieuDe(e) {
   if (!e.lieu) return null;
   const tous = lieux(doc);
   const L = tous[e.lieu] || Object.values(tous).find(x => sansAccents(x.nom) === sansAccents(e.lieu));
-  if (L) return { ...L, hex: COULEURS[L.couleur] || COULEURS.gris };
+  if (L) {
+    /* famille (0.79) : son nom complet commence par le mot de la famille (« École Jean Jaurès ») : couleur de la famille */
+    const F = familleDe(L.nom) || familleDe(L.cle);
+    if (F) return { ...L, couleur: F.couleur, famille: F.nom, hex: COULEURS[F.couleur] || COULEURS.gris };
+    return { ...L, hex: COULEURS[L.couleur] || COULEURS.gris };
+  }
+  const F = familleDe(e.lieu);
+  if (F) return { cle: '', nom: e.lieu, court: e.lieu, libre: true, couleur: F.couleur, famille: F.nom, hex: COULEURS[F.couleur] || COULEURS.gris };
   /* texte libre qui commence par un bâtiment connu (« Conservatoire, salle Schubert ») : il en prend la couleur, et
      la pastille ne garde que ce qui suit la virgule (« Salle Schubert ») */
   const tete = sansAccents(e.lieu.split(',')[0].trim());
@@ -8804,7 +9007,9 @@ const ETIQUETTES = { annulé: 'annulé', 'en attente': 'en attente', 'à confirm
 
 function ligneHtml(e) {
   const L = lieuDe(e);
-  const meta = [metaQuand(e), pastille(L)].filter(Boolean).join(' ');
+  /* libellés (0.79) : petites étiquettes discrètes, après le lieu */
+  const libs = (e.libelles || []).map(x => '<span class="lib-et">' + rich(x) + '</span>').join(' ');
+  const meta = [metaQuand(e), pastille(L), libs].filter(Boolean).join(' ');
   const tags = [];
   if (e.statut)
     tags.push(
@@ -8814,6 +9019,8 @@ function ligneHtml(e) {
         ETIQUETTES[e.statut] +
         '</span>'
     );
+  /* 0.79 : une vraie manifestation, absente des affiches publiques et de « Demandez le programme » */
+  if (e.horsAffiche && !e.interne) tags.push('<span class="tag t-hors">pas sur l’affiche</span>');
   /* réservé à l'équipe : fond prune très léger plutôt qu'une étiquette (19/10/2026) */
   let h =
     '<li class="ev' +
@@ -9136,7 +9343,12 @@ function changements(a, e) {
   if ((a.titre || '') !== e.titre) L.push('titre : ' + citer(a.titre) + ' → ' + citer(e.titre));
   if ((a.lieu || '') !== e.lieu) L.push('lieu : ' + (a.lieu || 'aucun') + ' → ' + (e.lieu || 'aucun'));
   if ((a.statut || '') !== e.statut) L.push('état : ' + (a.statut || 'confirmée') + ' → ' + (e.statut || 'confirmée'));
-  if (!!a.interne !== !!e.interne) L.push(e.interne ? 'réservée à l’équipe' : 'ouverte au public');
+  const dif = x => (x.interne ? 'équipe seulement' : x.horsAffiche ? 'pas sur l’affiche' : 'public');
+  if (dif(a) !== dif(e)) L.push('diffusion : ' + dif(a) + ' → ' + dif(e));
+  if (!egal(a.libelles || [], e.libelles || [])) {
+    const lb = x => ((x.libelles || []).length ? x.libelles.join(', ') : 'aucun');
+    L.push('libellés : ' + lb(a) + ' → ' + lb(e));
+  }
   if ((a.type || '') !== (e.type || '')) {
     const t = x => (x.type ? TYPES.find(T => T[0] === typeDe(x).cle)[2].toLowerCase() : 'deviné');
     L.push('type : ' + t(a) + ' → ' + t(e));
@@ -9400,7 +9612,7 @@ function remplirFiche() {
           '<button type="button" class="pastille' +
           (e.lieu === l.cle ? ' choisi' : '') +
           '" style="--c:' +
-          (COULEURS[l.couleur] || COULEURS.gris) +
+          lieuDe({ lieu: l.cle }).hex /* couleur de sa famille, s'il en a une (0.79) */ +
           '" data-cle="' +
           esc(l.cle) +
           '" title="' +
@@ -9427,8 +9639,14 @@ function remplirFiche() {
     TYPES.map(([c]) => '<option value="' + c + '">' + esc(nomT(c)) + '</option>').join('');
   $('#fType').value = ty.devine ? '' : ty.cle;
   $('#fType').classList.toggle('devine', ty.devine);
-  $('#fInterne').checked = e.interne;
+  /* diffusion (0.79) : public, pas sur l'affiche, équipe seulement */
+  const dv = e.interne ? 'interne' : e.horsAffiche ? 'hors' : '';
+  $$('#fDiffusion button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === dv)));
+  /* réservée à l'équipe mais d'un type compté : sans doute une vraie manifestation qu'on voulait seulement cacher */
+  $('#fDiffAide').hidden = !(e.interne && typeDe(e).cle !== 'organisation');
   $('#fPublic').hidden = e.interne; /* réservé à l'équipe : les champs du public ne servent à rien (19/10/2026) */
+  $('#fPublicTitre').textContent = e.horsAffiche ? 'Pour le mail « Complet » et les bilans' : 'Pour « Demandez le programme »';
+  afficherLibs(e);
   set('#fAccomp', e.accomp);
   set('#fRemarque', e.remarque);
   set('#fLibelle', e.libelle);
@@ -9491,6 +9709,11 @@ function modifier(champ, val, rendre = true) {
     afficherListe();
     afficherControles();
     $('#ficheDate').textContent = typo(majuscule(libDate(e)));
+    /* 0.79 : libellés proposés et indication de diffusion suivent le titre, le sous-titre, les élèves, le lieu */
+    if (['titre', 'soustitre', 'eleves', 'lieu'].includes(champ)) {
+      afficherLibs(e);
+      $('#fDiffAide').hidden = !(e.interne && typeDe(e).cle !== 'organisation');
+    }
   }
 }
 
@@ -9739,11 +9962,30 @@ function initListe() {
     modifier('type', v ? (reste ? v + ' ' + reste : v) : '');
     remplirFiche();
   };
-  $('#fInterne').onchange = () => {
+  const diffuser = v => {
+    const e = evSel();
+    if (!e) return;
+    const interne = v === 'interne',
+      hors = v === 'hors';
+    if (!!e.interne === interne && !!e.horsAffiche === hors) return;
+    snapshot();
     editSnap = null;
-    modifier('interne', $('#fInterne').checked);
+    e.interne = interne;
+    e.horsAffiche = hors;
+    changed();
+    afficherListe();
+    afficherControles();
     remplirFiche();
   };
+  $('#fDiffusion').addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (b) diffuser(b.dataset.v);
+  });
+  $('#fDiffHors').onclick = () => {
+    diffuser('hors');
+    toast('Pas sur l’affiche : comptée dans les bilans, absente de l’affiche et de « Demandez le programme »', 'Annuler', annuler);
+  };
+  initLibs();
   $('#fSupprimer').onclick = () => {
     if (creation && creation === selId) {
       const id = selId;
@@ -10388,6 +10630,8 @@ function textesEv(e) {
     e.accomp,
     e.remarque,
     e.statut,
+    (e.libelles || []).join(' '),
+    e.horsAffiche ? 'pas sur l’affiche' : '',
     libDate(e)
   ];
 }
@@ -10507,18 +10751,14 @@ function lieuxConnus(sauf) {
       libres.set(k, x);
     }
   }
-  const L = Object.values(ref).map(l => ({
-    cle: l.cle,
-    nom: l.nom,
-    couleur: l.couleur,
-    hex: COULEURS[l.couleur] || COULEURS.gris,
-    libre: false,
-    n: n.get(l.cle) || 0
-  }));
+  const L = Object.values(ref).map(l => {
+    const Lx = lieuDe({ lieu: l.cle }); /* couleur de sa famille, s'il en a une (0.79) */
+    return { cle: l.cle, nom: l.nom, couleur: Lx.couleur, famille: Lx.famille || '', hex: Lx.hex, libre: false, n: n.get(l.cle) || 0 };
+  });
   for (const x of libres.values()) {
     if (L.some(l => plat(l.nom) === plat(x.nom))) continue;
     const Lx = lieuDe({ lieu: x.nom });
-    L.push({ cle: '', nom: x.nom, couleur: Lx.couleur || '', hex: Lx.hex, libre: true, n: x.n });
+    L.push({ cle: '', nom: x.nom, couleur: Lx.couleur || '', famille: Lx.famille || '', hex: Lx.hex, libre: true, n: x.n });
   }
   return L.sort((a, b) => b.n - a.n || a.nom.localeCompare(b.nom, 'fr'));
 }
@@ -10537,7 +10777,15 @@ function lieuxPour(q) {
 /* ---- la petite liste sous le champ (une seule, déplacée sous le champ qui la demande) ----
    Pas de <datalist> : au téléphone, Android la montre en bandeau au-dessus du clavier, sans couleurs ni ordre, et
    Edge la mêle à l'historique des formulaires. */
-const prop = { champ: null, L: [], i: -1, choisir: null, sauf: '' };
+const prop = { champ: null, L: [], i: -1, choisir: null, sauf: '', src: null };
+/* ce que la liste propose : des lieux (0.78), ou des libellés (0.79) ; même composant */
+const SRC_LIEUX = {
+  items: q => lieuxPour(q).filter(l => plat(l.cle || l.nom) !== plat(q) && plat(l.nom) !== plat(q)),
+  html: l =>
+    '<span class="pastille' + (l.libre ? ' libre' : '') + '" style="--c:' + l.hex + '">' + esc(l.cle || l.nom) + '</span>' +
+    (l.cle && l.nom !== l.cle ? '<span class="lp-nom">' + rich(l.nom) + '</span>' : '<span class="lp-nom"></span>') +
+    '<span class="lp-n">' + (l.n ? l.n + ' date' + (l.n > 1 ? 's' : '') : '') + '</span>'
+};
 function fermerProp() {
   const b = $('#lieuProp');
   if (!b || b.hidden) return;
@@ -10546,21 +10794,19 @@ function fermerProp() {
   prop.champ = null;
   prop.i = -1;
 }
-function montrerProp(champ, q, choisir) {
+function montrerProp(champ, q, choisir, src = SRC_LIEUX) {
   prop.sauf = champ.id === 'fLieuLibre' ? selId : '';
   const b = $('#lieuProp'),
-    L = lieuxPour(q).filter(l => plat(l.cle || l.nom) !== plat(q) && plat(l.nom) !== plat(q));
+    L = src.items(q);
   if (!L.length) return fermerProp();
   prop.champ = champ;
   prop.L = L;
   prop.choisir = choisir;
+  prop.src = src;
   if (prop.i >= L.length) prop.i = -1;
+  b.setAttribute('aria-label', src === SRC_LIEUX ? 'Lieux déjà utilisés' : 'Libellés connus');
   b.innerHTML = L.map(
-    (l, k) =>
-      '<button type="button" role="option" data-k="' + k + '"' + (k === prop.i ? ' aria-selected="true"' : '') + '>' +
-      '<span class="pastille' + (l.libre ? ' libre' : '') + '" style="--c:' + l.hex + '">' + esc(l.cle || l.nom) + '</span>' +
-      (l.cle && l.nom !== l.cle ? '<span class="lp-nom">' + rich(l.nom) + '</span>' : '<span class="lp-nom"></span>') +
-      '<span class="lp-n">' + (l.n ? l.n + ' date' + (l.n > 1 ? 's' : '') : '') + '</span></button>'
+    (l, k) => '<button type="button" role="option" data-k="' + k + '"' + (k === prop.i ? ' aria-selected="true"' : '') + '>' + src.html(l) + '</button>'
   ).join('');
   const parent = champ.parentElement;
   if (b.parentElement !== parent) parent.append(b);
@@ -10571,17 +10817,19 @@ function montrerProp(champ, q, choisir) {
   b.hidden = false;
   champ.setAttribute('aria-expanded', 'true');
 }
-/** Branche la liste sur un champ. texte() : ce qui est cherché (null : rien à proposer) ; choisir(lieu) : le choix. */
-function brancherProp(champ, texte, choisir) {
+/** Branche la liste sur un champ. texte() : ce qui est cherché (null : rien à proposer) ; choisir(lieu) : le choix ;
+ *  src : ce qui est proposé ; vide : proposer aussi le champ vide (au toucher du champ). */
+function brancherProp(champ, texte, choisir, src = SRC_LIEUX, vide = false) {
   const maj = () => {
     const q = texte();
-    if (q == null || !q.trim()) return fermerProp();
-    montrerProp(champ, q, choisir);
+    if (q == null || (!vide && !q.trim())) return fermerProp();
+    montrerProp(champ, q, choisir, src);
   };
   champ.addEventListener('input', () => {
     prop.i = -1;
     maj();
   });
+  if (vide) champ.addEventListener('focus', () => ((prop.i = -1), maj()));
   champ.addEventListener('blur', () => setTimeout(() => prop.champ === champ && fermerProp(), 150));
   champ.addEventListener('keydown', ev => {
     const b = $('#lieuProp');
@@ -10590,7 +10838,7 @@ function brancherProp(champ, texte, choisir) {
       ev.preventDefault();
       const n = prop.L.length;
       prop.i = ev.key === 'ArrowDown' ? (prop.i + 1) % n : (prop.i - 1 + n) % n;
-      montrerProp(champ, texte(), choisir);
+      montrerProp(champ, texte(), choisir, src);
     } else if (ev.key === 'Enter' && prop.i >= 0) {
       ev.preventDefault();
       ev.stopPropagation();
@@ -10663,7 +10911,90 @@ function fixerLieu(cle, nom, couleur) {
     doc.reglages.splice(der >= 0 ? der + 1 : doc.reglages.length, 0, { cle: 'lieu', val: v });
   }
 }
-let lxOuvert = ''; /* lieu dont la palette est ouverte */
+/** Écrit une famille (« École · sarcelle ») ; la crée à la suite des familles, sinon après les lieux. */
+function fixerFamille(nom, couleur) {
+  const v = nom + ' · ' + couleur,
+    i = doc.reglages.findIndex(r => r.cle === 'famille' && plat(r.val.split(' · ')[0]).trim() === plat(nom).trim());
+  if (i >= 0) doc.reglages[i] = { cle: 'famille', val: v };
+  else {
+    const R = doc.reglages.map(r => r.cle);
+    let der = R.lastIndexOf('famille');
+    if (der < 0) der = R.lastIndexOf('lieu');
+    doc.reglages.splice(der >= 0 ? der + 1 : doc.reglages.length, 0, { cle: 'famille', val: v });
+  }
+}
+/** Lieux (référentiel et tapés en toutes lettres) dont le nom commence par ce mot de tête. */
+const membres = tete => lieuxConnus().filter(l => commencePar(l.nom, tete) || (l.cle && commencePar(l.cle, tete)));
+/** Couleur de départ d'une famille : la plus fréquente parmi ses lieux du référentiel, si aucun autre lieu ne la porte
+ *  (le bleu du conservatoire n'irait pas aux écoles) ; sinon la première couleur libre de la palette. */
+function couleurDeDepart(tete) {
+  const C = lieuxConnus(),
+    est = l => commencePar(l.nom, tete) || (!!l.cle && commencePar(l.cle, tete)),
+    M = C.filter(est),
+    autres = new Set(C.filter(l => !est(l) && !l.libre).map(l => l.couleur)),
+    n = new Map();
+  for (const l of M) if (!l.libre && l.couleur && l.couleur !== 'gris' && !autres.has(l.couleur)) n.set(l.couleur, (n.get(l.couleur) || 0) + 1);
+  const c = [...n].sort((a, b) => b[1] - a[1])[0];
+  if (c) return c[0];
+  /* les couleurs ajoutées en 0.78 d'abord : bleu, framboise, vert et ocre disent déjà un équipement de la Ville */
+  return ['sarcelle', 'indigo', 'olive', 'violet', 'brun', 'orange'].find(x => !autres.has(x)) || 'sarcelle';
+}
+const palette = (choisie, nom) =>
+  '<div class="lx-palette" role="group" aria-label="Couleur de ' + esc(nom) + '">' +
+  PALETTE.map(
+    ([c, n]) => '<button type="button" data-c="' + c + '" title="' + n + '" aria-label="' + n + '" aria-pressed="' + ((choisie || 'gris') === c) + '" style="--c:' + COULEURS[c] + '"></button>'
+  ).join('') +
+  '</div>';
+/** Section « Familles » (0.79) : chaque famille, ses lieux, sa couleur ; « École » proposée d'office. */
+function afficherFamilles() {
+  const F = familles(doc);
+  let h = '<h3>Familles</h3>';
+  if (F.length)
+    h +=
+      '<ul class="lx lx-fam">' +
+      F.map(f => {
+        const M = membres(f.nom),
+          k = 'f:' + f.nom,
+          hex = COULEURS[f.couleur] || COULEURS.gris;
+        return (
+          '<li data-fam="' + esc(f.nom) + '"' + (lxOuvert === k ? ' class="ouvert"' : '') + '>' +
+          '<button type="button" class="pastille lx-p" style="--c:' + hex + '" title="Changer la couleur de la famille" aria-expanded="' + (lxOuvert === k) + '">' + esc(f.nom) + '</button>' +
+          '<span class="lx-membres" title="' + esc(M.map(l => l.nom).join(', ')) + '">' +
+          (M.length ? pluriel(M.length, 'lieu', 'lieux') + ' : ' + M.map(l => esc(l.nom)).join(', ') : '<i>aucun lieu pour l’instant</i>') +
+          '</span>' +
+          '<span class="lx-n"><button type="button" class="lien lx-fam-retirer">retirer</button></span>' +
+          (lxOuvert === k ? palette(f.couleur, f.nom) : '') +
+          '</li>'
+        );
+      }).join('') +
+      '</ul>';
+  else h += '<p class="aide lx-aide">Une famille donne la même couleur à tous les lieux dont le nom commence par le même mot : « École Jean Jaurès », « École Mendès France »…</p>';
+  /* « École » proposée d'office si un lieu commence par ce mot et qu'aucune famille ne le couvre */
+  const ecoles = membres('École').filter(l => !l.famille);
+  if (ecoles.length && !F.some(f => plat(f.nom) === 'ecole'))
+    h +=
+      '<p class="lx-propose">' + pluriel(ecoles.length, 'lieu commence', 'lieux commencent') + ' par « École » : ' +
+      '<button type="button" class="lx-fam-creer" data-tete="École">En faire une famille</button></p>';
+  h +=
+    '<form id="lxFamAjout" class="lx-ajout lx-fam-ajout" autocomplete="off">' +
+    '<input id="lxFamNom" placeholder="Mot de tête : École, Gymnase…" aria-label="Mot de tête de la nouvelle famille" maxlength="30">' +
+    '<button>Créer la famille</button></form>';
+  $('#lxFamilles').innerHTML = h;
+}
+function creerFamille(tete) {
+  const t = nomSur(tete).replace(/[,·]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t) return;
+  if (familles(doc).some(f => plat(f.nom) === plat(t))) return toast('La famille « ' + t + ' » existe déjà');
+  snapshot();
+  fixerFamille(t, couleurDeDepart(t));
+  changed();
+  toutAfficher();
+  lxOuvert = 'f:' + t;
+  afficherLieux();
+  const n = membres(t).length;
+  toast('Famille « ' + t + ' » : ' + pluriel(n, 'lieu', 'lieux') + ', même couleur', 'Annuler', annuler);
+}
+let lxOuvert = ''; /* lieu (sa clé) ou famille (« f:École ») dont la palette est ouverte */
 function afficherLieux() {
   const C = lieuxConnus(),
     ref = C.filter(l => !l.libre).sort((a, b) => ordreRef.indexOf(a.cle) - ordreRef.indexOf(b.cle)),
@@ -10674,21 +11005,15 @@ function afficherLieux() {
       .map(
         l =>
           '<li data-cle="' + esc(l.cle) + '"' + (lxOuvert === l.cle ? ' class="ouvert"' : '') + '>' +
-          '<button type="button" class="pastille lx-p" style="--c:' + l.hex + '" title="Changer la couleur" aria-expanded="' + (lxOuvert === l.cle) + '">' + esc(l.cle) + '</button>' +
+          '<button type="button" class="pastille lx-p" style="--c:' + l.hex + '" title="' + (l.famille ? 'Couleur de la famille « ' + esc(l.famille) + ' »' : 'Changer la couleur') + '" aria-expanded="' + (lxOuvert === l.cle) + '">' + esc(l.cle) + '</button>' +
           '<input class="lx-nom" value="' + esc(l.nom) + '" aria-label="Nom complet de ' + esc(l.cle) + '">' +
           '<span class="lx-n">' + (l.n ? l.n + ' date' + (l.n > 1 ? 's' : '') : '<button type="button" class="lien lx-retirer">retirer</button>') + '</span>' +
-          (lxOuvert === l.cle
-            ? '<div class="lx-palette" role="group" aria-label="Couleur de ' + esc(l.cle) + '">' +
-              PALETTE.map(
-                ([c, nom]) =>
-                  '<button type="button" data-c="' + c + '" title="' + nom + '" aria-label="' + nom + '" aria-pressed="' + ((l.couleur || 'gris') === c) + '" style="--c:' + COULEURS[c] + '"></button>'
-              ).join('') +
-              '</div>'
-            : '') +
+          (lxOuvert === l.cle ? palette(l.couleur, l.cle) : '') +
           '</li>'
       )
       .join('') +
     '</ul>';
+  afficherFamilles();
   $('#lxLibres').innerHTML = libres.length
     ? '<h3>Tapés en toutes lettres</h3><ul class="lx lx-libres">' +
       libres
@@ -10730,6 +11055,17 @@ function initLieux() {
       return afficherLieux();
     }
     const c = ev.target.closest('[data-c]');
+    const F = c && (familleDe(L.nom) || familleDe(cle));
+    if (F) {
+      /* un lieu d'une famille : c'est la famille qui change de couleur, avec tous ses lieux */
+      if (F.couleur === c.dataset.c) return;
+      snapshot();
+      fixerFamille(F.nom, c.dataset.c);
+      changed();
+      toutAfficher();
+      afficherLieux();
+      return toast('Famille « ' + F.nom + ' » : ' + PALETTE.find(p => p[0] === c.dataset.c)[1], 'Annuler', annuler);
+    }
     if (c) {
       if ((L.couleur || 'gris') === c.dataset.c) return;
       snapshot();
@@ -10773,16 +11109,54 @@ function initLieux() {
     /* même couleur que le dernier lieu ajouté du même bâtiment (« École, … ») : la série se fait toute seule */
     const tete = plat(nom.split(',')[0]),
       frere = Object.values(lieux(doc)).find(l => nom.includes(',') && plat(l.nom.split(',')[0]) === tete);
+    const fam = familleDe(nom) || familleDe(cle);
     snapshot();
-    fixerLieu(cle, nom, frere ? frere.couleur || 'gris' : 'gris');
+    fixerLieu(cle, nom, fam ? fam.couleur : frere ? frere.couleur || 'gris' : 'gris');
     changed();
     toutAfficher();
     ordreRef = Object.keys(lieux(doc));
-    lxOuvert = frere ? '' : cle;
+    lxOuvert = frere || fam ? '' : cle;
     afficherLieux();
     $('#lxCle').value = $('#lxNom').value = '';
     toast('Lieu ajouté : ' + cle, 'Annuler', annuler);
   };
+  $('#lxFamilles').addEventListener('click', ev => {
+    const cr = ev.target.closest('.lx-fam-creer');
+    if (cr) return creerFamille(cr.dataset.tete);
+    const li = ev.target.closest('li[data-fam]');
+    if (!li) return;
+    const F = familles(doc).find(f => f.nom === li.dataset.fam);
+    if (!F) return;
+    if (ev.target.closest('.lx-p')) {
+      lxOuvert = lxOuvert === 'f:' + F.nom ? '' : 'f:' + F.nom;
+      return afficherLieux();
+    }
+    const c = ev.target.closest('[data-c]');
+    if (c) {
+      if (F.couleur === c.dataset.c) return;
+      snapshot();
+      fixerFamille(F.nom, c.dataset.c);
+      changed();
+      toutAfficher();
+      afficherLieux();
+      return toast('Famille « ' + F.nom + ' » : ' + PALETTE.find(p => p[0] === c.dataset.c)[1], 'Annuler', annuler);
+    }
+    if (ev.target.closest('.lx-fam-retirer')) {
+      snapshot();
+      doc.reglages = doc.reglages.filter(r => !(r.cle === 'famille' && plat(r.val.split(' · ')[0]).trim() === plat(F.nom).trim()));
+      changed();
+      toutAfficher();
+      lxOuvert = '';
+      afficherLieux();
+      toast('Famille « ' + F.nom + ' » retirée : chaque lieu reprend sa couleur', 'Annuler', annuler);
+    }
+  });
+  $('#lxFamilles').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const v = $('#lxFamNom').value;
+    if (!v.trim()) return $('#lxFamNom').focus();
+    creerFamille(v);
+  });
   $('#lxLibres').addEventListener('click', ev => {
     const b = ev.target.closest('.lx-ajouter');
     if (!b) return;
@@ -11004,7 +11378,7 @@ async function telechargerDocx(octets, nom) {
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   toast('Document téléchargé : ' + nom);
 }
-/* 06h-bilans.js : fenêtre « Bilans… » (0.78), deux bilans, copiés (tableau en texte riche) ou en document Word.
+/* 06h-bilans.js : fenêtre « Bilans… » (0.78), trois bilans depuis la 0.79 (Par libellé), copiés (tableau en texte riche) ou en document Word.
    - Par type (François : « nombre de manifestations en fonction du type : Concerts et représentations ; Auditions ;
      Manifestations du dispositif « Conservatoire à l’école » ; Autres interventions ») : par trimestre, par période
      ou toute la saison ; réalisées et à venir.
@@ -11084,15 +11458,26 @@ const nomLieu = e => {
 };
 
 /* ---- bilan par type ---- */
-function bilanTypes(c, internes) {
-  const E = dansChoix(c),
-    pris = E.filter(e => e.statut !== 'annulé' && e.statut !== 'en attente' && (internes || !e.interne)),
-    par = TYPES.map(([cle, nom]) => ({ cle, nom, L: pris.filter(e => typeDe(e).cle === cle) }));
-  const non = [
-    [E.filter(e => e.statut === 'annulé').length, 'annulée', 'annulées'],
-    [E.filter(e => e.statut === 'en attente').length, 'en attente', 'en attente'],
-    [internes ? 0 : E.filter(e => e.interne && e.statut !== 'annulé' && e.statut !== 'en attente').length, 'réservée à l’équipe', 'réservées à l’équipe']
+/** Comptée dans un bilan (0.79) : ni annulée, ni en attente, ni d'organisation, quelle que soit la diffusion (François :
+ *  « ce qui est purement de l'ordre de l'organisation ne doit pas rentrer dans le bilan »). */
+const compte = e => e.statut !== 'annulé' && e.statut !== 'en attente' && typeDe(e).cle !== 'organisation';
+/** Celles qui ne comptent pas, dites en tête : « 1 annulée, 2 d’organisation ». */
+function nonComptees(E) {
+  const an = E.filter(e => e.statut === 'annulé'),
+    at = E.filter(e => e.statut === 'en attente'),
+    org = E.filter(e => !an.includes(e) && !at.includes(e) && typeDe(e).cle === 'organisation');
+  return [
+    [an.length, 'annulée', 'annulées'],
+    [at.length, 'en attente', 'en attente'],
+    [org.length, 'd’organisation (hors bilan)', 'd’organisation (hors bilan)']
   ].filter(x => x[0]);
+}
+const ligneMan = e => '<b>' + rich(e.titre) + '</b>' + (e.soustitre ? '<br>' + richLignes(e.soustitre) : '');
+function bilanTypes(c) {
+  const E = dansChoix(c),
+    pris = E.filter(compte),
+    par = TYPES_COMPTES.map(([cle, nom]) => ({ cle, nom, L: pris.filter(e => typeDe(e).cle === cle) })),
+    non = nonComptees(E);
   const blocs = [
     { titre: 'Bilan des manifestations' },
     { sousTitre: rich(majuscule(nomChoix(c)) + ', ' + libChoix(c)) },
@@ -11117,25 +11502,80 @@ function bilanTypes(c, internes) {
   ];
   const pc = horsFichier(c);
   if (pc) blocs.splice(2, 0, { p: '<i>' + esc(pc) + '</i>' });
+  const tableMan = L => ({
+    cols: [3.2, 6, 3.4, 1.6],
+    tete: ['Date', 'Manifestation', 'Lieu', ''],
+    ids: L.map(e => e.id),
+    devine: L.map(e => typeDe(e).devine),
+    lignes: L.map(e => [esc(quandBil(e)), ligneMan(e), rich(nomLieu(e)), passee(e) ? 'réalisée' : 'à venir'])
+  });
   for (const t of par) {
     if (!t.L.length) continue;
     blocs.push({ h: esc(t.nom) + ' (' + t.L.length + ')' });
+    blocs.push({ table: tableMan(t.L) });
+  }
+  /* par libellé (0.79), en bas : combien de manifestations comptées portent chacun */
+  const libs = libellesConnus(doc)
+    .map(l => [l, pris.filter(e => (e.libelles || []).some(x => plat(x) === plat(l)))])
+    .filter(x => x[1].length);
+  if (libs.length) {
+    blocs.push({ h: 'Par libellé' });
     blocs.push({
       table: {
-        cols: [3.2, 6, 3.4, 1.6],
-        tete: ['Date', 'Manifestation', 'Lieu', ''],
-        ids: t.L.map(e => e.id),
-        devine: t.L.map(e => typeDe(e).devine),
-        lignes: t.L.map(e => [
-          esc(quandBil(e)),
-          '<b>' + rich(e.titre) + '</b>' + (e.soustitre ? '<br>' + richLignes(e.soustitre) : '') + (e.interne ? ' <i>(équipe)</i>' : ''),
-          rich(nomLieu(e)),
-          passee(e) ? 'réalisée' : 'à venir'
-        ])
+        cols: [5, 1.6, 1.6, 1.6],
+        tete: ['Libellé', 'Réalisées', 'À venir', 'Total'],
+        droite: [1, 2, 3],
+        lignes: libs.map(([l, L]) => [esc(l), String(L.filter(passee).length), String(L.filter(e => !passee(e)).length), String(L.length)])
       }
     });
   }
+  /* à l'écran seulement : ce qui est hors bilan, pour vérifier un type deviné (jamais copié ni dans le Word) */
+  const org = E.filter(e => e.statut !== 'annulé' && e.statut !== 'en attente' && typeDe(e).cle === 'organisation');
+  if (org.length) {
+    blocs.push({ ecran: true, h: 'Hors bilan : organisation (' + org.length + ')' });
+    blocs.push({ ecran: true, table: tableMan(org) });
+  }
   return { blocs, nom: 'Bilan des manifestations, ' + nomChoix(c) };
+}
+
+/* ---- bilan par libellé (0.79) ---- */
+function bilanLibelle(c, lib) {
+  if (!lib)
+    return {
+      blocs: [{ titre: 'Bilan par libellé' }, { p: '<i>Aucun libellé pour l’instant : ajoute-en un dans la fiche d’une manifestation (ligne « Libellés »).</i>' }],
+      nom: 'Bilan par libellé'
+    };
+  const E = dansChoix(c).filter(e => (e.libelles || []).some(x => plat(x) === plat(lib))),
+    pris = E.filter(compte),
+    non = nonComptees(E),
+    r = pris.filter(passee).length;
+  const blocs = [
+    { titre: 'Manifestations ' + esc(lib) },
+    { sousTitre: rich(majuscule(nomChoix(c)) + ', ' + libChoix(c)) },
+    {
+      p:
+        '<b>' + pluriel(pris.length, 'manifestation', 'manifestations') + '</b>' +
+        (pris.length ? ' (' + r + ' réalisée' + (r > 1 ? 's' : '') + ', ' + (pris.length - r) + ' à venir)' : '') +
+        (non.length ? '. Non comptées : ' + non.map(x => pluriel(...x)).join(', ') + '.' : '.')
+    }
+  ];
+  const pc = horsFichier(c);
+  if (pc) blocs.push({ p: '<i>' + esc(pc) + '</i>' });
+  if (pris.length)
+    blocs.push({
+      table: {
+        cols: [3.2, 6, 3.4, 4],
+        tete: ['Date', 'Manifestation', 'Lieu', 'Élèves concernés'],
+        ids: pris.map(e => e.id),
+        lignes: pris.map(e => [
+          esc(quandBil(e)) + (libHoraire(e) ? '<br>' + esc(typo(libHoraire(e))) : '') + (passee(e) ? '' : '<br><i>à venir</i>'),
+          ligneMan(e),
+          rich(nomLieu(e)),
+          rich(e.eleves || '')
+        ])
+      }
+    });
+  return { blocs, nom: 'Bilan ' + libSur(lib).replace(/[\\/:*?"<>|]/g, '-') + ', ' + nomChoix(c) };
 }
 
 /* ---- bilan CCAS ---- */
@@ -11162,7 +11602,7 @@ function suiviCcas(e) {
 }
 function bilanCcas(c) {
   const E = dansChoix(c).filter(estCcas),
-    pris = E.filter(e => e.statut !== 'annulé' && e.statut !== 'en attente' && !e.interne),
+    pris = E.filter(compte),
     apart = E.filter(e => !pris.includes(e));
   const ligne = e => {
     const org = [
@@ -11205,7 +11645,7 @@ function bilanCcas(c) {
         ids: apart.map(e => e.id),
         lignes: apart.map(e => {
           const l = ligne(e);
-          return [l[0], l[1], e.statut === 'annulé' ? 'annulée' : e.statut === 'en attente' ? 'en attente' : 'réservée à l’équipe', l[3]];
+          return [l[0], l[1], e.statut === 'annulé' ? 'annulée' : e.statut === 'en attente' ? 'en attente' : 'organisation', l[3]];
         })
       }
     });
@@ -11218,6 +11658,7 @@ function htmlBilan(B, ecran) {
   const F = 'font-family:Calibri,Arial,sans-serif;color:#1f2933;';
   let h = '<div style="' + F + 'font-size:11pt">';
   for (const b of B.blocs) {
+    if (b.ecran && !ecran) continue;
     if (b.titre != null) h += '<p style="margin:0 0 2pt;font-size:16pt;font-weight:bold;color:#2e5e8c">' + b.titre + '</p>';
     else if (b.sousTitre != null) h += '<p style="margin:0 0 8pt;font-style:italic;color:#5b6470">' + b.sousTitre + '</p>';
     else if (b.h != null) h += '<p style="margin:12pt 0 4pt;font-size:12pt;font-weight:bold;color:#2e5e8c">' + b.h + '</p>';
@@ -11251,8 +11692,10 @@ function htmlBilan(B, ecran) {
 function texteBilan(B) {
   const d = document.createElement('div'),
     out = [];
-  const t = h => ((d.innerHTML = (h || '').replace(/<br>/g, ' · ')), d.textContent);
+  /* « n<sup>o</sup> » → « nº » : en texte brut, l'exposant se perdrait (« no 1 ») */
+  const t = h => ((d.innerHTML = (h || '').replace(/<br>/g, ' · ').replace(/<sup>o<\/sup>/g, 'º')), d.textContent);
   for (const b of B.blocs) {
+    if (b.ecran) continue;
     if (b.titre != null) out.push(t(b.titre));
     else if (b.sousTitre != null) out.push(t(b.sousTitre), '');
     else if (b.h != null) out.push('', t(b.h));
@@ -11265,17 +11708,29 @@ function texteBilan(B) {
 let bilSorte = 'types';
 function bilanCourant() {
   const c = choixCourant();
-  return bilSorte === 'ccas' ? bilanCcas(c) : bilanTypes(c, $('#bilInternes').checked);
+  return bilSorte === 'ccas' ? bilanCcas(c) : bilSorte === 'libelle' ? bilanLibelle(c, $('#bilLibelle').value) : bilanTypes(c);
+}
+/** Les libellés connus dans le choix (le précédent gardé). */
+function remplirLibelles() {
+  const sel = $('#bilLibelle'),
+    avant = sel.value,
+    L = libellesConnus(doc);
+  sel.innerHTML = L.map(l => '<option value="' + esc(l) + '">' + esc(l) + '</option>').join('');
+  sel.value = L.includes(avant) ? avant : L[0] || '';
+  sel.hidden = bilSorte !== 'libelle' || !L.length;
 }
 function afficherBilan() {
   $$('#bilSorte button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === bilSorte)));
-  $('#bilInternesW').hidden = bilSorte === 'ccas';
+  remplirLibelles();
   const B = bilanCourant();
   $('#bilApercu').innerHTML = htmlBilan(B, true);
   $('#bilAide').textContent =
     bilSorte === 'ccas'
       ? 'À la Conciergerie, ou le CCAS nommé dans le titre, le sous-titre, le descriptif ou une remarque.'
-      : 'Sans type choisi dans la fiche, Saison le devine. Touche une ligne pour ouvrir sa fiche.';
+      : bilSorte === 'libelle'
+        ? 'Les manifestations qui portent ce libellé (ligne « Libellés » de la fiche). Touche une ligne pour ouvrir sa fiche.'
+        : 'Sans type choisi dans la fiche, Saison le devine ; l’organisation ne compte pas. Touche une ligne pour ouvrir sa fiche.';
+  $('#bilWord').disabled = $('#bilCopier').disabled = bilSorte === 'libelle' && !$('#bilLibelle').value;
 }
 function ouvrirBilans(sorte) {
   if (!socle.ouvert) return toast('Ouvre d’abord le fichier de suivi');
@@ -11304,7 +11759,7 @@ function ouvrirBilans(sorte) {
 function initBilans() {
   $('#bilFermer').onclick = () => $('#bilans').close();
   $('#bilPeriode').onchange = afficherBilan;
-  $('#bilInternes').onchange = afficherBilan;
+  $('#bilLibelle').onchange = afficherBilan;
   $('#bilSorte').addEventListener('click', ev => {
     const b = ev.target.closest('[data-s]');
     if (!b) return;
@@ -11324,8 +11779,117 @@ function initBilans() {
   };
   $('#bilWord').onclick = () => {
     const B = bilanCourant();
-    telechargerDocx(docxDe(B.blocs), B.nom.replace(/[\\/:*?"<>|]/g, '-') + '.docx');
+    telechargerDocx(docxDe(B.blocs.filter(b => !b.ecran)), B.nom.replace(/[\\/:*?"<>|]/g, '-') + '.docx');
   };
+}
+/* 06i-libelles.js : libellés d'une manifestation (0.79).
+   François : « il faudrait aussi lister toutes les manifestations qui font participer des CHAM. Et ça ne peut pas être
+   un type à part, il faudrait un système de libellés ». Jeton {libellés CHAM ; Orchestre} (02-modele.js), liste connue
+   dans les réglages (« - libellé : CHAM »). Dans la fiche, une ligne « Libellés » : les libellés posés (toucher : retirer),
+   ceux que le titre, le sous-titre ou les élèves concernés mentionnent sans les porter (proposés, un geste : jamais
+   comptés en silence), et un champ d'ajout avec la liste des libellés connus (même composant que les lieux proposés). */
+
+/** Un libellé tel qu'on peut l'écrire dans le jeton : sans accolades ni « ; », espaces simples. */
+const libSur = s => String(s || '').replace(/[{};]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+/** Nombre de manifestations qui portent chaque libellé (clé sans accents). */
+function comptesLibs() {
+  const n = new Map();
+  for (const e of doc.evts) for (const x of e.libelles || []) n.set(plat(x), (n.get(plat(x)) || 0) + 1);
+  return n;
+}
+/** Proposés sous le champ : les libellés connus que la date ne porte pas, qui contiennent ce qui est tapé ; puis
+ *  « nouveau libellé » si le texte tapé n'existe pas encore. */
+const SRC_LIBS = {
+  items: q => {
+    const e = evSel(),
+      pose = (e && e.libelles) || [],
+      n = comptesLibs(),
+      mots = plat(q).split(/\s+/).filter(Boolean);
+    const L = libellesConnus(doc)
+      .filter(l => !pose.some(x => plat(x) === plat(l)) && mots.every(m => plat(l).includes(m)))
+      .map(l => ({ nom: l, n: n.get(plat(l)) || 0 }));
+    const t = libSur(q);
+    if (t && !libellesConnus(doc).some(l => plat(l) === plat(t))) L.push({ nom: t, n: 0, nouveau: true });
+    return L.slice(0, 7);
+  },
+  html: l =>
+    '<span class="lib-et">' + esc(l.nom) + '</span>' +
+    '<span class="lp-nom">' + (l.nouveau ? 'nouveau libellé' : '') + '</span>' +
+    '<span class="lp-n">' + (l.n ? l.n + ' date' + (l.n > 1 ? 's' : '') : '') + '</span>'
+};
+function afficherLibs(e) {
+  const pose = e.libelles || [],
+    props = libellesProposes(e, doc);
+  $('#fLibs').innerHTML =
+    pose
+      .map(x => '<button type="button" class="lib-et pose" data-retirer="' + esc(x) + '" title="Retirer ce libellé">' + esc(x) + '<span aria-hidden="true"> ×</span></button>')
+      .join('') +
+    props
+      .map(x => '<button type="button" class="lib-et propose" data-ajouter="' + esc(x) + '" title="Le titre, le sous-titre ou les élèves concernés en parlent : ajouter ce libellé">+ ' + esc(x) + '</button>')
+      .join('');
+  $('#fLibs').hidden = !pose.length && !props.length;
+}
+/** Pose un libellé sur la date ouverte ; un libellé nouveau entre dans la liste connue (réglages). */
+function ajouterLib(nom) {
+  const e = evSel(),
+    t = libSur(nom);
+  if (!e || !t) return;
+  const connu = libellesConnus(doc).find(l => plat(l) === plat(t)),
+    v = connu || t;
+  if ((e.libelles || []).some(x => plat(x) === plat(v))) return;
+  snapshot();
+  editSnap = null;
+  e.libelles = [...(e.libelles || []), v];
+  const nouveau = !doc.reglages.some(r => r.cle === 'libellé' && plat(r.val) === plat(v));
+  if (nouveau) {
+    /* à la suite des libellés, sinon après les lieux et les familles */
+    const R = doc.reglages.map(r => r.cle);
+    let i = R.lastIndexOf('libellé');
+    if (i < 0) i = Math.max(R.lastIndexOf('lieu'), R.lastIndexOf('famille'));
+    doc.reglages.splice(i >= 0 ? i + 1 : doc.reglages.length, 0, { cle: 'libellé', val: v });
+  }
+  changed();
+  afficherListe();
+  afficherLibs(e);
+  if (!connu) toast('Nouveau libellé : ' + v, 'Annuler', annuler);
+}
+function retirerLib(nom) {
+  const e = evSel();
+  if (!e) return;
+  snapshot();
+  editSnap = null;
+  e.libelles = (e.libelles || []).filter(x => x !== nom);
+  changed();
+  afficherListe();
+  afficherLibs(e);
+}
+function initLibs() {
+  const champ = $('#fLibAjout');
+  $('#fLibs').addEventListener('click', ev => {
+    const a = ev.target.closest('[data-ajouter]'),
+      r = ev.target.closest('[data-retirer]');
+    if (a) ajouterLib(a.dataset.ajouter);
+    else if (r) retirerLib(r.dataset.retirer);
+  });
+  brancherProp(
+    champ,
+    () => champ.value,
+    l => {
+      ajouterLib(l.nom);
+      champ.value = '';
+      champ.focus();
+    },
+    SRC_LIBS,
+    true
+  );
+  champ.addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter' || ev.defaultPrevented) return;
+    ev.preventDefault();
+    if (!champ.value.trim()) return;
+    ajouterLib(champ.value);
+    champ.value = '';
+    fermerProp();
+  });
 }
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
@@ -11529,9 +12093,13 @@ function nomVacances(fin) {
 function legende(evts) {
   const parCouleur = new Map();
   const Ls = evts.map(lieuDe).filter(Boolean);
-  for (const l of Object.values(lieux(doc)))
-    if (l.couleur && Ls.some(L => L.couleur === l.couleur) && !parCouleur.has(l.couleur))
-      parCouleur.set(l.couleur, l.nom.replace(/,.*$/, ''));
+  for (const l of Object.values(lieux(doc))) {
+    /* un lieu d'une famille (0.79) : la légende dit la famille (« École ») */
+    const Lx = lieuDe({ lieu: l.cle });
+    if (Lx.couleur && Ls.some(L => L.couleur === Lx.couleur) && !parCouleur.has(Lx.couleur))
+      parCouleur.set(Lx.couleur, Lx.famille || l.nom.replace(/,.*$/, ''));
+  }
+  for (const L of Ls) if (L.famille && !parCouleur.has(L.couleur)) parCouleur.set(L.couleur, L.famille);
   if (Ls.some(L => !L.couleur)) parCouleur.set('gris', 'Autres lieux');
   if (!parCouleur.size) return '';
   return (
@@ -11659,6 +12227,7 @@ function ligneAffiche(e, interne) {
     );
   else if (e.statut === 'à confirmer') tags.push('<span class="tag t-confirmer">sous réserve</span>');
   if (interne && e.interne) tags.push('<span class="tag t-interne">équipe</span>');
+  else if (interne && e.horsAffiche) tags.push('<span class="tag t-hors">pas sur l’affiche</span>');
   h += '<div class="pg-t">' + titreHtml(e.titre) + (tags.length ? ' ' + tags.join(' ') : '') + '</div>';
   if (e.soustitre) h += '<div class="pg-soustitre">' + richLignes(e.soustitre) + '</div>';
   const meta = metaQuand(e);
@@ -12276,6 +12845,7 @@ function blocEquipe(e, complet) {
   if (e.statut) titre += ' (' + e.statut + ')';
   /* « interne » : rien à signaler à l'équipe, pour qui tout est interne ; utile seulement dans « Complet » */
   if (e.interne && complet) titre += ' (interne)';
+  else if (e.horsAffiche && complet) titre += ' (pas sur l’affiche)';
   const lignes = [titre];
   for (const l of (e.soustitre || '').split('\n')) if (l.trim()) lignes.push(l.trim());
   if (L) lignes.push('Lieu : ' + L.nom);
@@ -12507,6 +13077,19 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-21 11:14',
+    v: '0.79.13',
+    t: 'Diffusion, libellés, familles de lieux',
+    items: [
+      'Fiche, «\u00a0Diffusion\u00a0»\u00a0: «\u00a0Public\u00a0», «\u00a0Pas sur l’affiche\u00a0» (une vraie manifestation, absente des affiches, de «\u00a0Demandez le programme\u00a0» et de la page du PDF, mais présente partout ailleurs) ou «\u00a0Équipe seulement\u00a0». Tes manifestations d’écoles mises en «\u00a0Équipe seulement\u00a0» pour les cacher\u00a0: passe-les à «\u00a0Pas sur l’affiche\u00a0» (la fiche le propose, un toucher sur «\u00a0Basculer\u00a0»).',
+      'Bilans\u00a0: toute manifestation compte, quelle que soit sa diffusion, sauf l’organisation. Nouveau type «\u00a0Organisation, hors bilan\u00a0»\u00a0; Saison le devine pour les réunions, conseils de classe, jurys, la rentrée, le début et la fin des cours, les examens, les inscriptions, et ce qui est «\u00a0Équipe seulement\u00a0» sans autre indice. Le bilan les montre à l’écran pour vérifier, sans les copier.',
+      'Libellés (CHAM, Orchestre…)\u00a0: une ligne «\u00a0Libellés\u00a0» dans la fiche. Si le titre, le sous-titre ou les élèves concernés parlent d’un libellé connu, la fiche le propose\u00a0: un toucher le pose. Dans les bilans, un onglet «\u00a0Par libellé\u00a0» (date, titre, lieu, élèves\u00a0; Copier et Word) et le compte par libellé en bas de «\u00a0Par type\u00a0».',
+      'Menu ⋯ → «\u00a0Lieux…\u00a0», «\u00a0Familles\u00a0»\u00a0: tout lieu dont le nom commence par «\u00a0École\u00a0» (École Jean Jaurès, École Mendès France…) prend la couleur de la famille, sans virgule. La famille «\u00a0École\u00a0» est proposée dès qu’un lieu commence ainsi.',
+      '«\u00a0n°\u00a01\u00a0» et «\u00a0no\u00a01\u00a0» s’écrivent n et un o en exposant, partout\u00a0; «\u00a0nº\u00a0» reste tel quel, et «\u00a0no\u00a0» n’est jamais touché ailleurs («\u00a0no future\u00a0», «\u00a0piano 3\u00a0»).',
+      'À installer aussi au PC avant de t’en servir\u00a0: une page plus ancienne mettrait encore sur l’affiche une manifestation «\u00a0Pas sur l’affiche\u00a0».'
+    ]
+  },
   {
     d: '2026-11-21 08:58',
     v: '0.78.12',
@@ -13190,7 +13773,7 @@ function pagePdf(m) {
     {
       sorte: 'chiffre',
       libelle: 'Prochaine date',
-      valeur: prochaine ? typo(majuscule(libDate(prochaine)) + ' · ' + prochaine.titre) : 'aucune'
+      valeur: prochaine ? numeroTexte(typo(majuscule(libDate(prochaine)) + ' · ' + prochaine.titre.replace(/\*/g, ''))) : 'aucune'
     },
     { sorte: 'section', texte: 'Dates à venir' }
   ];
@@ -13208,9 +13791,9 @@ function pagePdf(m) {
       sorte: 'ligne',
       cellules: [
         datePdf(e),
-        typo(e.titre.replace(/\*/g, '')) + (e.statut === 'à confirmer' ? ' (à confirmer)' : ''),
-        typo(L || e.lieu || ''),
-        typo(heuresPdf(e))
+        numeroTexte(typo(e.titre.replace(/\*/g, ''))) + (e.statut === 'à confirmer' ? ' (à confirmer)' : ''),
+        numeroTexte(typo(L || e.lieu || '')),
+        numeroTexte(typo(heuresPdf(e)))
       ],
       largeurs: [1.4, 4.0, 3.4, 2.0],
       aligne: ['g', 'g', 'g', 'd']
