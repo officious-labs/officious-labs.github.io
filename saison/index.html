@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261121102040">
+<meta name="officious-page" content="20261121130729">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3270,6 +3270,92 @@ ul.lx-fam li {
 #lieuxF .lx-fam .pastille.lx-p {
   font-weight: 700;
 }
+
+/* ---------- 0.80 : fenêtre « Programme partagé… » ---------- */
+dialog.programme {
+  width: min(34rem, calc(100vw - 2rem));
+}
+dialog.programme .aide {
+  margin: 0.3rem 0 0.6rem;
+  font-size: 0.88rem;
+}
+.prog-champ {
+  display: block;
+  margin: 0.7rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gris);
+}
+.prog-champ small {
+  font-weight: 400;
+}
+.prog-champ input {
+  display: block;
+  margin-top: 0.25rem;
+  font-weight: 400;
+  color: var(--encre);
+  font-size: 0.95rem;
+}
+.prog-ligne {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+.prog-ligne input {
+  margin-top: 0;
+  flex: 1;
+  min-width: 0;
+}
+.prog-ligne button {
+  flex: none;
+}
+dialog.programme .prog-garde {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+}
+.prog-auto {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin: 0.9rem 0 0.2rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--filet);
+  border-bottom: 1px solid var(--filet);
+}
+.prog-auto input {
+  width: auto;
+  margin: 0.2rem 0 0;
+  flex: none;
+}
+.prog-auto small {
+  display: block;
+  color: var(--gris);
+  font-size: 0.82rem;
+  margin-top: 0.1rem;
+}
+.prog-dernier {
+  margin: 0.7rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.prog-dernier.echec {
+  color: #b3261e;
+}
+.prog-pied {
+  margin-top: 0.9rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+@media (pointer: coarse) {
+  .prog-champ input {
+    font-size: 1rem;
+    min-height: 2.6rem;
+  }
+  .prog-pied button {
+    min-height: 2.6rem;
+  }
+}
 </style>
 </head>
 <body>
@@ -3303,6 +3389,7 @@ ul.lx-fam li {
     <button data-act="etapes" role="menuitem">Modèles de rétroplanning…</button>
     <button data-act="lieux" role="menuitem">Lieux…</button>
     <button data-act="bilans" role="menuitem">Bilans…</button>
+    <button data-act="programme" role="menuitem">Programme partagé…</button>
     <button data-act="horsheures" role="menuitemcheckbox" aria-checked="false" hidden title="Pour toute la suite, jusqu’à ce que tu l’arrêtes, au plus tard à la reprise suivante (9 h)">Synchroniser hors des heures<span class="inter" aria-hidden="true"></span></button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
     <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
@@ -3507,6 +3594,28 @@ ul.lx-fam li {
   </form>
   <div id="lxFamilles"></div>
   <div id="lxLibres"></div>
+</dialog>
+
+<dialog id="progF" class="s-dialogue programme s-plein" aria-label="Programme partagé">
+  <div class="mail-tete">
+    <h2>Programme partagé</h2>
+    <button id="pgFermer" class="icone" title="Fermer (Échap)">×</button>
+  </div>
+  <p class="aide">Le programme des manifestations pour les professeurs, en PDF, toujours au même lien : toute la saison, dates d’équipe, accompagnements et remarques compris ; ni historique, ni données cachées.</p>
+  <div id="pgTel">
+    <label class="prog-champ">Adresse du script<input id="pgAdresse" type="url" inputmode="url" placeholder="https://…/exec" autocomplete="off" spellcheck="false"></label>
+    <label class="prog-champ">Clé<input id="pgCle" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label class="prog-champ">Lien des professeurs <small>(facultatif, pour le copier)</small><span class="prog-ligne"><input id="pgLien" type="url" inputmode="url" placeholder="Le lien que tu leur as donné" autocomplete="off" spellcheck="false"><button type="button" id="pgCopier">Copier</button></span></label>
+    <p class="aide prog-garde">Gardés sur ce téléphone seulement, jamais dans le fichier de suivi.</p>
+    <label class="prog-auto"><input type="checkbox" id="pgAuto"> <span>Envoi automatique<small>aux heures de travail, quand le programme change (au plus une fois par quart d’heure), et à la synchro du matin</small></span></label>
+    <p id="pgDernier" class="prog-dernier"></p>
+    <p id="pgAvis" class="aide"></p>
+    <div class="mail-pied prog-pied"><button type="button" id="pgPdf">Enregistrer le PDF</button><button type="button" id="pgEnvoyer" class="primaire">Envoyer maintenant</button></div>
+  </div>
+  <div id="pgPc" hidden>
+    <p class="aide">Au PC, rien ne part tout seul : l’envoi se fait depuis le téléphone (menu ⋯ → « Programme partagé… »). Pour un dépôt à la main, télécharge le PDF, puis remplace le fichier dans ton espace de partage par cette nouvelle version (le lien reste le même).</p>
+    <div class="mail-pied prog-pied"><span></span><button type="button" id="pgPdfPc" class="primaire">Télécharger le PDF</button></div>
+  </div>
 </dialog>
 
 <dialog id="retrouver" class="s-dialogue" aria-label="Manifestations disparues">
@@ -7240,8 +7349,9 @@ function mettreEnPage(doc) {
   return pages;
 }
 
-/** Données (texte) + description de la page → PDF 1.4 complet, en UTF-8. */
-function emballer(texte, doc) {
+/** Données (texte) + description de la page → PDF 1.4 complet, en UTF-8.
+    sans (1.20, via page()) : aucune donnée, ni /PieceInfo ; l'objet 5 n'est qu'un dictionnaire vide. */
+function emballer(texte, doc, sans) {
   texte = bienForme(String(texte == null ? '' : texte));
   doc = Object.assign({}, doc || {});
   doc.titre = String(doc.titre || 'Document');
@@ -7250,18 +7360,19 @@ function emballer(texte, doc) {
     quand = datePdf(maintenant()),
     np = pages.length,
     pi = '<< /' + PDF_CLE + ' << /LastModified (' + quand + ') /Private 5 0 R >> >>';
+  if (sans) texte = '';
   const O = [];
-  O[1] = '<< /Type /Catalog /Pages 2 0 R /PieceInfo ' + pi + ' >>';
+  O[1] = '<< /Type /Catalog /Pages 2 0 R' + (sans ? '' : ' /PieceInfo ' + pi) + ' >>';
   O[2] = '<< /Type /Pages /Kids [' + pages.map((_, k) => 7 + 2 * k + ' 0 R').join(' ') + '] /Count ' + np + ' >>';
   O[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
   O[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
-  O[5] = '<< /Type /' + PDF_CLE + ' /Length ' + octets(texte) + ' >>\nstream\n' + texte + '\nendstream';
+  O[5] = sans ? '<< >>' : '<< /Type /' + PDF_CLE + ' /Length ' + octets(texte) + ' >>\nstream\n' + texte + '\nendstream';
   O[6] = '<< /Title ' + textePdf(doc.titre) + ' /CreationDate (' + quand + ') /ModDate (' + quand + ') >>';
   pages.forEach((ops, k) => {
     const c = ops.join('\n');
     O[7 + 2 * k] =
       '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + nb(PDF_L) + ' ' + nb(PDF_H) + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' +
-      (8 + 2 * k) + ' 0 R' + (k ? '' : ' /LastModified (' + quand + ') /PieceInfo ' + pi) + ' >>';
+      (8 + 2 * k) + ' 0 R' + (k || sans ? '' : ' /LastModified (' + quand + ') /PieceInfo ' + pi) + ' >>';
     O[8 + 2 * k] = '<< /Length ' + c.length + ' >>\nstream\n' + c + '\nendstream';
   });
   /* en-tête, puis une ligne de commentaire en caractères non ASCII (le fichier est binaire pour les logiciels PDF) */
@@ -7281,6 +7392,13 @@ function emballer(texte, doc) {
   x += 'trailer\n<< /Size ' + O.length + ' /Root 1 0 R /Info 6 0 R /ID [<' + id1 + '> <' + id2 + '>] >>\nstartxref\n' + pos + '\n%%EOF\n';
   parts.push(x);
   return parts.join('');
+}
+
+/** Description de la page → PDF sans aucune donnée cachée (1.20) : à partager (programme pour les professeurs, par
+    exemple). Chaîne UTF-8 comme emballer (la 2e ligne de commentaire n'est pas en ASCII) : pour l'envoyer en base64,
+    passer par TextEncoder. deballer() n'y trouve rien : erreur « illisible », jamais de données. */
+function page(doc) {
+  return emballer('', doc, true);
 }
 
 /** Erreur « PDF sans données lisibles ». */
@@ -7615,7 +7733,7 @@ async function passerAuPdf() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.19.1',
+  version: '1.20.0',
   demarrer,
   /* fichier */
   modifie,
@@ -7630,8 +7748,8 @@ return {
   /* fichiers discrets (1.19) : au PC, menu ⋯ de l'outil */
   passerAuPdf,
   fusionnerCopie,
-  /* emballer(texte, doc), deballer(brut), estPdf(brut) : 25-pdf.js */
-  pdf: { emballer, deballer, estPdf },
+  /* emballer(texte, doc), deballer(brut), estPdf(brut), page(doc) (1.20 : PDF sans données, à partager) : 25-pdf.js */
+  pdf: { emballer, deballer, estPdf, page },
   /* format du fichier de travail tel qu'il a été lu : 'md', 'pdf', ou null avant la première lecture */
   get format() {
     return C.format;
@@ -8548,6 +8666,7 @@ function retablir() {
 function changed() {
   if (typeof suivreDates === 'function') suivreDates(); /* rétroplanning : Tâches suit la nouvelle date */
   socle.modifie();
+  programmeModifie(); /* programme partagé (0.80) : un envoi un peu plus tard, s'il a changé */
 }
 const toast = (...a) => socle.toast(...a);
 const setStatus = () => socle.etat();
@@ -11358,19 +11477,20 @@ function b64(octets) {
 }
 /** Télécharge un document : au téléphone, fenêtre « Enregistrer sous » d'Android (saveBytes, Compagnon 3.0.135) ;
  *  au PC, un téléchargement ordinaire. */
-async function telechargerDocx(octets, nom) {
+async function telechargerDocx(octets, nom, type = DOCX_TYPE) {
   if (AND) {
     try {
-      const r = await socle.appel('saveBytes', JSON.stringify({ nom, type: DOCX_TYPE, base64: b64(octets) }));
+      const r = await socle.appel('saveBytes', JSON.stringify({ nom, type, base64: b64(octets) }));
       toast('Document enregistré : ' + (r || nom));
     } catch (e) {
-      if (/inconnue/.test(e.message)) toast('Pour enregistrer un document Word au téléphone, mets d’abord le Compagnon à jour (3.0.135 ou plus)', null, null, 7000);
+      if (/inconnue/.test(e.message))
+        toast('Pour enregistrer un document ' + (type === DOCX_TYPE ? 'Word ' : '') + 'au téléphone, mets d’abord le Compagnon à jour (3.0.135 ou plus)', null, null, 7000);
       else if (!/annulé/.test(e.message)) toast('Enregistrement impossible : ' + e.message);
     }
     return;
   }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([octets], { type: DOCX_TYPE }));
+  a.href = URL.createObjectURL(new Blob([octets], { type }));
   a.download = nom;
   document.body.append(a);
   a.click();
@@ -11890,6 +12010,427 @@ function initLibs() {
     champ.value = '';
     fermerProp();
   });
+}
+/* 06j-programme.js : programme partagé (0.80, demande B du 21/11/2026, socle/docs/proposition-partage-2026-11-21.md).
+
+   Le PDF du programme pour les professeurs : version interne (internes, « pas sur l'affiche », en attente, annulées
+   signalées, accompagnements, élèves concernés et remarques 🔒 compris), sans aucune donnée cachée (socle.pdf.page,
+   1.20) ni historique, ni descriptif, ni infos pratiques. Toute la saison, les dates passées en gris.
+
+   Envoi, au téléphone seulement : POST en text/plain (requête simple, sans pré-vérification) vers le script de
+   François, qui remplace le contenu d'un même fichier (lien stable). Le script répond par une redirection que fetch
+   suit en GET ; la réponse finale autorise toutes les origines : le JSON {ok, taille, quand} est lisible. Si la
+   requête échoue sans réponse lisible (réseau, CORS), une relecture « ?etat=1 » dit si le fichier a été remplacé
+   (même taille, remplacé depuis le début de l'envoi) : jamais de succès supposé.
+
+   Quand : automatiquement aux heures de travail (jours ouvrés, 9 h – 18 h 30), si le contenu du PDF a changé depuis le
+   dernier envoi réussi (empreinte de la description de la page, sans la date), au plus une fois toutes les 15 minutes :
+   après chaque lecture en accès direct (A.apresLecture : ouverture, retour dans l'appli, synchro du matin, qui
+   l'attend), et un peu après une modification faite ici. « Envoyer maintenant » : à toute heure.
+
+   Réglages (adresse, clé, lien des professeurs, envoi automatique) et suivi des envois : sur l'appareil seulement
+   (localStorage « saison-programme »), jamais dans le fichier de suivi. */
+
+const CLE_PROG = 'saison-programme';
+const PROG_DELAI = 15 * 60e3; /* au plus un envoi automatique par quart d'heure */
+const PROG_APRES_MODIF = 20e3; /* une modification groupée de plusieurs dates ne part qu'une fois */
+const PROG_ATTENTE = 45e3; /* délai d'une requête */
+const PROG_ECHECS = 3; /* échecs automatiques avant un message */
+
+/* ---- le PDF ---- */
+
+/** « 2026-2027 », d'après le titre du planning, sinon d'après la date du jour. */
+function saisonDe(m) {
+  const t = ((m.titre || '').match(/\b(\d{4})\s*[-–]\s*(\d{4})\b/) || [])[0];
+  if (t) return t.replace(/\s*[-–]\s*/, '-');
+  const d = jour(auj()),
+    a = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1;
+  return a + '-' + (a + 1);
+}
+function titreProgramme(m) {
+  return 'Programme des manifestations ' + saisonDe(m || doc);
+}
+/** État discret d'une date pour les professeurs : « à confirmer », « en attente », « annulé », « équipe », « pas sur
+ *  l'affiche » (même vocabulaire que la liste). */
+function etatsProg(e) {
+  const E = [];
+  if (e.statut) E.push(e.statut);
+  if (e.interne) E.push('équipe');
+  else if (e.horsAffiche) E.push('pas sur l’affiche');
+  return E;
+}
+const pdfTexte = s => numeroTexte(typo(String(s || '').replace(/\*/g, '')));
+/* colonnes : date, horaire, titre (presque toute la largeur : un titre n'est presque jamais coupé) ; dessous, en
+   retrait sous le titre et coupé à la largeur : sous-titre, lieu, puis ce qui sert à l'équipe */
+const PROG_COLS = [1.8, 1.8, 6.9];
+const PROG_TITRE = 56; /* caractères qui tiennent sûrement dans la colonne du titre (Helvetica 10 pt, 301 pt) */
+const PROG_RETRAIT = ((595.28 - 2 * 62) * (PROG_COLS[0] + PROG_COLS[1])) / PROG_COLS.reduce((a, v) => a + v, 0) / 14;
+
+/** Blocs d'une date : la ligne du tableau, puis les lignes en retrait. flou : date à fixer (la date en toutes lettres
+ *  prend la place de la date et de l'horaire ; le titre reste aligné). */
+function blocsProg(e, quand, passe, flou) {
+  const E = etatsProg(e),
+    titre = pdfTexte(e.titre),
+    gris = passe || e.statut === 'annulé',
+    seul = E.length && (titre + ' (' + E.join(', ') + ')').length <= PROG_TITRE,
+    h = flou ? '' : pdfTexte(heuresPdf(e)),
+    hLong = h.length > 15, /* horaire en toutes lettres trop long pour sa colonne : en retrait */
+    L = lieuDe(e);
+  /* un titre trop long continue à la ligne, coupé entre deux mots (estimation en caractères, prudente : le socle
+     couperait avec « … ») */
+  let t1 = titre + (seul ? ' (' + E.join(', ') + ')' : ''),
+    t2 = '';
+  if (t1.length > PROG_TITRE) {
+    const k = t1.lastIndexOf(' ', PROG_TITRE);
+    if (k > 20) [t1, t2] = [t1.slice(0, k), t1.slice(k + 1)];
+  }
+  const B = [
+    {
+      sorte: 'ligne',
+      cellules: [quand, ...(flou ? [] : [hLong ? '' : h]), t1],
+      largeurs: flou ? [PROG_COLS[0] + PROG_COLS[1], PROG_COLS[2]] : PROG_COLS,
+      gris
+    }
+  ];
+  const sous = (texte, g) => B.push({ sorte: 'texte', texte, retrait: PROG_RETRAIT, gris: gris || g });
+  if (t2) sous(t2);
+  if (E.length && !seul) sous(majuscule(E.join(', ')), true);
+  for (const l of (e.soustitre || '').split('\n')) if (l.trim()) sous(pdfTexte(l.trim()));
+  if (hLong) sous(pdfTexte(majuscule(h)), true);
+  if (L) sous(pdfTexte(L.nom), true);
+  if (e.eleves) sous(pdfTexte('Élèves : ' + e.eleves), true);
+  if (e.accomp) sous(pdfTexte('Accompagnement : ' + e.accomp), true);
+  for (const l of (e.remarque || '').split('\n')) if (l.trim()) sous(pdfTexte('Remarque : ' + l.trim()), true);
+  return B;
+}
+
+/** Description de la page du programme (socle.pdf.page) : version interne, toute la saison, sans la date (le socle
+ *  met celle du jour sous le titre) ; m : le planning (doc par défaut). */
+function docProgramme(m) {
+  m = m || doc;
+  const a = auj(),
+    datees = m.evts.filter(estDatee).sort(ordre),
+    actives = datees.filter(e => e.statut !== 'annulé'),
+    avenir = actives.filter(e => e.d2 >= a),
+    compte = s => avenir.filter(e => e.statut === s).length,
+    annulees = datees.length - actives.length,
+    afix = m.evts
+      .filter(e => !estDatee(e) && e.statut !== 'annulé')
+      .sort((x, y) => (!x.d1 !== !y.d1 ? (x.d1 ? -1 : 1) : ordre(x, y))),
+    prochaine = avenir[0];
+  const blocs = [
+    { sorte: 'chiffre', libelle: 'Saison', valeur: saisonDe(m) },
+    { sorte: 'chiffre', libelle: 'Dates de la saison', valeur: String(actives.length) },
+    { sorte: 'chiffre', libelle: 'Dates à venir', valeur: String(avenir.length) },
+    { sorte: 'chiffre', libelle: 'dont à confirmer', valeur: String(compte('à confirmer')), retrait: 1 },
+    { sorte: 'chiffre', libelle: 'dont en attente', valeur: String(compte('en attente')), retrait: 1 }
+  ];
+  if (annulees) blocs.push({ sorte: 'chiffre', libelle: 'Dates annulées', valeur: String(annulees) });
+  if (afix.length) blocs.push({ sorte: 'chiffre', libelle: 'Dates à fixer', valeur: String(afix.length) });
+  blocs.push(
+    {
+      sorte: 'chiffre',
+      libelle: 'Prochaine date',
+      valeur: prochaine ? pdfTexte(majuscule(libDate(prochaine)) + ' · ' + prochaine.titre) : 'aucune'
+    },
+    { sorte: 'vide', hauteur: 6 },
+    {
+      sorte: 'texte',
+      texte:
+        'Pour l’équipe pédagogique : dates d’équipe, accompagnements et remarques compris. En gris : les dates passées et les dates annulées. Ce document est remplacé à chaque mise à jour, le lien reste le même.',
+      gris: true
+    },
+    { sorte: 'section', texte: 'Dates de la saison' }
+  );
+  if (!datees.length) blocs.push({ sorte: 'texte', texte: 'Aucune date pour le moment.', gris: true });
+  let mois = '';
+  for (const e of datees) {
+    const cle = e.d1.slice(0, 7);
+    if (cle !== mois) {
+      mois = cle;
+      blocs.push({ sorte: 'mois', texte: majuscule(MOIS[+cle.slice(5) - 1]) + ' ' + cle.slice(0, 4) });
+    }
+    blocs.push(...blocsProg(e, pdfTexte(datePdf(e)), e.d2 < a));
+  }
+  if (afix.length) {
+    blocs.push({ sorte: 'section', texte: 'Dates à fixer' });
+    for (const e of afix) blocs.push(...blocsProg(e, pdfTexte(majuscule(e.libelle || libFlou(e))), false, true));
+  }
+  return { titre: titreProgramme(m), colonneChiffres: 0.3, blocs };
+}
+
+/** Empreinte courte (FNV-1a) d'un texte. */
+function empreinteProg(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+/** Le PDF du programme : {doc, pdf (chaîne UTF-8), octets, empreinte (contenu sans la date), nom}. */
+function pdfProgramme() {
+  const d = docProgramme(doc),
+    pdf = socle.pdf.page(d);
+  return {
+    doc: d,
+    pdf,
+    octets: new TextEncoder().encode(pdf),
+    empreinte: empreinteProg(JSON.stringify(d)),
+    nom: d.titre + '.pdf'
+  };
+}
+
+/* ---- réglages et suivi, sur l'appareil ---- */
+
+function progEtat() {
+  let o = null;
+  try {
+    o = JSON.parse(localStorage.getItem(CLE_PROG) || 'null');
+  } catch (e) {}
+  return Object.assign({ adresse: '', cle: '', lien: '', auto: true, empreinte: '', essai: 0, echecs: 0, dernier: null, signaler: '' }, o || {});
+}
+function progFixe(changement) {
+  const o = Object.assign(progEtat(), changement);
+  try {
+    localStorage.setItem(CLE_PROG, JSON.stringify(o));
+  } catch (e) {}
+  return o;
+}
+const progMaintenant = () => (window.__now ? new Date(window.__now) : new Date());
+const progPret = o => !!(o.adresse && o.cle);
+/** Heures de travail, strictement : jours ouvrés (ni week-end, ni jour chômé que le socle connaît), 9 h – 18 h 30. */
+function progHeures() {
+  const d = progMaintenant(),
+    t = d.getHours() * 60 + d.getMinutes();
+  return d.getDay() > 0 && d.getDay() < 6 && t >= 9 * 60 && t < 18 * 60 + 30 && !socle.horsHeures();
+}
+function tailleTexte(n) {
+  return n < 1024 ? n + ' octets' : String(Math.round((n / 1024) * 10) / 10).replace('.', ',') + ' Ko';
+}
+function quandTexte(ms) {
+  const d = new Date(ms),
+    n = progMaintenant(),
+    h = libH(String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
+  if (isoDe(d) === isoDe(n)) return 'aujourd’hui à ' + h;
+  const hier = new Date(n);
+  hier.setDate(hier.getDate() - 1);
+  if (isoDe(d) === isoDe(hier)) return 'hier à ' + h;
+  return 'le ' + quantieme(d) + ' ' + MOIS[d.getMonth()] + ' à ' + h;
+}
+
+/* ---- l'envoi ---- */
+
+let progEnCours = null,
+  progMinuteur = 0;
+
+function avecDelai(ms) {
+  const ac = typeof AbortController === 'function' ? new AbortController() : null,
+    t = ac ? setTimeout(() => ac.abort(), ms) : 0;
+  return { signal: ac ? ac.signal : undefined, fin: () => clearTimeout(t) };
+}
+/** Le fichier a-t-il été remplacé par cet envoi ? (relecture « ?etat=1 », quand la réponse au POST n'est pas lisible) */
+async function progConfirmer(adresse, taille, debut) {
+  const D = avecDelai(PROG_ATTENTE);
+  try {
+    const r = await fetch(adresse + (adresse.includes('?') ? '&' : '?') + 'etat=1', { signal: D.signal });
+    const j = JSON.parse(await r.text());
+    return !!(j && j.ok && +j.taille === taille && Date.parse(j.quand) >= debut - 120e3) ? j : null;
+  } catch (e) {
+    return null;
+  } finally {
+    D.fin();
+  }
+}
+/** Une requête : {ok, taille, quand} ou {ok: false, erreur}. Ne lève jamais. */
+async function progPoster(o, P) {
+  const debut = Date.now(),
+    D = avecDelai(PROG_ATTENTE);
+  let texte;
+  try {
+    const r = await fetch(o.adresse, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ cle: o.cle, pdf: b64(P.octets) }),
+      redirect: 'follow',
+      credentials: 'omit',
+      signal: D.signal
+    });
+    texte = await r.text();
+    if (!r.ok) return { ok: false, erreur: 'réponse ' + r.status };
+  } catch (e) {
+    D.fin();
+    if (e && e.name === 'AbortError') return { ok: false, erreur: 'pas de réponse' };
+    const c = await progConfirmer(o.adresse, P.octets.length, debut);
+    return c ? { ok: true, taille: +c.taille, quand: c.quand, relu: true } : { ok: false, erreur: 'réseau' };
+  } finally {
+    D.fin();
+  }
+  let j;
+  try {
+    j = JSON.parse(texte);
+  } catch (e) {
+    /* une page au lieu du JSON : déploiement mal réglé (accès, adresse) */
+    return { ok: false, erreur: /^\s*</.test(texte || '') ? 'adresse ou accès du script à vérifier' : 'réponse illisible' };
+  }
+  if (!j || !j.ok) return { ok: false, erreur: (j && j.erreur) || 'refusé' };
+  if (+j.taille !== P.octets.length) return { ok: false, erreur: 'taille reçue différente (' + j.taille + ' octets)' };
+  return { ok: true, taille: +j.taille, quand: j.quand };
+}
+
+/** Envoie le PDF du programme. manuel : « Envoyer maintenant » (à toute heure, message à la fin). → résultat. */
+async function envoyerProgramme(manuel) {
+  if (progEnCours) return progEnCours;
+  progEnCours = (async () => {
+    const o = progEtat();
+    if (!progPret(o)) return { ok: false, erreur: 'adresse ou clé manquante' };
+    const P = pdfProgramme(),
+      t = progMaintenant().getTime();
+    progFixe({ essai: t });
+    const r = await progPoster(o, P);
+    const dernier = { quand: t, ok: r.ok, taille: P.octets.length, message: r.ok ? '' : r.erreur, manuel: !!manuel };
+    if (r.ok) {
+      progFixe({ empreinte: P.empreinte, echecs: 0, dernier, signaler: '' });
+      socle.journal('programme partagé : envoyé', { taille: P.octets.length, empreinte: P.empreinte, par: manuel ? 'toi' : 'auto' });
+    } else {
+      const echecs = manuel ? progEtat().echecs : progEtat().echecs + 1;
+      progFixe({ echecs, dernier });
+      socle.journal('programme partagé : échec (' + r.erreur + ')', { essais: echecs, par: manuel ? 'toi' : 'auto' });
+      if (!manuel && echecs === PROG_ECHECS) {
+        const m = 'Programme partagé : ' + echecs + ' envois ont échoué (' + r.erreur + '). Menu ⋯ → « Programme partagé… »';
+        if (socle.synchroMatin) progFixe({ signaler: m }); /* aucun message dans la vue invisible : à la prochaine ouverture */
+        else toast(m, null, null, 7000);
+      }
+    }
+    return Object.assign({ taille: P.octets.length }, r);
+  })();
+  try {
+    return await progEnCours;
+  } finally {
+    progEnCours = null;
+    if ($('#progF').open) afficherProgramme();
+  }
+}
+
+/** Envoi automatique, s'il y a lieu ; la promesse se termine quand c'est fait (la synchro du matin l'attend). */
+async function programmeAuto() {
+  try {
+    clearTimeout(progMinuteur);
+    const o = progEtat();
+    if (!AND || !socle.ouvert || !progPret(o) || !o.auto || !progHeures()) return null;
+    if (pdfProgramme().empreinte === o.empreinte) return null; /* rien de changé depuis le dernier envoi réussi */
+    const reste = o.essai + PROG_DELAI - progMaintenant().getTime();
+    if (reste > 0) {
+      /* trop tôt : un essai à la fin du quart d'heure (aux heures de travail, sinon la synchro du matin rattrape) */
+      if (!socle.synchroMatin) progMinuteur = setTimeout(programmeAuto, Math.min(reste + 1000, 2 ** 31 - 1));
+      return null;
+    }
+    return await envoyerProgramme(false);
+  } catch (e) {
+    return null;
+  }
+}
+/** Après une modification faite ici : un essai un peu plus tard (une série de modifications ne part qu'une fois). */
+function programmeModifie() {
+  if (!AND || !progPret(progEtat())) return;
+  clearTimeout(progMinuteur);
+  progMinuteur = setTimeout(programmeAuto, PROG_APRES_MODIF);
+}
+
+/* ---- fenêtre « Programme partagé… » ---- */
+
+async function telechargerProgramme() {
+  if (!socle.ouvert) return toast('Ouvre d’abord le fichier de suivi');
+  const P = pdfProgramme();
+  await telechargerDocx(P.octets, P.nom, 'application/pdf');
+}
+function afficherProgramme() {
+  const o = progEtat(),
+    F = $('#progF');
+  $('#pgTel').hidden = !AND;
+  $('#pgPc').hidden = AND;
+  for (const [id, k] of [
+    ['#pgAdresse', 'adresse'],
+    ['#pgCle', 'cle'],
+    ['#pgLien', 'lien']
+  ])
+    if (document.activeElement !== $(id)) $(id).value = o[k];
+  $('#pgAuto').checked = !!o.auto;
+  $('#pgCopier').disabled = !o.lien;
+  $('#pgEnvoyer').disabled = !progPret(o) || !!progEnCours;
+  $('#pgEnvoyer').textContent = progEnCours ? 'Envoi…' : 'Envoyer maintenant';
+  const d = o.dernier;
+  let t = 'Aucun envoi pour le moment.';
+  if (d)
+    t =
+      'Dernier envoi : ' +
+      quandTexte(d.quand) +
+      ', ' +
+      tailleTexte(d.taille) +
+      (d.ok ? ', réussi.' : ', échec (' + d.message + ')' + (o.echecs > 1 ? ', ' + o.echecs + ' essais automatiques de suite.' : '.'));
+  $('#pgDernier').textContent = t;
+  $('#pgDernier').classList.toggle('echec', !!d && !d.ok);
+  let a = '';
+  if (socle.ouvert && progPret(o)) {
+    const change = pdfProgramme().empreinte !== o.empreinte;
+    a = !change
+      ? 'Le programme partagé est à jour.'
+      : !o.auto
+        ? 'Le programme a changé depuis le dernier envoi ; l’envoi automatique est arrêté.'
+        : progHeures()
+          ? 'Le programme a changé : il part dans le quart d’heure.'
+          : 'Le programme a changé : il partira aux heures de travail (ou à la synchro du matin).';
+  } else if (!progPret(o)) a = 'Colle l’adresse du script et la clé (voir la marche à suivre).';
+  $('#pgAvis').textContent = a;
+  F.classList.toggle('pret', progPret(o));
+}
+function ouvrirProgramme() {
+  if (!socle.ouvert) return toast('Ouvre d’abord le fichier de suivi');
+  afficherProgramme();
+  $('#progF').showModal();
+}
+function initProgramme() {
+  $('#pgFermer').onclick = () => $('#progF').close();
+  /* gardé dès qu'on quitte le champ ; sans tout réafficher (le texte d'aide qui change de hauteur au moment où l'on
+     appuie sur « Envoyer maintenant » ferait rater le toucher) */
+  const garder = (id, k, net) =>
+    ($(id).onchange = () => {
+      const o = progFixe({ [k]: net($(id).value) });
+      $('#pgCopier').disabled = !o.lien;
+    });
+  garder('#pgAdresse', 'adresse', v => v.trim());
+  garder('#pgCle', 'cle', v => v.trim());
+  garder('#pgLien', 'lien', v => v.trim());
+  $('#pgAdresse').oninput = $('#pgCle').oninput = () => ($('#pgEnvoyer').disabled = !($('#pgAdresse').value.trim() && $('#pgCle').value.trim()));
+  $('#pgAuto').onchange = () => {
+    progFixe({ auto: $('#pgAuto').checked });
+    afficherProgramme();
+    toast($('#pgAuto').checked ? 'Envoi automatique activé, aux heures de travail' : 'Envoi automatique arrêté');
+    if ($('#pgAuto').checked) programmeAuto();
+  };
+  $('#pgCopier').onclick = async () => {
+    const l = progEtat().lien;
+    if (!l) return;
+    toast((await socle.copierRiche('<a href="' + esc(l) + '">' + esc(l) + '</a>', l)) ? 'Lien des professeurs copié' : 'Copie impossible');
+  };
+  $('#pgPdf').onclick = $('#pgPdfPc').onclick = () => telechargerProgramme();
+  $('#pgEnvoyer').onclick = async () => {
+    /* les champs pas encore quittés comptent */
+    progFixe({ adresse: $('#pgAdresse').value.trim(), cle: $('#pgCle').value.trim() });
+    const p = envoyerProgramme(true);
+    afficherProgramme();
+    const r = await p;
+    if (r.ok) toast('Programme envoyé (' + tailleTexte(r.taille) + ') : les professeurs voient cette version d’ici quelques minutes.', null, null, 5000);
+    else toast('Envoi impossible : ' + r.erreur, null, null, 7000);
+  };
+  /* trois échecs pendant la synchro du matin : le message attendait la prochaine ouverture */
+  const s = progEtat().signaler;
+  if (s && !socle.synchroMatin)
+    setTimeout(() => {
+      if (socle.synchroMatin) return;
+      progFixe({ signaler: '' });
+      toast(s, null, null, 7000);
+    }, 2500);
 }
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
@@ -13078,6 +13619,16 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-11-21 14:06',
+    v: '0.80.14',
+    t: 'Programme partagé',
+    items: [
+      'Menu ⋯ → «\u00a0Programme partagé…\u00a0»\u00a0: le programme des manifestations pour les professeurs, en PDF, toujours au même lien. Toute la saison (les dates passées en gris), dates d’équipe, «\u00a0pas sur l’affiche\u00a0», en attente et annulées signalées, accompagnements, élèves et remarques compris\u00a0; ni historique, ni descriptif, ni données cachées.',
+      'Au téléphone\u00a0: colle une fois l’adresse et la clé de ton espace de partage (marche à suivre dans le dossier docs/programme-partage). Elles restent sur le téléphone, jamais dans le fichier de suivi. Ensuite, le programme part tout seul aux heures de travail quand il a changé (au plus une fois par quart d’heure) et à la synchro du matin\u00a0; «\u00a0Envoyer maintenant\u00a0» à toute heure.',
+      'Au PC\u00a0: rien ne part tout seul\u00a0; «\u00a0Télécharger le PDF\u00a0» pour un dépôt à la main.'
+    ]
+  },
+  {
     d: '2026-11-21 11:14',
     v: '0.79.13',
     t: 'Diffusion, libellés, familles de lieux',
@@ -13871,6 +14422,7 @@ function initBoutons() {
       etapes: () => ouvrirEtapes(),
       lieux: ouvrirLieux,
       bilans: () => ouvrirBilans(),
+      programme: ouvrirProgramme,
       enligne: () => socle.reglerEnLigne(),
       outils: () => socle.reglerOutils(),
       actualiser: () => socle.actualiser(),
@@ -13952,6 +14504,7 @@ initEtapes();
 initProp();
 initLieux();
 initBilans();
+initProgramme();
 initAffiche();
 initMail();
 document.addEventListener('keydown', raccourcis);
@@ -13995,6 +14548,8 @@ socle.demarrer({
   retour,
   resume: m => m.evts.length + ' événements',
   apresChargement: () => (pileA.length = pileR.length = 0),
+  /* programme partagé (0.80) : après chaque lecture en accès direct, synchro du matin comprise (attendu) */
+  apresLecture: programmeAuto,
   surAppli: n => ($('#mMaj').hidden = !n),
   nouveautes: NOUVEAUTES
 });
