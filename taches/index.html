@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261121081143">
+<meta name="officious-page" content="20261121100534">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -13393,7 +13393,10 @@ function merge3(B, M, T) {
 /* ---------- affichage ---------- */
 /** 1re, 2e, 1er, 3es… en exposant (3.20.21), pour l'affichage non modifiable des titres. Construit des nœuds (texte et
  *  <sup>) : jamais d'HTML tiré du titre, donc rien à échapper. Le fichier garde « 2e » tel quel. */
-const RX_EXPO = /(?<![\p{L}\p{N}_])(\d+)(res?|ers?|es?)(?![\p{L}\p{N}_])/gu;
+const RX_EXPO =
+  /(?<![\p{L}\p{N}_])(?:(\d+)(res?|ers?|es?)(?![\p{L}\p{N}_])|([nN])(?:°|o(?=[ \u00a0\u202f]\d)))/gu;
+/* 3.21.22 : « n° » / « N° » (degré) et « no 5 » / « No 5 » (mot entier, espace, chiffre) → n + <sup>o</sup>. « nº » (U+00BA),
+   « no future », « piano », « nos », « no. » restent tels quels. */
 function expoNodes(s) {
   const out = [];
   let i = 0,
@@ -13401,9 +13404,9 @@ function expoNodes(s) {
   s = String(s == null ? '' : s);
   RX_EXPO.lastIndex = 0;
   while ((m = RX_EXPO.exec(s))) {
-    out.push(document.createTextNode(s.slice(i, m.index) + m[1]));
+    out.push(document.createTextNode(s.slice(i, m.index) + (m[3] || m[1])));
     const u = document.createElement('sup');
-    u.textContent = m[2];
+    u.textContent = m[3] ? 'o' : m[2];
     out.push(u);
     i = m.index + m[0].length;
   }
@@ -13416,7 +13419,7 @@ function setExpo(el, s) {
 }
 /** Même chose pour une chaîne HTML (texte échappé, exposants en <sup>). */
 function expoHtml(s) {
-  return escHtml(String(s == null ? '' : s)).replace(RX_EXPO, '$1<sup>$2</sup>');
+  return escHtml(String(s == null ? '' : s)).replace(RX_EXPO, (t, a, b, n) => (n ? n + '<sup>o</sup>' : a + '<sup>' + b + '</sup>'));
 }
 function decorate(el, text, expo) {
   el.textContent = '';
@@ -21481,6 +21484,16 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-11-21 10:49',
+    type: 'web',
+    v: '3.21.22',
+    t: 'n° et no 5 en exposant',
+    items: [
+      'Dans les titres affichés, « n° 5 » s’écrit « n » suivi d’un « o » en exposant. « no 5 » (le mot entier, une espace, un chiffre) est corrigé de la même façon ; « no future », « piano » ou « nos » ne sont pas touchés, ni « nº » (déjà bien écrit).',
+      'Ton fichier garde ce que tu as tapé. Dans le PDF de suivi, qui n’a pas d’exposant, c’est « nº ».'
+    ]
+  },
+  {
     d: '2026-11-21 09:05',
     type: 'web',
     v: '3.20.21',
@@ -27472,7 +27485,9 @@ function pdfDate(iso) {
 }
 /** Titre affichable d'une tâche : sans mise en forme Markdown, sur une ligne. */
 function pdfTitre(t) {
+  /* Helvetica n'a pas d'exposant : « n° », « N° » et « no 5 » s'écrivent « nº » (U+00BA, présent en WinAnsi) ; mêmes critères que l'écran (RX_EXPO) */
   return plainFmt(t || '')
+    .replace(/(?<![\p{L}\p{N}_])([nN])(?:°|o(?=[ \u00a0\u202f]\d))/gu, '$1º')
     .replace(/\s+/g, ' ')
     .trim();
 }
