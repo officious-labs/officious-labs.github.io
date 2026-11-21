@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261119121943">
+<meta name="officious-page" content="20261121075934">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1011,10 +1011,15 @@ button.danger {
   color: var(--gris);
   font-size: 0.85rem;
 }
+/* 1re, 2e, 1er (0.78, François : « le e est trop bas ») : le haut de la lettre au niveau du haut des chiffres et des
+   capitales, quelle que soit la police. vertical-align se compte dans la taille de l'exposant : il faut monter de la
+   hauteur des capitales du texte (1cap / 0,68) moins la hauteur de la lettre (1ex). Avant : 0,42 em de l'exposant,
+   soit 3 px trop bas à 48 px en Inter, 4 px en Inter Display. Ligne de secours pour un navigateur sans l'unité cap. */
 sup {
   font-size: 0.68em;
   line-height: 0;
-  vertical-align: 0.42em;
+  vertical-align: 0.52em;
+  vertical-align: calc(1cap / 0.68 - 1ex);
 }
 
 /* mini-mois à gauche de la liste (PC, écran large) */
@@ -1543,6 +1548,10 @@ body.avec-fiche #principal {
   white-space: nowrap;
 }
 .pastille.libre {
+  /* 0.78 : la classe « libre » du socle (1.10, ligne d'état hors des heures) mettait ces pastilles en ocre, avec
+     !important ; deux classes l'emportent sur une */
+  color: var(--c) !important;
+  cursor: inherit;
   white-space: normal; /* un lieu en toutes lettres peut être long */
 }
 .lieu-libre {
@@ -2877,6 +2886,311 @@ dialog.completer {
 #etat.pause {
   cursor: var(--s-cur-pointer);
 }
+
+/* ---------- 0.78 : type d'une manifestation (fiche) ---------- */
+#fType {
+  font-size: 0.95rem;
+  color: var(--encre);
+  border: 1px solid var(--filet);
+  border-radius: 7px;
+  padding: 0.35rem 0.5rem;
+  background: var(--papier);
+  width: 100%;
+}
+#fType.devine {
+  color: var(--gris);
+  font-style: italic;
+}
+
+/* ---------- 0.78 : lieux déjà tapés, proposés sous le champ ---------- */
+.lieu-champ {
+  position: relative; /* #ajout est déjà positionné (collant) */
+}
+.lieu-prop {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--papier);
+  border: 1px solid var(--filet);
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+  padding: 0.25rem;
+  animation: lp-vient 0.15s ease-out;
+}
+.lieu-prop[hidden] {
+  display: none;
+}
+.lieu-prop button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.9rem;
+  color: var(--encre);
+}
+.lieu-prop button:hover,
+.lieu-prop button[aria-selected='true'] {
+  background: var(--survol);
+}
+.lieu-prop .pastille {
+  flex: none;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lp-nom {
+  flex: 1;
+  min-width: 0;
+  color: var(--gris);
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lp-n {
+  flex: none;
+  color: var(--pale);
+  font-size: 0.75rem;
+}
+@keyframes lp-vient {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@media (pointer: coarse) {
+  .lieu-prop button {
+    min-height: 2.6rem;
+    font-size: 1rem;
+  }
+}
+
+/* ---------- 0.78 : fenêtre « Lieux… » ---------- */
+dialog.lieux {
+  width: min(36rem, calc(100vw - 2rem));
+}
+dialog.lieux h3 {
+  font-size: 0.85rem;
+  color: var(--gris);
+  font-weight: 600;
+  margin: 1rem 0 0.3rem;
+}
+ul.lx {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+}
+ul.lx li {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, max-content) 1fr auto;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--filet);
+}
+ul.lx-libres li {
+  grid-template-columns: 1fr auto auto;
+}
+ul.lx .pastille {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+ul.lx .lx-p {
+  font-size: 0.85rem;
+  cursor: var(--s-cur-pointer);
+}
+ul.lx li.ouvert .lx-p {
+  box-shadow: 0 0 0 2px var(--c);
+}
+.lx-nom {
+  min-width: 0;
+  width: 100%;
+  font-size: 0.92rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.3rem 0.45rem;
+  background: none;
+}
+.lx-nom:hover,
+.lx-nom:focus {
+  border-color: var(--filet);
+  background: var(--papier);
+}
+.lx-n {
+  color: var(--pale);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.lx-palette {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.3rem 0 0.4rem;
+  animation: lp-vient 0.15s ease-out;
+}
+.lx-palette button {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--papier);
+  background: var(--c);
+  box-shadow: 0 0 0 1px var(--filet);
+  transition: transform 0.15s ease-out;
+}
+.lx-palette button:hover {
+  transform: scale(1.12);
+}
+.lx-palette button[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--c);
+}
+.lx-ajout {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.7fr) 1.3fr auto;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+.lx-ajout input {
+  min-width: 0;
+  font-size: 0.92rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--filet);
+  border-radius: 7px;
+  background: var(--papier);
+}
+@media (max-width: 760px) {
+  .lx-ajout {
+    grid-template-columns: 1fr auto;
+  }
+  .lx-ajout #lxNom {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  ul.lx li {
+    grid-template-columns: minmax(4.5rem, max-content) 1fr auto;
+  }
+}
+
+/* ---------- 0.78 : fenêtre « Bilans… » ---------- */
+dialog.bilans {
+  width: min(820px, calc(100vw - 2rem));
+  max-height: calc(100vh - 3rem);
+}
+dialog.bilans[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+#bilPeriode {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--filet);
+  border-radius: 7px;
+  padding: 0.3rem 0.5rem;
+  background: var(--papier);
+}
+#bilInternesW[hidden] {
+  display: none;
+}
+#bilApercu {
+  overflow: auto;
+  flex: 1;
+  min-height: 10rem;
+  background: #fff;
+  color: #1f2933;
+  border: 1px solid var(--filet);
+  border-radius: 9px;
+  padding: 14px 16px;
+}
+#bilApercu tr.bil-lien {
+  cursor: var(--s-cur-pointer);
+}
+#bilApercu tr.bil-lien:hover td {
+  background: #f3f6f9;
+}
+.bil-devine {
+  display: inline-block;
+  font: 600 0.72em/1 Inter, sans-serif;
+  color: #5b6470;
+  border: 1px dashed #aab2bc;
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  margin-left: 0.2em;
+}
+dialog.bilans .mail-pied {
+  flex-wrap: wrap;
+  row-gap: 0.4rem;
+}
+dialog.bilans .mail-pied .aide {
+  flex: 1 1 14rem;
+}
+#bilInternesW input {
+  width: auto; /* la règle des fenêtres du socle met les champs en pleine largeur */
+}
+/* aperçu : le tableau tient dans la fenêtre (colonnes aux largeurs prévues, mots coupés au besoin) */
+#bilApercu table {
+  table-layout: fixed;
+}
+#bilApercu td,
+#bilApercu th {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+@media (max-width: 760px) {
+  #bilApercu {
+    padding: 10px 8px;
+  }
+  #bilApercu table {
+    font-size: 8.5pt !important;
+  }
+  #bilApercu td,
+  #bilApercu th {
+    padding: 3pt 3pt !important;
+  }
+}
+
+/* fenêtre « Lieux… » : la règle des boutons des fenêtres du socle ne doit pas effacer les pastilles */
+#lieuxF .pastille.lx-p {
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 11%, white);
+  border: 1px solid color-mix(in srgb, var(--c) 40%, white);
+  border-radius: 99px;
+  padding: 0.22em 0.6em 0.28em;
+  font: 600 0.85rem/1 Inter, sans-serif;
+}
+#lieuxF .lx-palette button {
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--papier);
+  background: var(--c);
+}
+#lieuxF .lx-nom {
+  padding: 0.3rem 0.45rem;
+  border-color: transparent;
+}
+#lieuxF .lx-nom:hover,
+#lieuxF .lx-nom:focus {
+  border-color: var(--filet);
+}
+@media (max-width: 760px) {
+  #lieuxF .lx-palette {
+    gap: 0.25rem;
+  }
+  #lieuxF .lx-palette button {
+    width: 1.65rem;
+    height: 1.65rem;
+  }
+}
 </style>
 </head>
 <body>
@@ -2908,6 +3222,8 @@ dialog.completer {
     <button data-act="exporter" role="menuitem">Télécharger une copie</button>
     <button data-act="retrouver" role="menuitem">Retrouver une manifestation disparue…</button>
     <button data-act="etapes" role="menuitem">Modèles de rétroplanning…</button>
+    <button data-act="lieux" role="menuitem">Lieux…</button>
+    <button data-act="bilans" role="menuitem">Bilans…</button>
     <button data-act="horsheures" role="menuitemcheckbox" aria-checked="false" hidden title="Pour toute la suite, jusqu’à ce que tu l’arrêtes, au plus tard à la reprise suivante (9 h)">Synchroniser hors des heures<span class="inter" aria-hidden="true"></span></button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
     <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
@@ -2967,13 +3283,14 @@ dialog.completer {
   </div>
   <div class="champ">Lieu
     <div id="fLieux" class="puces"></div>
-    <input id="fLieuLibre" placeholder="Autre lieu, en toutes lettres">
+    <div class="lieu-champ"><input id="fLieuLibre" placeholder="Autre lieu, en toutes lettres" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lieuProp"></div>
   </div>
   <div class="champ">État
     <div id="fStatut" class="bascule large" role="group">
       <button data-v="">Confirmé</button><button data-v="à confirmer">À confirmer</button><button data-v="en attente">En attente</button><button data-v="annulé">Annulé</button>
     </div>
   </div>
+  <label class="champ type-champ">Type<select id="fType" title="Pour les bilans (menu ⋯ → Bilans…) ; sans choix, Saison le devine d’après le titre et le lieu"></select></label>
   <label class="coche"><input id="fInterne" type="checkbox"> Réservé à l’équipe (ni affiches, ni « Demandez le programme »)</label>
   <!-- trois blocs (19/10/2026) : ce qui est au-dessus va partout ; puis le public, masqué pour une manifestation
        réservée à l'équipe ; puis l'équipe -->
@@ -3006,6 +3323,8 @@ dialog.completer {
   </div>
   <datalist id="accomps"></datalist>
 </aside>
+
+<div id="lieuProp" class="lieu-prop" role="listbox" aria-label="Lieux déjà utilisés" hidden></div>
 
 <section id="affiche" hidden aria-label="Affiche">
   <div class="outils">
@@ -3063,6 +3382,41 @@ dialog.completer {
   <div id="etapesListe"></div>
   <p><button type="button" id="etapesAjout" class="lien">+ Ajouter un modèle</button></p>
   <form method="dialog" class="s-pied"><button value="non">Annuler</button> <button id="etapesOk" class="primaire" value="oui">Enregistrer</button></form>
+</dialog>
+
+<dialog id="bilans" class="s-dialogue bilans s-plein" aria-label="Bilans">
+  <div class="mail-tete">
+    <h2>Bilans</h2>
+    <button id="bilFermer" class="icone" title="Fermer (Échap)">×</button>
+  </div>
+  <div class="mail-reglages">
+    <div id="bilSorte" class="bascule" role="group" aria-label="Bilan">
+      <button data-s="types" aria-pressed="true" title="Nombre de manifestations par type">Par type</button>
+      <button data-s="ccas" aria-pressed="false" title="Manifestations faites avec le CCAS (Conciergerie), avec l’organisation">CCAS</button>
+    </div>
+    <select id="bilPeriode" aria-label="Période"></select>
+    <label class="coche" id="bilInternesW"><input id="bilInternes" type="checkbox"> avec celles réservées à l’équipe</label>
+  </div>
+  <div id="bilApercu"></div>
+  <div class="mail-pied">
+    <span id="bilAide" class="aide"></span>
+    <button id="bilWord" title="Document Word à télécharger">Document Word</button>
+    <button id="bilCopier" class="primaire" title="Tableau à coller dans un mail ou un document Word">Copier</button>
+  </div>
+</dialog>
+
+<dialog id="lieuxF" class="s-dialogue lieux s-plein" aria-label="Lieux">
+  <div class="mail-tete">
+    <h2>Lieux</h2>
+    <button id="lxFermer" class="icone" title="Fermer (Échap)">×</button>
+  </div>
+  <div id="lxListe"></div>
+  <form id="lxAjout" class="lx-ajout" autocomplete="off">
+    <input id="lxCle" placeholder="Nom court (pastille)" aria-label="Nom court du nouveau lieu" maxlength="40">
+    <input id="lxNom" placeholder="Nom complet : École, Jules Ferry" aria-label="Nom complet du nouveau lieu">
+    <button class="primaire">Ajouter</button>
+  </form>
+  <div id="lxLibres"></div>
 </dialog>
 
 <dialog id="retrouver" class="s-dialogue" aria-label="Manifestations disparues">
@@ -4302,6 +4656,21 @@ function fusionner(B, M, T) {
   return r;
 }
 
+/** Copie en double (ou copie choisie au PC) : fusion avec l'état affiché. Depuis sa version de départ (« issu de »)
+    si on la connaît (la base, ou une version vue ici) ; sinon fusion prudente, à partir de rien, comme syncSave sans
+    base : ce que la copie a en plus est ajouté, rien n'est retiré, en cas de différence la version du fichier de travail
+    est gardée. « issu de » reste celui du fichier de travail (syncSave le refait en écrivant).
+    Rend { anc (texte ou null), avant, r (modèle fusionné), apres } ; ne change rien à l'état (1.19.1, commun au
+    ramassage du téléphone et à « Fusionner une copie… » du PC). */
+function fusionCopie(txt) {
+  const p = parentOf(txt),
+    anc = !p ? null : C.baseText != null && hash8(C.baseText) === p ? C.baseText : seenTexts.find(x => hash8(x) === p) || null,
+    avant = A.serialize(A.etat()),
+    r = fusionner(A.parse(anc != null ? anc : ''), A.parse(avant), A.parse(txt));
+  A.fixeReglage(r, 'issu de', A.reglage(A.parse(avant), 'issu de') || null);
+  return { anc, avant, r, apres: A.serialize(r) };
+}
+
 /** Refus d'écrire : l'erreur porte le message montré, avec « Écrire quand même ». */
 function refus(msg) {
   const e = new Error('refus:' + msg);
@@ -5197,7 +5566,9 @@ async function envoyerQuandMeme() {
    Fusion depuis leur version de départ (« issu de ») si on la connaît, puis corbeille de OneDrive (Tâches 2.22.1).
    1.19 (décisions de François du 18/11) : seulement les copies de plus d'une minute (au lieu de dix) ; au plus une fois
    par heure à l'ouverture, au retour et à la synchro du matin, mais à chaque « tirer pour actualiser » (force). Une
-   copie PDF sans données lisibles n'est ni fusionnée ni mise à la corbeille. ---- */
+   copie PDF sans données lisibles n'est ni fusionnée ni mise à la corbeille.
+   1.19.1 (21/11) : version de départ inconnue = fusion prudente (fusionCopie), plus jamais la corbeille sans fusion ;
+   copie vide ou illisible laissée (dite une fois) ; corbeille seulement une fois la fusion enregistrée. ---- */
 const DOUBLON_DELAI = 60e3;
 function ramasserDoublons(force) {
   /* une seule à la fois : tirer pendant le ramassage de l'ouverture attend la fin, puis repasse */
@@ -5218,52 +5589,82 @@ async function ramasser(force) {
   }
   mem.set('doublons', Date.now());
   const copies = liste.filter(f => A.doublon.test(f.name) && Date.now() - Date.parse(f.modified) > DOUBLON_DELAI);
-  let n = 0;
+  /* copies laissées (illisibles) : journalisées et dites une fois, tant qu'elles ne changent pas */
+  const dites = mem.get('doublons-laisses', []),
+    signe = f => f.name + '|' + f.modified;
+  let n = 0,
+    prudentes = 0;
+  const laissees = [];
   for (const f of copies) {
     const url = dossier + '/' + encodeURIComponent(f.name);
     const fait = await occupe('Rangement d’une copie en double…', async () => {
       const brut = JSON.parse(await spCall('spRead', url)).text;
-      let txt;
+      let txt,
+        pourquoi = '';
       try {
         txt = deballer(brut);
         if (txt == null) txt = brut;
+        if (!txt || !txt.trim()) pourquoi = 'vide';
       } catch (e) {
-        journal('copie en double', { fichier: f.name, fusion: 'PDF sans données, laissée telle quelle' });
+        pourquoi = 'PDF sans données';
+      }
+      if (pourquoi) {
+        /* rien à fusionner : la mettre à la corbeille perdrait peut-être quelque chose (1.19.1) */
+        laissees.push(f);
+        if (!dites.includes(signe(f)))
+          journal('copie en double', { fichier: f.name, fusion: pourquoi + ', laissée telle quelle' });
         return false;
       }
-      const p = parentOf(txt),
-        anc = p && seenTexts.find(x => hash8(x) === p);
-      if (anc) {
-        const avant = A.serialize(A.etat());
-        A.appliquer(fusionner(A.parse(anc), A.etat(), A.parse(txt)));
-        if (A.serialize(A.etat()) !== avant) {
-          C.dirty = true;
-          C.rev++;
-          await syncSave();
+      const { anc, avant, r, apres } = fusionCopie(txt);
+      if (apres !== avant) {
+        A.appliquer(r);
+        C.dirty = true;
+        C.rev++;
+        backup();
+        await syncSave();
+        /* pas enregistrée : la copie reste, elle sera reprise au prochain ramassage */
+        if (C.saveErr) {
+          journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente', corbeille: 'non, pas enregistré' });
+          return false;
         }
       }
-      journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'version de départ inconnue' });
+      journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente' });
       await spCall('spRecycle', url);
+      if (!anc) prudentes++;
       return true;
     });
     if (fait) n++;
   }
+  const nouvelles = laissees.filter(f => !dites.includes(signe(f)));
+  mem.set('doublons-laisses', laissees.map(signe));
+  const s = k => (k > 1 ? 's' : '');
+  const msg = [];
   if (n)
-    toast(
-      (n > 1 ? n + ' copies en double' : 'Une copie en double') +
+    msg.push(
+      (n > 1 ? n + '\u00a0copies en double' : 'Une copie en double') +
         ' de ' +
         nomDonnees() +
         ' (créée' +
-        (n > 1 ? 's' : '') +
+        s(n) +
         ' par OneDrive) fusionnée' +
-        (n > 1 ? 's' : '') +
+        s(n) +
+        (prudentes
+          ? ' (' + (n > 1 ? prudentes + '\u00a0' : '') + 'prudemment\u00a0: version de départ inconnue)'
+          : '') +
         ' et mise' +
-        (n > 1 ? 's' : '') +
-        ' à la corbeille de OneDrive',
-      null,
-      null,
-      6000
+        s(n) +
+        ' à la corbeille de OneDrive'
     );
+  if (nouvelles.length)
+    msg.push(
+      (nouvelles.length > 1 ? nouvelles.map(f => f.name).join(', ') + ' laissées' : nouvelles[0].name + ' laissée') +
+        ' telle' +
+        s(nouvelles.length) +
+        ' quelle' +
+        s(nouvelles.length) +
+        '\u00a0: aucune donnée lisible, rien à fusionner'
+    );
+  if (msg.length) toast(msg.join(' · '), null, null, prudentes || nouvelles.length ? 8000 : 6000);
   return n;
 }
 /* socle/js/19-versions.js : la chaîne des mises à jour, GitHub → Compagnon → OneDrive → PC.
@@ -6892,9 +7293,8 @@ function texteEcarts(r) {
 }
 
 /** PC : choisir une copie (PDF ou .md), dire ce qu'elle apporte, la fusionner, enregistrer, puis proposer de la supprimer.
-    Version de départ inconnue (« issu de » absent ou jamais vu ici) : fusion prudente, à partir de rien, comme syncSave
-    sans base : ce que la copie a en plus est ajouté, rien n'est retiré, et en cas de différence la version du fichier de
-    travail est gardée (décision du 19/11 : plutôt que refuser, puisque rien ne peut s'y perdre). */
+    Version de départ inconnue (« issu de » absent ou jamais vu ici) : fusion prudente (fusionCopie, 16-synchro.js),
+    décision du 19/11 : plutôt que refuser, puisque rien ne peut s'y perdre. */
 async function fusionnerCopie() {
   if (AND || !hasFS) return toast('«\u00a0Fusionner une copie…\u00a0» se fait au PC, dans Edge');
   if (!pret() || !C.ouvert || accesPerdu()) return toast('Ouvre d’abord le fichier de travail');
@@ -6923,14 +7323,8 @@ async function fusionnerCopie() {
     await enregistrer();
     if (C.saveErr) return;
   }
-  const p = parentOf(txt),
-    anc = !p ? null : C.baseText != null && hash8(C.baseText) === p ? C.baseText : seenTexts.find(x => hash8(x) === p) || null;
-  const avant = A.serialize(A.etat()),
-    r = fusionner(A.parse(anc != null ? anc : ''), A.parse(avant), A.parse(txt)),
+  const { anc, avant, r, apres } = fusionCopie(txt),
     nom = fichierPc.handle.name;
-  /* « issu de » reste celui du fichier de travail (syncSave le refait en écrivant) : pas une différence */
-  A.fixeReglage(r, 'issu de', A.reglage(A.parse(avant), 'issu de') || null);
-  const apres = A.serialize(r);
   if (apres === avant) {
     journal('copie à fusionner', { fichier: h.name, apport: 'rien' });
     const v = await question(
@@ -7131,7 +7525,7 @@ async function passerAuPdf() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.19.0',
+  version: '1.19.1',
   demarrer,
   /* fichier */
   modifie,
@@ -7418,9 +7812,29 @@ const COULEURS = {
   vert: '#3D7A45' /* médiathèque */,
   ocre: '#A0661C' /* Conciergerie */,
   gris: '#64707D' /* autres lieux */,
-  orange: '#c2620a',
-  violet: '#6a3d9a'
+  orange: '#b35a09' /* 0.78 : un peu plus foncé (4,8:1 sur blanc au lieu de 4,2) */,
+  violet: '#6a3d9a',
+  /* 0.78 (François : « une série d’étiquettes de lieu, toutes de la même couleur, pour les écoles ») : palette élargie,
+     lisible sur blanc (≥ 4,5:1 ; ≥ 4,6:1 dans la pastille) et, éclaircie, sur fond sombre ; jamais la prune, réservée à l'équipe */
+  sarcelle: '#1E7470',
+  indigo: '#4B4FA6',
+  olive: '#66701F',
+  brun: '#8A5A3C'
 };
+/** Couleurs proposées dans la fenêtre « Lieux… », dans cet ordre, avec leur nom affiché. */
+const PALETTE = [
+  ['bleu', 'bleu'],
+  ['rouge', 'framboise'],
+  ['vert', 'vert'],
+  ['ocre', 'ocre'],
+  ['sarcelle', 'sarcelle'],
+  ['indigo', 'indigo'],
+  ['violet', 'violet'],
+  ['orange', 'orange'],
+  ['olive', 'olive'],
+  ['brun', 'brun'],
+  ['gris', 'gris']
+];
 /* mêmes teintes, plus saturées, pour le texte fin imprimé (lieux de l'A3) : sur papier, les couleurs d'écran
    paraissent ternes en petit corps (François, 19/10/2026) */
 const COULEURS_VIVES = {
@@ -7430,8 +7844,21 @@ const COULEURS_VIVES = {
   ocre: '#B56A00',
   gris: '#56616E',
   orange: '#D35F00',
-  violet: '#6B2FA8'
+  violet: '#6B2FA8',
+  sarcelle: '#0E7F79',
+  indigo: '#3E45B8',
+  olive: '#677A0E',
+  brun: '#955A2E'
 };
+/* Type d'une manifestation (0.78, pour les bilans) : quatre valeurs fixes, jeton {type …}. Sans jeton, le type est
+   deviné (typeDevine) et rien n'est écrit. La clé est le premier mot du jeton : une version suivante pourra y ajouter
+   un genre après un espace ({type concert théâtre}), gardé tel quel ici. */
+const TYPES = [
+  ['concert', 'Concerts et représentations', 'Concert ou représentation'],
+  ['audition', 'Auditions', 'Audition'],
+  ['école', 'Conservatoire à l’école', 'Conservatoire à l’école'],
+  ['autre', 'Autres interventions', 'Autre intervention']
+];
 /* ligne d'événement : la zone des heures accepte n'importe quoi jusqu'au « · » (18/10/2026 : une heure écrite
    « 14h-14h45et15h15-16h » rendait la ligne illisible, et l'événement disparaissait du fichier à l'écriture suivante) */
 const RX_EV = /^- (\d{4}-\d{2}-\d{2}|\?)(?:\.\.(\d{4}-\d{2}-\d{2}))?(?: ([^·]*?))? · (.*)$/;
@@ -7506,6 +7933,7 @@ function evVide() {
     semaine: false,
     libelle: '',
     aDater: false /* date approximative : d1..d2 est une fenêtre (mois, période), pas la date */,
+    type: '' /* 0.78 : jeton {type …} tel qu'écrit (« audition »), '' = deviné ; voir typeDe */,
     taches: '' /* rétroplanning envoyé à Tâches : date de la manifestation à ce moment-là (jeton {tâches AAAA-MM-JJ}) */,
     autres: [],
     lignes: [] /* 0.76 : lignes sous la manifestation qu'une version plus récente a écrites et que celle-ci ne connaît
@@ -7588,6 +8016,7 @@ function parse(texte) {
       else if (t === 'interne') ev.interne = true;
       else if (t === 'à dater') ev.aDater = true;
       else if ((k = t.match(/^tâches (\d{4}-\d{2}-\d{2})$/))) ev.taches = k[1];
+      else if ((k = t.match(/^type (\S.*)$/))) ev.type = k[1].trim();
       else if (STATUTS.includes(t)) ev.statut = t;
       else ev.autres.push(t);
     }
@@ -7694,6 +8123,7 @@ function ligneEv(e) {
   if (e.accomp) j.push('accompagnement ' + e.accomp);
   if (e.statut) j.push(e.statut);
   if (e.interne) j.push('interne');
+  if (e.type) j.push('type ' + e.type);
   if (e.taches) j.push('tâches ' + e.taches);
   j.push(...e.autres);
   j.push('id ' + e.id);
@@ -7756,6 +8186,7 @@ const CHAMPS = [
   'libelle',
   'aDater',
   'taches',
+  'type',
   'autres',
   'lignes'
 ];
@@ -7860,6 +8291,30 @@ function estDatee(e) {
 /** Rien n'est annoncé au public sans date (François, 19/10/2026). */
 function estPublic(e) {
   return estDatee(e) && !e.interne && e.statut !== 'annulé' && e.statut !== 'en attente';
+}
+
+/* ---- type d'une manifestation (0.78) ---- */
+
+const plat = s => sansAccents(String(s || '')).toLowerCase();
+/** Type deviné d'après le titre et le lieu (jamais écrit dans le fichier). */
+function typeDevine(e) {
+  /* le lieu : son texte, et son nom complet s'il est au référentiel (« Paul Bert » = « École, Paul Bert ») */
+  const ref = e.lieu && typeof doc !== 'undefined' && doc.reglages ? lieux(doc)[e.lieu] : null;
+  const t = plat(e.titre),
+    l = plat(e.lieu + ' ' + (ref ? ref.nom : ''));
+  if (/\baudition/.test(t)) return 'audition';
+  /* une école (lieu ou titre), sauf l'« École du spectateur » ; les concerts des CHAM restent des concerts */
+  const ecole = /\b(ecoles?|maternelle|elementaire|groupe scolaire|scolaires?|periscolaire)\b/;
+  if ((ecole.test(l) || ecole.test(t.replace(/ecole du spectateur/g, ''))) && !/\bcham\b/.test(t)) return 'école';
+  if (/\b(concerts?|spectacles?|representations?|recitals?|carte blanche|comedie musicale|theatr\w*|opera|samedis musicaux|cabaret|bal)\b/.test(t))
+    return 'concert';
+  return 'autre';
+}
+/** {cle, devine} : le type écrit (premier mot du jeton, s'il est connu), sinon le type deviné. */
+function typeDe(e) {
+  const m = plat((e.type || '').split(' ')[0]),
+    T = TYPES.find(([c]) => plat(c) === m);
+  return T ? { cle: T[0], devine: false } : { cle: typeDevine(e), devine: true };
 }
 /* 03-etat.js : état de la page, copie de secours, annuler / rétablir, petits outils d'affichage. */
 
@@ -8682,6 +9137,10 @@ function changements(a, e) {
   if ((a.lieu || '') !== e.lieu) L.push('lieu : ' + (a.lieu || 'aucun') + ' → ' + (e.lieu || 'aucun'));
   if ((a.statut || '') !== e.statut) L.push('état : ' + (a.statut || 'confirmée') + ' → ' + (e.statut || 'confirmée'));
   if (!!a.interne !== !!e.interne) L.push(e.interne ? 'réservée à l’équipe' : 'ouverte au public');
+  if ((a.type || '') !== (e.type || '')) {
+    const t = x => (x.type ? TYPES.find(T => T[0] === typeDe(x).cle)[2].toLowerCase() : 'deviné');
+    L.push('type : ' + t(a) + ' → ' + t(e));
+  }
   const autres = [
     ['soustitre', 'sous-titre'],
     ['detail', 'descriptif'],
@@ -8960,6 +9419,14 @@ function remplirFiche() {
   set('#fPratique', e.pratique);
   $('#fTarifs').innerHTML = pucesTarifs(e.pratique);
   $$('#fStatut button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === e.statut)));
+  /* type (0.78, pour les bilans) : « deviné » tant que rien n'est choisi ; le jeton n'est écrit qu'à un choix */
+  const ty = typeDe(e),
+    nomT = c => TYPES.find(t => t[0] === c)[2];
+  $('#fType').innerHTML =
+    '<option value="">' + esc(nomT(typeDevine(e))) + ' (deviné)</option>' +
+    TYPES.map(([c]) => '<option value="' + c + '">' + esc(nomT(c)) + '</option>').join('');
+  $('#fType').value = ty.devine ? '' : ty.cle;
+  $('#fType').classList.toggle('devine', ty.devine);
   $('#fInterne').checked = e.interne;
   $('#fPublic').hidden = e.interne; /* réservé à l'équipe : les champs du public ne servent à rien (19/10/2026) */
   set('#fAccomp', e.accomp);
@@ -9263,6 +9730,15 @@ function initListe() {
     modifier('statut', b.dataset.v);
     remplirFiche();
   });
+  $('#fType').onchange = () => {
+    const e = evSel();
+    if (!e) return;
+    editSnap = null;
+    const v = $('#fType').value,
+      reste = (e.type || '').split(' ').slice(1).join(' '); /* un genre écrit par une version suivante est gardé */
+    modifier('type', v ? (reste ? v + ' ' + reste : v) : '');
+    remplirFiche();
+  };
   $('#fInterne').onchange = () => {
     editSnap = null;
     modifier('interne', $('#fInterne').checked);
@@ -10008,6 +10484,849 @@ function initRecherche() {
     afficherCalendrier();
   });
 }
+/* 06f-lieux.js : lieux déjà tapés proposés pendant la saisie, fenêtre « Lieux… » (0.78).
+   François : « j’aimerais que l’application me propose un lieu que j’ai déjà tapé, et même éventuellement de
+   personnaliser moi-même la couleur du lieu […] une série d’étiquettes de lieu, toutes de la même couleur, pour les
+   écoles ». Le référentiel reste celui des réglages (« - lieu : Clé = Nom complet · couleur ») ; rien de nouveau dans
+   le format, sinon quatre couleurs de plus (PALETTE, 02-modele.js). */
+
+/** Lieux connus : le référentiel, puis les lieux tapés en toutes lettres dans le fichier ; les plus utilisés d'abord.
+ *  → [{cle, nom, couleur, hex, libre, n}] (cle '' pour un lieu libre). */
+function lieuxConnus(sauf) {
+  const ref = lieux(doc),
+    n = new Map(),
+    libres = new Map();
+  for (const e of doc.evts) {
+    /* sauf : la date en cours de saisie (son lieu change à chaque lettre tapée) */
+    if (!e.lieu || e.id === sauf) continue;
+    if (ref[e.lieu]) n.set(e.lieu, (n.get(e.lieu) || 0) + 1);
+    else {
+      const k = plat(e.lieu).replace(/\s+/g, ' ').trim();
+      const x = libres.get(k) || { nom: e.lieu, n: 0 };
+      x.n++;
+      libres.set(k, x);
+    }
+  }
+  const L = Object.values(ref).map(l => ({
+    cle: l.cle,
+    nom: l.nom,
+    couleur: l.couleur,
+    hex: COULEURS[l.couleur] || COULEURS.gris,
+    libre: false,
+    n: n.get(l.cle) || 0
+  }));
+  for (const x of libres.values()) {
+    if (L.some(l => plat(l.nom) === plat(x.nom))) continue;
+    const Lx = lieuDe({ lieu: x.nom });
+    L.push({ cle: '', nom: x.nom, couleur: Lx.couleur || '', hex: Lx.hex, libre: true, n: x.n });
+  }
+  return L.sort((a, b) => b.n - a.n || a.nom.localeCompare(b.nom, 'fr'));
+}
+/** Lieux qui contiennent tous les mots tapés (sans accents ni majuscules), au plus six. */
+function lieuxPour(q) {
+  const mots = plat(q).split(/\s+/).filter(Boolean);
+  if (!mots.length) return [];
+  return lieuxConnus(prop.sauf)
+    .filter(l => {
+      const t = plat(l.cle + ' ' + l.nom);
+      return mots.every(m => t.includes(m));
+    })
+    .slice(0, 6);
+}
+
+/* ---- la petite liste sous le champ (une seule, déplacée sous le champ qui la demande) ----
+   Pas de <datalist> : au téléphone, Android la montre en bandeau au-dessus du clavier, sans couleurs ni ordre, et
+   Edge la mêle à l'historique des formulaires. */
+const prop = { champ: null, L: [], i: -1, choisir: null, sauf: '' };
+function fermerProp() {
+  const b = $('#lieuProp');
+  if (!b || b.hidden) return;
+  b.hidden = true;
+  if (prop.champ) prop.champ.setAttribute('aria-expanded', 'false');
+  prop.champ = null;
+  prop.i = -1;
+}
+function montrerProp(champ, q, choisir) {
+  prop.sauf = champ.id === 'fLieuLibre' ? selId : '';
+  const b = $('#lieuProp'),
+    L = lieuxPour(q).filter(l => plat(l.cle || l.nom) !== plat(q) && plat(l.nom) !== plat(q));
+  if (!L.length) return fermerProp();
+  prop.champ = champ;
+  prop.L = L;
+  prop.choisir = choisir;
+  if (prop.i >= L.length) prop.i = -1;
+  b.innerHTML = L.map(
+    (l, k) =>
+      '<button type="button" role="option" data-k="' + k + '"' + (k === prop.i ? ' aria-selected="true"' : '') + '>' +
+      '<span class="pastille' + (l.libre ? ' libre' : '') + '" style="--c:' + l.hex + '">' + esc(l.cle || l.nom) + '</span>' +
+      (l.cle && l.nom !== l.cle ? '<span class="lp-nom">' + rich(l.nom) + '</span>' : '<span class="lp-nom"></span>') +
+      '<span class="lp-n">' + (l.n ? l.n + ' date' + (l.n > 1 ? 's' : '') : '') + '</span></button>'
+  ).join('');
+  const parent = champ.parentElement;
+  if (b.parentElement !== parent) parent.append(b);
+  /* sous le champ, à sa largeur (au moins 18 rem), dans le cadre de son parent */
+  b.style.top = champ.offsetTop + champ.offsetHeight + 3 + 'px';
+  b.style.left = champ.offsetLeft + 'px';
+  b.style.width = Math.max(champ.offsetWidth, Math.min(288, parent.clientWidth - champ.offsetLeft)) + 'px';
+  b.hidden = false;
+  champ.setAttribute('aria-expanded', 'true');
+}
+/** Branche la liste sur un champ. texte() : ce qui est cherché (null : rien à proposer) ; choisir(lieu) : le choix. */
+function brancherProp(champ, texte, choisir) {
+  const maj = () => {
+    const q = texte();
+    if (q == null || !q.trim()) return fermerProp();
+    montrerProp(champ, q, choisir);
+  };
+  champ.addEventListener('input', () => {
+    prop.i = -1;
+    maj();
+  });
+  champ.addEventListener('blur', () => setTimeout(() => prop.champ === champ && fermerProp(), 150));
+  champ.addEventListener('keydown', ev => {
+    const b = $('#lieuProp');
+    if (b.hidden || prop.champ !== champ) return;
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      const n = prop.L.length;
+      prop.i = ev.key === 'ArrowDown' ? (prop.i + 1) % n : (prop.i - 1 + n) % n;
+      montrerProp(champ, texte(), choisir);
+    } else if (ev.key === 'Enter' && prop.i >= 0) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const l = prop.L[prop.i];
+      fermerProp();
+      choisir(l);
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      ev.stopPropagation(); /* Échap ferme la liste, pas la fiche */
+      fermerProp();
+    }
+  });
+}
+function initProp() {
+  const b = $('#lieuProp');
+  b.addEventListener('mousedown', ev => ev.preventDefault()); /* le champ garde le curseur */
+  b.addEventListener('click', ev => {
+    const x = ev.target.closest('[data-k]');
+    if (!x || !prop.choisir) return;
+    const l = prop.L[+x.dataset.k],
+      ch = prop.choisir;
+    fermerProp();
+    ch(l);
+  });
+  /* fiche : « Autre lieu, en toutes lettres » */
+  brancherProp(
+    $('#fLieuLibre'),
+    () => $('#fLieuLibre').value,
+    l => {
+      editSnap = null;
+      if (l.cle) {
+        modifier('lieu', l.cle);
+        $('#fLieuLibre').value = '';
+        remplirFiche();
+      } else {
+        $('#fLieuLibre').value = l.nom;
+        modifier('lieu', l.nom);
+        $$('#fLieux .pastille').forEach(b => b.classList.remove('choisi'));
+      }
+      editSnap = null;
+    }
+  );
+  /* saisie rapide : ce qui suit « @ » */
+  const apresArobase = () => {
+    const m = /(?:^|\s)@([^@]*)$/.exec($('#ajoutTxt').value);
+    return m ? m[1] : null;
+  };
+  brancherProp($('#ajoutTxt'), apresArobase, l => {
+    const t = $('#ajoutTxt');
+    t.value = t.value.replace(/@([^@]*)$/, '@' + (l.cle || l.nom));
+    apercuSaisie();
+    t.focus();
+  });
+}
+
+/* ---- fenêtre « Lieux… » ---- */
+/** Réglage d'un lieu, tel qu'il s'écrit (« Clé = Nom complet · couleur »). */
+function valLieu(cle, nom, couleur) {
+  return cle + ' = ' + nom + (couleur ? ' · ' + couleur : '');
+}
+/** Un nom sans ce qui casserait la ligne du réglage (« = », « · », accolades). */
+const nomSur = s => s.replace(/[{}]/g, '').replace(/\s+=\s+/g, ' – ').replace(/\s+·\s+/g, ', ').replace(/\s+/g, ' ').trim();
+/** Écrit un lieu du référentiel (le crée s'il n'y est pas, à la fin de ceux qui existent). */
+function fixerLieu(cle, nom, couleur) {
+  const v = valLieu(cle, nom, couleur),
+    i = doc.reglages.findIndex(r => r.cle === 'lieu' && r.val.split(' = ')[0] === cle);
+  if (i >= 0) doc.reglages[i] = { cle: 'lieu', val: v };
+  else {
+    const der = doc.reglages.map(r => r.cle).lastIndexOf('lieu');
+    doc.reglages.splice(der >= 0 ? der + 1 : doc.reglages.length, 0, { cle: 'lieu', val: v });
+  }
+}
+let lxOuvert = ''; /* lieu dont la palette est ouverte */
+function afficherLieux() {
+  const C = lieuxConnus(),
+    ref = C.filter(l => !l.libre).sort((a, b) => ordreRef.indexOf(a.cle) - ordreRef.indexOf(b.cle)),
+    libres = C.filter(l => l.libre);
+  $('#lxListe').innerHTML =
+    '<ul class="lx">' +
+    ref
+      .map(
+        l =>
+          '<li data-cle="' + esc(l.cle) + '"' + (lxOuvert === l.cle ? ' class="ouvert"' : '') + '>' +
+          '<button type="button" class="pastille lx-p" style="--c:' + l.hex + '" title="Changer la couleur" aria-expanded="' + (lxOuvert === l.cle) + '">' + esc(l.cle) + '</button>' +
+          '<input class="lx-nom" value="' + esc(l.nom) + '" aria-label="Nom complet de ' + esc(l.cle) + '">' +
+          '<span class="lx-n">' + (l.n ? l.n + ' date' + (l.n > 1 ? 's' : '') : '<button type="button" class="lien lx-retirer">retirer</button>') + '</span>' +
+          (lxOuvert === l.cle
+            ? '<div class="lx-palette" role="group" aria-label="Couleur de ' + esc(l.cle) + '">' +
+              PALETTE.map(
+                ([c, nom]) =>
+                  '<button type="button" data-c="' + c + '" title="' + nom + '" aria-label="' + nom + '" aria-pressed="' + ((l.couleur || 'gris') === c) + '" style="--c:' + COULEURS[c] + '"></button>'
+              ).join('') +
+              '</div>'
+            : '') +
+          '</li>'
+      )
+      .join('') +
+    '</ul>';
+  $('#lxLibres').innerHTML = libres.length
+    ? '<h3>Tapés en toutes lettres</h3><ul class="lx lx-libres">' +
+      libres
+        .map(
+          l =>
+            '<li data-nom="' + esc(l.nom) + '"><span class="pastille libre" style="--c:' + l.hex + '">' + esc(l.nom) + '</span>' +
+            '<span class="lx-n">' + l.n + ' date' + (l.n > 1 ? 's' : '') + '</span>' +
+            '<button type="button" class="lx-ajouter">Ajouter aux lieux</button></li>'
+        )
+        .join('') +
+      '</ul>'
+    : '';
+}
+let ordreRef = [];
+function ouvrirLieux() {
+  if (!socle.ouvert) return toast('Ouvre d’abord le fichier de suivi');
+  ordreRef = Object.keys(lieux(doc));
+  lxOuvert = '';
+  afficherLieux();
+  $('#lieuxF').showModal();
+}
+/** Clé libre pour un lieu tapé en toutes lettres : ce qui suit la virgule (« Conservatoire, salle Liszt » → « Salle
+ *  Liszt »), sinon le texte entier ; jamais une clé déjà prise. */
+function cleLibre(nom) {
+  const ref = lieux(doc),
+    court = nomSur(nom.includes(',') ? majuscule(nom.slice(nom.indexOf(',') + 1).trim()) : nom);
+  return ref[court] ? (ref[nomSur(nom)] ? null : nomSur(nom)) : court;
+}
+function initLieux() {
+  $('#lxFermer').onclick = () => $('#lieuxF').close();
+  $('#lieuxF').addEventListener('close', () => toutAfficher());
+  $('#lxListe').addEventListener('click', ev => {
+    const li = ev.target.closest('li[data-cle]');
+    if (!li) return;
+    const cle = li.dataset.cle,
+      L = lieux(doc)[cle];
+    if (ev.target.closest('.lx-p')) {
+      lxOuvert = lxOuvert === cle ? '' : cle;
+      return afficherLieux();
+    }
+    const c = ev.target.closest('[data-c]');
+    if (c) {
+      if ((L.couleur || 'gris') === c.dataset.c) return;
+      snapshot();
+      fixerLieu(cle, L.nom, c.dataset.c);
+      changed();
+      toutAfficher();
+      afficherLieux();
+      return toast(cle + ' : ' + PALETTE.find(p => p[0] === c.dataset.c)[1], 'Annuler', annuler);
+    }
+    if (ev.target.closest('.lx-retirer')) {
+      if (doc.evts.some(e => e.lieu === cle)) return;
+      snapshot();
+      doc.reglages = doc.reglages.filter(r => !(r.cle === 'lieu' && r.val.split(' = ')[0] === cle));
+      changed();
+      toutAfficher();
+      ordreRef = Object.keys(lieux(doc));
+      afficherLieux();
+      toast(lieux(doc)[cle] ? cle + ' : couleur d’origine' : cle + ' retiré des lieux', 'Annuler', annuler);
+    }
+  });
+  $('#lxListe').addEventListener('change', ev => {
+    const f = ev.target.closest('.lx-nom');
+    if (!f) return;
+    const cle = f.closest('li').dataset.cle,
+      L = lieux(doc)[cle],
+      v = nomSur(f.value);
+    if (!v) return (f.value = L.nom);
+    if (v === L.nom) return;
+    snapshot();
+    fixerLieu(cle, v, L.couleur);
+    changed();
+    toutAfficher();
+    toast(cle + ' : « ' + v + ' »', 'Annuler', annuler);
+  });
+  $('#lxAjout').onsubmit = ev => {
+    ev.preventDefault();
+    const cle = nomSur($('#lxCle').value),
+      nom = nomSur($('#lxNom').value) || cle;
+    if (!cle) return $('#lxCle').focus();
+    if (lieux(doc)[cle]) return toast('« ' + cle + ' » existe déjà');
+    /* même couleur que le dernier lieu ajouté du même bâtiment (« École, … ») : la série se fait toute seule */
+    const tete = plat(nom.split(',')[0]),
+      frere = Object.values(lieux(doc)).find(l => nom.includes(',') && plat(l.nom.split(',')[0]) === tete);
+    snapshot();
+    fixerLieu(cle, nom, frere ? frere.couleur || 'gris' : 'gris');
+    changed();
+    toutAfficher();
+    ordreRef = Object.keys(lieux(doc));
+    lxOuvert = frere ? '' : cle;
+    afficherLieux();
+    $('#lxCle').value = $('#lxNom').value = '';
+    toast('Lieu ajouté : ' + cle, 'Annuler', annuler);
+  };
+  $('#lxLibres').addEventListener('click', ev => {
+    const b = ev.target.closest('.lx-ajouter');
+    if (!b) return;
+    const nom = b.closest('li').dataset.nom,
+      cle = cleLibre(nom);
+    if (!cle) return toast('« ' + nom + ' » : nom déjà pris');
+    const Lx = lieuDe({ lieu: nom });
+    snapshot();
+    fixerLieu(cle, nomSur(nom), Lx.couleur || 'gris');
+    /* les dates qui portaient ce texte prennent la clé : même pastille, désormais du référentiel */
+    let n = 0;
+    for (const e of doc.evts)
+      if (e.lieu && plat(e.lieu).replace(/\s+/g, ' ').trim() === plat(nom).replace(/\s+/g, ' ').trim()) {
+        e.lieu = cle;
+        n++;
+      }
+    changed();
+    toutAfficher();
+    ordreRef = Object.keys(lieux(doc));
+    lxOuvert = cle;
+    afficherLieux();
+    toast(cle + ' ajouté aux lieux (' + n + ' date' + (n > 1 ? 's' : '') + ')', 'Annuler', annuler);
+  });
+}
+/* 06g-docx.js : document Word (.docx) sans bibliothèque (0.78, bilans). Même technique que les notes de Tâches 3.17
+   (copiée, pas partagée : aucun lien entre les dépôts) : un .docx est une archive zip de fichiers XML, écrite ici sans
+   compression (Word l'accepte), avec son CRC-32. Le contenu vient du même HTML que la copie (gras, italique,
+   exposants, retours à la ligne). */
+
+const CRC_T = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(b) {
+  let c = 0xffffffff;
+  for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+/** Archive zip sans compression : [{nom, texte}] → Uint8Array. */
+function zipStocke(fichiers) {
+  const enc = new TextEncoder(),
+    parts = [],
+    central = [];
+  let pos = 0;
+  const d = window.__now ? new Date(window.__now) : new Date(),
+    heure = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+    jr = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const f of fichiers) {
+    const nom = enc.encode(f.nom),
+      data = enc.encode(f.texte),
+      crc = crc32(data),
+      loc = new DataView(new ArrayBuffer(30)),
+      cen = new DataView(new ArrayBuffer(46));
+    loc.setUint32(0, 0x04034b50, true);
+    loc.setUint16(4, 20, true);
+    loc.setUint16(6, 0x0800, true); /* noms en UTF-8 */
+    loc.setUint16(10, heure, true);
+    loc.setUint16(12, jr, true);
+    loc.setUint32(14, crc, true);
+    loc.setUint32(18, data.length, true);
+    loc.setUint32(22, data.length, true);
+    loc.setUint16(26, nom.length, true);
+    cen.setUint32(0, 0x02014b50, true);
+    cen.setUint16(4, 20, true);
+    cen.setUint16(6, 20, true);
+    cen.setUint16(8, 0x0800, true);
+    cen.setUint16(12, heure, true);
+    cen.setUint16(14, jr, true);
+    cen.setUint32(16, crc, true);
+    cen.setUint32(20, data.length, true);
+    cen.setUint32(24, data.length, true);
+    cen.setUint16(28, nom.length, true);
+    cen.setUint32(42, pos, true);
+    parts.push(new Uint8Array(loc.buffer), nom, data);
+    central.push(new Uint8Array(cen.buffer), nom);
+    pos += 30 + nom.length + data.length;
+  }
+  const taille = central.reduce((s, x) => s + x.length, 0),
+    fin = new DataView(new ArrayBuffer(22));
+  fin.setUint32(0, 0x06054b50, true);
+  fin.setUint16(8, fichiers.length, true);
+  fin.setUint16(10, fichiers.length, true);
+  fin.setUint32(12, taille, true);
+  fin.setUint32(16, pos, true);
+  const tout = [...parts, ...central, new Uint8Array(fin.buffer)],
+    out = new Uint8Array(tout.reduce((s, x) => s + x.length, 0));
+  let o = 0;
+  for (const x of tout) out.set(x, o), (o += x.length);
+  return out;
+}
+const xmlEsc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const W_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+
+/** Petit HTML (b, strong, i, em, sup, br, span) → runs Word. gras : tout en gras (en-têtes de tableau). */
+function runsDe(html, gras) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html || '';
+  let x = '';
+  const marche = (n, f) => {
+    if (n.nodeType === 3) {
+      if (!n.nodeValue) return;
+      const pr = (f.b ? '<w:b/>' : '') + (f.i ? '<w:i/>' : '') + (f.gris ? '<w:color w:val="5B6470"/>' : '') + (f.sup ? '<w:vertAlign w:val="superscript"/>' : '');
+      x += '<w:r>' + (pr ? '<w:rPr>' + pr + '</w:rPr>' : '') + '<w:t xml:space="preserve">' + xmlEsc(n.nodeValue) + '</w:t></w:r>';
+      return;
+    }
+    if (n.nodeType !== 1) return;
+    const t = n.nodeName;
+    if (t === 'BR') return void (x += '<w:r><w:br/></w:r>');
+    const g = {
+      b: f.b || t === 'B' || t === 'STRONG',
+      i: f.i || t === 'I' || t === 'EM',
+      sup: f.sup || t === 'SUP',
+      gris: f.gris || (n.classList && n.classList.contains('gris'))
+    };
+    n.childNodes.forEach(c => marche(c, g));
+  };
+  tpl.content.childNodes.forEach(c => marche(c, { b: !!gras }));
+  return x;
+}
+const paraW = (style, corps, plus) =>
+  '<w:p>' + (style || plus ? '<w:pPr>' + (style ? '<w:pStyle w:val="' + style + '"/>' : '') + (plus || '') + '</w:pPr>' : '') + corps + '</w:p>';
+
+/**
+ * Document Word : {blocs: [{titre}, {sousTitre}, {h}, {p}, {table: {cols: [largeurs relatives], tete: [html], lignes:
+ * [[html]], droite: [index des colonnes alignées à droite], total: vrai si la dernière ligne est un total]}}]} →
+ * Uint8Array. A4 portrait, Calibri 10,5 pt.
+ */
+function docxDe(blocs) {
+  const LARGEUR = 9638; /* 17 cm utiles, en vingtièmes de point */
+  let corps = '';
+  for (const b of blocs) {
+    if (b.titre != null) corps += paraW('Titre', runsDe(b.titre));
+    else if (b.sousTitre != null) corps += paraW('SousTitre', runsDe(b.sousTitre));
+    else if (b.h != null) corps += paraW('Titre1', runsDe(b.h));
+    else if (b.p != null) corps += paraW('', runsDe(b.p));
+    else if (b.table) {
+      const T = b.table,
+        somme = T.cols.reduce((s, x) => s + x, 0),
+        w = T.cols.map(c => Math.round((LARGEUR * c) / somme));
+      const cell = (html, k, entete, total) =>
+        '<w:tc><w:tcPr><w:tcW w:w="' + w[k] + '" w:type="dxa"/>' + (entete ? '<w:shd w:val="clear" w:color="auto" w:fill="EEF2F6"/>' : '') + '</w:tcPr>' +
+        paraW('Cellule', runsDe(html, entete || total), (T.droite || []).includes(k) ? '<w:jc w:val="right"/>' : '') + '</w:tc>';
+      corps +=
+        '<w:tbl><w:tblPr><w:tblW w:w="' + LARGEUR + '" w:type="dxa"/><w:tblBorders>' +
+        ['top', 'bottom', 'insideH'].map(c => '<w:' + c + ' w:val="single" w:sz="4" w:space="0" w:color="C9CFD6"/>').join('') +
+        '</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr>' +
+        '<w:tblGrid>' + w.map(x => '<w:gridCol w:w="' + x + '"/>').join('') + '</w:tblGrid>' +
+        '<w:tr><w:trPr><w:tblHeader/></w:trPr>' + T.tete.map((h, k) => cell(h, k, true)).join('') + '</w:tr>' +
+        T.lignes.map((l, i) => '<w:tr><w:trPr><w:cantSplit/></w:trPr>' + l.map((h, k) => cell(h, k, false, T.total && i === T.lignes.length - 1)).join('') + '</w:tr>').join('') +
+        '</w:tbl>' + paraW('', '');
+    }
+  }
+  const document_ =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ' + W_NS + '><w:body>' + corps +
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  const style = (id, nom, taille, couleur, avant, gras, italique) =>
+    '<w:style w:type="paragraph" w:styleId="' + id + '"><w:name w:val="' + nom + '"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="' + avant + '" w:after="80"/>' +
+    (id === 'Titre1' ? '<w:outlineLvl w:val="0"/>' : '') + '</w:pPr><w:rPr>' + (gras ? '<w:b/>' : '') + (italique ? '<w:i/>' : '') + '<w:color w:val="' + couleur + '"/><w:sz w:val="' + taille + '"/><w:szCs w:val="' + taille + '"/></w:rPr></w:style>';
+  const styles =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ' + W_NS + '>' +
+    '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/><w:sz w:val="21"/><w:szCs w:val="21"/><w:lang w:val="fr-FR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
+    style('Titre', 'Title', 36, '2E5E8C', 0, true) +
+    style('SousTitre', 'Subtitle', 22, '5B6470', 0, false, true) +
+    style('Titre1', 'heading 1', 26, '2E5E8C', 240, true) +
+    '<w:style w:type="paragraph" w:styleId="Cellule"><w:name w:val="Table Text"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0" w:line="252" w:lineRule="auto"/></w:pPr><w:rPr><w:sz w:val="19"/><w:szCs w:val="19"/></w:rPr></w:style>' +
+    '</w:styles>';
+  return zipStocke([
+    {
+      nom: '[Content_Types].xml',
+      texte:
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'
+    },
+    {
+      nom: '_rels/.rels',
+      texte:
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'
+    },
+    { nom: 'word/document.xml', texte: document_ },
+    { nom: 'word/styles.xml', texte: styles },
+    {
+      nom: 'word/_rels/document.xml.rels',
+      texte:
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdS" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'
+    }
+  ]);
+}
+const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+function b64(octets) {
+  let s = '';
+  for (let i = 0; i < octets.length; i += 0x8000) s += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+/** Télécharge un document : au téléphone, fenêtre « Enregistrer sous » d'Android (saveBytes, Compagnon 3.0.135) ;
+ *  au PC, un téléchargement ordinaire. */
+async function telechargerDocx(octets, nom) {
+  if (AND) {
+    try {
+      const r = await socle.appel('saveBytes', JSON.stringify({ nom, type: DOCX_TYPE, base64: b64(octets) }));
+      toast('Document enregistré : ' + (r || nom));
+    } catch (e) {
+      if (/inconnue/.test(e.message)) toast('Pour enregistrer un document Word au téléphone, mets d’abord le Compagnon à jour (3.0.135 ou plus)', null, null, 7000);
+      else if (!/annulé/.test(e.message)) toast('Enregistrement impossible : ' + e.message);
+    }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([octets], { type: DOCX_TYPE }));
+  a.download = nom;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('Document téléchargé : ' + nom);
+}
+/* 06h-bilans.js : fenêtre « Bilans… » (0.78), deux bilans, copiés (tableau en texte riche) ou en document Word.
+   - Par type (François : « nombre de manifestations en fonction du type : Concerts et représentations ; Auditions ;
+     Manifestations du dispositif « Conservatoire à l’école » ; Autres interventions ») : par trimestre, par période
+     ou toute la saison ; réalisées et à venir.
+   - CCAS (« tenir le compte par trimestre des événements faits avec le CCAS (Conciergerie) […] y compris des infos
+     sur l’organisation qui peuvent justifier du temps passé ») : trimestres civils.
+   Une manifestation compte une fois, à sa première date, même sur plusieurs jours. Jamais les dates à fixer. */
+
+const TRIM_MOIS = ['janvier', 'avril', 'juillet', 'octobre'],
+  TRIM_FIN = ['31\u00a0mars', '30\u00a0juin', '30\u00a0septembre', '31\u00a0décembre'];
+const nomTrim = (a, q) => (q === 1 ? '1er' : q + 'e') + ' trimestre ' + a;
+/** Ce que couvre le fichier : de la première à la dernière période (à défaut, de la première à la dernière date). */
+function couverture() {
+  const P = periodes(doc),
+    D = doc.evts.filter(estDatee);
+  const d1 = P.length ? P[0].d1 : D.map(e => e.d1).sort()[0],
+    d2 = P.length ? P[P.length - 1].d2 : D.map(e => e.d2).sort().pop();
+  return d1 && d2 ? { d1, d2 } : null;
+}
+/** Choix proposés : toute la saison, les trimestres civils qu'elle touche, ses périodes. → [{val, nom, groupe, d1, d2, p}] */
+function choixBilan() {
+  const C = couverture(),
+    L = [{ val: 'saison', nom: 'toute la saison', groupe: '' }];
+  if (!C) return L;
+  let a = +C.d1.slice(0, 4),
+    q = Math.floor((+C.d1.slice(5, 7) - 1) / 3) + 1;
+  for (;;) {
+    const m = String((q - 1) * 3 + 1).padStart(2, '0'),
+      d1 = a + '-' + m + '-01',
+      d2 = plusJours((q === 4 ? a + 1 + '-01' : a + '-' + String(q * 3 + 1).padStart(2, '0')) + '-01', -1);
+    if (d1 > C.d2) break;
+    L.push({ val: 'T' + a + '-' + q, nom: nomTrim(a, q), groupe: 'Trimestres', d1, d2, a, q });
+    if (++q > 4) (q = 1), a++;
+  }
+  for (const p of periodes(doc)) L.push({ val: 'P:' + p.nom, nom: p.nom, groupe: 'Périodes', p, d1: p.d1, d2: p.d2 });
+  return L;
+}
+function choixCourant() {
+  const L = choixBilan();
+  return L.find(c => c.val === $('#bilPeriode').value) || L[0];
+}
+/** Manifestations datées du choix (première date dans le trimestre, ou rangées dans la période). */
+function dansChoix(c) {
+  const pers = periodes(doc);
+  return doc.evts
+    .filter(estDatee)
+    .filter(e => (c.p ? periodeDe(e, pers) === pers.find(x => x.nom === c.p.nom) : !c.d1 || (e.d1 >= c.d1 && e.d1 <= c.d2)))
+    .sort(ordre);
+}
+/** « du 1er janvier au 31 mars 2027 », « saison 2026-2027 » */
+function libChoix(c) {
+  if (c.val === 'saison') {
+    const C = couverture();
+    return C ? 'du ' + dateL(C.d1) + ' au ' + dateL(C.d2) : '';
+  }
+  if (c.q) return 'du 1er\u00a0' + TRIM_MOIS[c.q - 1] + ' au ' + TRIM_FIN[c.q - 1] + ' ' + c.a;
+  return 'du ' + jourMois(jour(c.d1)) + ' au ' + dateL(c.d2);
+}
+const dateL = iso => jourMois(jour(iso)) + ' ' + iso.slice(0, 4);
+/** Nom du choix dans une phrase : « 1er trimestre 2027 », « saison 2026-2027 », « janvier – février 2027 ». */
+const nomChoix = c => (c.val === 'saison' ? nomSaison() : c.p ? c.nom.charAt(0).toLowerCase() + c.nom.slice(1) : c.nom);
+const nomSaison = () => 'saison ' + (((doc.titre || '').match(/\d{4}\s*[-–]\s*\d{4}/) || [''])[0].replace(/\s/g, '') || '');
+/** Le trimestre déborde du fichier (il chevauche deux saisons) : la phrase qui le dit, ou ''. */
+function horsFichier(c) {
+  const C = couverture();
+  if (!c.q || !C) return '';
+  if (c.d1 < C.d1) return 'Ce fichier commence le ' + dateL(C.d1) + ' : le début du trimestre est dans le planning de la saison précédente.';
+  if (c.d2 > C.d2) return 'Ce fichier s’arrête le ' + dateL(C.d2) + ' : la fin du trimestre est dans le planning de la saison suivante.';
+  return '';
+}
+const passee = e => e.d2 < auj();
+const pluriel = (n, un, des) => n + ' ' + (n > 1 ? des : un);
+/** Date d'une ligne de bilan, avec l'année (le document sort de la saison : il se relit des mois après). */
+const quandBil = e => typo(majuscule(libDate(e)) + (e.libelle && /\d{4}/.test(e.libelle) ? '' : ' ' + e.d2.slice(0, 4)));
+const nomLieu = e => {
+  const L = lieuDe(e);
+  return L ? L.nom : '';
+};
+
+/* ---- bilan par type ---- */
+function bilanTypes(c, internes) {
+  const E = dansChoix(c),
+    pris = E.filter(e => e.statut !== 'annulé' && e.statut !== 'en attente' && (internes || !e.interne)),
+    par = TYPES.map(([cle, nom]) => ({ cle, nom, L: pris.filter(e => typeDe(e).cle === cle) }));
+  const non = [
+    [E.filter(e => e.statut === 'annulé').length, 'annulée', 'annulées'],
+    [E.filter(e => e.statut === 'en attente').length, 'en attente', 'en attente'],
+    [internes ? 0 : E.filter(e => e.interne && e.statut !== 'annulé' && e.statut !== 'en attente').length, 'réservée à l’équipe', 'réservées à l’équipe']
+  ].filter(x => x[0]);
+  const blocs = [
+    { titre: 'Bilan des manifestations' },
+    { sousTitre: rich(majuscule(nomChoix(c)) + ', ' + libChoix(c)) },
+    {
+      p:
+        '<b>' + pluriel(pris.length, 'manifestation', 'manifestations') + '</b> (' + pris.filter(passee).length + ' réalisée' + (pris.filter(passee).length > 1 ? 's' : '') +
+        ', ' + pris.filter(e => !passee(e)).length + ' à venir)' +
+        (non.length ? '. Non comptées : ' + non.map(x => pluriel(...x)).join(', ') + '.' : '.')
+    },
+    {
+      table: {
+        cols: [5, 1.6, 1.6, 1.6],
+        tete: ['Type', 'Réalisées', 'À venir', 'Total'],
+        droite: [1, 2, 3],
+        total: true,
+        lignes: [
+          ...par.map(t => [esc(t.nom), String(t.L.filter(passee).length), String(t.L.filter(e => !passee(e)).length), String(t.L.length)]),
+          ['Total', String(pris.filter(passee).length), String(pris.filter(e => !passee(e)).length), String(pris.length)]
+        ]
+      }
+    }
+  ];
+  const pc = horsFichier(c);
+  if (pc) blocs.splice(2, 0, { p: '<i>' + esc(pc) + '</i>' });
+  for (const t of par) {
+    if (!t.L.length) continue;
+    blocs.push({ h: esc(t.nom) + ' (' + t.L.length + ')' });
+    blocs.push({
+      table: {
+        cols: [3.2, 6, 3.4, 1.6],
+        tete: ['Date', 'Manifestation', 'Lieu', ''],
+        ids: t.L.map(e => e.id),
+        devine: t.L.map(e => typeDe(e).devine),
+        lignes: t.L.map(e => [
+          esc(quandBil(e)),
+          '<b>' + rich(e.titre) + '</b>' + (e.soustitre ? '<br>' + richLignes(e.soustitre) : '') + (e.interne ? ' <i>(équipe)</i>' : ''),
+          rich(nomLieu(e)),
+          passee(e) ? 'réalisée' : 'à venir'
+        ])
+      }
+    });
+  }
+  return { blocs, nom: 'Bilan des manifestations, ' + nomChoix(c) };
+}
+
+/* ---- bilan CCAS ---- */
+/** Faite avec le CCAS : à la Conciergerie (lieu), ou le CCAS ou la Conciergerie nommés dans le titre, le sous-titre,
+ *  le descriptif ou une remarque (sans accents ni majuscules). */
+function estCcas(e) {
+  const L = lieuDe(e),
+    rx = /\bccas\b|\bconcierg/;
+  return rx.test(plat(e.lieu + ' ' + (L ? L.nom : ''))) || rx.test(plat([e.titre, e.soustitre, e.detail, e.remarque].join(' ')));
+}
+const MOIS_C = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const dateCourte = iso => +iso.slice(8) + (iso.slice(8) === '01' ? 'er' : '') + ' ' + MOIS_C[+iso.slice(5, 7) - 1] + ' ' + iso.slice(0, 4);
+/** Ce que l'historique 🕓 dit du travail : depuis quand la date est au planning, combien de fois elle a été reprise,
+ *  le rétroplanning envoyé à Tâches. Les modifications elles-mêmes (« horaire : 18 h → 18 h 30 ») ne justifient rien. */
+function suiviCcas(e) {
+  const H = (e.histoire || '').split('\n').filter(l => /^\d{4}-\d{2}-\d{2} /.test(l)),
+    cree = H.find(l => / · créée /.test(l)),
+    modifs = H.filter(l => / · (modifiée|confirmée)/.test(l)),
+    out = [];
+  if (cree) out.push('au planning depuis le ' + dateCourte(cree.slice(0, 10)));
+  if (modifs.length) out.push(pluriel(modifs.length, 'mise à jour', 'mises à jour') + ', la dernière le ' + dateCourte(modifs[modifs.length - 1].slice(0, 10)));
+  if (e.taches || H.some(l => /rétroplanning envoyé/.test(l))) out.push('rétroplanning dans Tâches');
+  return out.length ? majuscule(out.join(' ; ')) : '';
+}
+function bilanCcas(c) {
+  const E = dansChoix(c).filter(estCcas),
+    pris = E.filter(e => e.statut !== 'annulé' && e.statut !== 'en attente' && !e.interne),
+    apart = E.filter(e => !pris.includes(e));
+  const ligne = e => {
+    const org = [
+      e.accomp ? 'Accompagnement : ' + rich(e.accomp) : '',
+      e.remarque ? richLignes(e.remarque) : '',
+      suiviCcas(e) ? '<i>' + rich(suiviCcas(e)) + '</i>' : ''
+    ].filter(Boolean);
+    return [
+      esc(quandBil(e)) + (libHoraire(e) ? '<br>' + esc(typo(libHoraire(e))) : '') + (e.statut === 'à confirmer' ? '<br><i>à confirmer</i>' : '') + (passee(e) ? '' : '<br><i>à venir</i>'),
+      '<b>' + rich(e.titre) + '</b>' +
+        (e.soustitre ? '<br>' + richLignes(e.soustitre) : '') +
+        (e.eleves ? '<br>Élèves concernés : ' + rich(e.eleves) : '') +
+        (e.detail ? '<br>' + richLignes(e.detail) : ''),
+      rich(nomLieu(e)),
+      org.join('<br>')
+    ];
+  };
+  const r = pris.filter(passee).length;
+  const blocs = [
+    { titre: 'Bilan CCAS' },
+    { sousTitre: rich(majuscule(nomChoix(c)) + ', ' + libChoix(c)) },
+    {
+      p:
+        '<b>' + pluriel(pris.length, 'manifestation', 'manifestations') + ' avec le CCAS</b>' +
+        (pris.length ? ' (' + r + ' réalisée' + (r > 1 ? 's' : '') + ', ' + (pris.length - r) + ' à venir)' : '') + '.'
+    }
+  ];
+  const pc = horsFichier(c);
+  if (pc) blocs.push({ p: '<i>' + esc(pc) + '</i>' });
+  if (pris.length)
+    blocs.push({
+      table: { cols: [3, 6, 3, 5], tete: ['Date et horaire', 'Manifestation', 'Lieu', 'Organisation'], ids: pris.map(e => e.id), lignes: pris.map(ligne) }
+    });
+  if (apart.length) {
+    blocs.push({ h: 'À part, non comptées' });
+    blocs.push({
+      table: {
+        cols: [3, 6, 3, 5],
+        tete: ['Date', 'Manifestation', 'État', 'Organisation'],
+        ids: apart.map(e => e.id),
+        lignes: apart.map(e => {
+          const l = ligne(e);
+          return [l[0], l[1], e.statut === 'annulé' ? 'annulée' : e.statut === 'en attente' ? 'en attente' : 'réservée à l’équipe', l[3]];
+        })
+      }
+    });
+  }
+  return { blocs, nom: 'Bilan CCAS, ' + nomChoix(c) };
+}
+
+/* ---- rendu : HTML à coller (styles en ligne, pour Outlook et Word) ; à l'écran, le même avec les « deviné » ---- */
+function htmlBilan(B, ecran) {
+  const F = 'font-family:Calibri,Arial,sans-serif;color:#1f2933;';
+  let h = '<div style="' + F + 'font-size:11pt">';
+  for (const b of B.blocs) {
+    if (b.titre != null) h += '<p style="margin:0 0 2pt;font-size:16pt;font-weight:bold;color:#2e5e8c">' + b.titre + '</p>';
+    else if (b.sousTitre != null) h += '<p style="margin:0 0 8pt;font-style:italic;color:#5b6470">' + b.sousTitre + '</p>';
+    else if (b.h != null) h += '<p style="margin:12pt 0 4pt;font-size:12pt;font-weight:bold;color:#2e5e8c">' + b.h + '</p>';
+    else if (b.p != null) h += '<p style="margin:0 0 8pt">' + b.p + '</p>';
+    else if (b.table) {
+      const T = b.table,
+        s = T.cols.reduce((x, y) => x + y, 0),
+        td = (k, plus) => 'padding:3pt 5pt;border-bottom:1px solid #c9cfd6;vertical-align:top;width:' + Math.round((100 * T.cols[k]) / s) + '%;' + ((T.droite || []).includes(k) ? 'text-align:right;' : '') + (plus || '');
+      h +=
+        '<table style="border-collapse:collapse;width:100%;font-size:10pt;margin:0 0 8pt" cellspacing="0" cellpadding="0"><tr>' +
+        T.tete.map((x, k) => '<th style="' + td(k, 'background:#eef2f6;text-align:' + ((T.droite || []).includes(k) ? 'right' : 'left') + ';border-top:1px solid #c9cfd6') + '">' + x + '</th>').join('') +
+        '</tr>' +
+        T.lignes
+          .map(
+            (l, i) =>
+              '<tr' + (ecran && T.ids ? ' data-id="' + esc(T.ids[i]) + '" class="bil-lien" title="Ouvrir la fiche"' : '') + '>' +
+              l.map((x, k) => {
+                const t = T.total && i === T.lignes.length - 1 ? 'font-weight:bold;' : '';
+                const dv = ecran && k === 1 && T.devine && T.devine[i] ? ' <span class="bil-devine" title="Type deviné : choisis-le dans la fiche">deviné</span>' : '';
+                return '<td style="' + td(k, t) + '">' + x + dv + '</td>';
+              }).join('') +
+              '</tr>'
+          )
+          .join('') +
+        '</table>';
+    }
+  }
+  return h + '</div>';
+}
+/** Texte brut de secours (presse-papiers sans mise en forme). */
+function texteBilan(B) {
+  const d = document.createElement('div'),
+    out = [];
+  const t = h => ((d.innerHTML = (h || '').replace(/<br>/g, ' · ')), d.textContent);
+  for (const b of B.blocs) {
+    if (b.titre != null) out.push(t(b.titre));
+    else if (b.sousTitre != null) out.push(t(b.sousTitre), '');
+    else if (b.h != null) out.push('', t(b.h));
+    else if (b.p != null) out.push(t(b.p), '');
+    else if (b.table) out.push(b.table.tete.map(t).join('\t'), ...b.table.lignes.map(l => l.map(t).join('\t')), '');
+  }
+  return out.join('\n');
+}
+
+let bilSorte = 'types';
+function bilanCourant() {
+  const c = choixCourant();
+  return bilSorte === 'ccas' ? bilanCcas(c) : bilanTypes(c, $('#bilInternes').checked);
+}
+function afficherBilan() {
+  $$('#bilSorte button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === bilSorte)));
+  $('#bilInternesW').hidden = bilSorte === 'ccas';
+  const B = bilanCourant();
+  $('#bilApercu').innerHTML = htmlBilan(B, true);
+  $('#bilAide').textContent =
+    bilSorte === 'ccas'
+      ? 'À la Conciergerie, ou le CCAS nommé dans le titre, le sous-titre, le descriptif ou une remarque.'
+      : 'Sans type choisi dans la fiche, Saison le devine. Touche une ligne pour ouvrir sa fiche.';
+}
+function ouvrirBilans(sorte) {
+  if (!socle.ouvert) return toast('Ouvre d’abord le fichier de suivi');
+  if (sorte) bilSorte = sorte;
+  const L = choixBilan(),
+    a = auj(),
+    sel = $('#bilPeriode'),
+    avant = sel.value;
+  let h = '',
+    g = null;
+  for (const c of L) {
+    if (c.groupe !== g) {
+      if (g) h += '</optgroup>';
+      if (c.groupe) h += '<optgroup label="' + c.groupe + '">';
+      g = c.groupe;
+    }
+    h += '<option value="' + esc(c.val) + '">' + esc(majuscule(typo(c.nom))) + '</option>';
+  }
+  sel.innerHTML = h + (g ? '</optgroup>' : '');
+  /* à l'ouverture : le choix précédent, sinon le trimestre en cours (ou toute la saison) */
+  const cur = L.find(c => c.q && c.d1 <= a && a <= c.d2);
+  sel.value = L.some(c => c.val === avant) ? avant : cur ? cur.val : 'saison';
+  afficherBilan();
+  $('#bilans').showModal();
+}
+function initBilans() {
+  $('#bilFermer').onclick = () => $('#bilans').close();
+  $('#bilPeriode').onchange = afficherBilan;
+  $('#bilInternes').onchange = afficherBilan;
+  $('#bilSorte').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-s]');
+    if (!b) return;
+    bilSorte = b.dataset.s;
+    afficherBilan();
+  });
+  $('#bilApercu').addEventListener('click', ev => {
+    const tr = ev.target.closest('tr[data-id]');
+    if (!tr) return;
+    $('#bilans').close();
+    ouvrirFiche(tr.dataset.id);
+  });
+  $('#bilCopier').onclick = async () => {
+    const B = bilanCourant(),
+      r = await socle.copierRiche(htmlBilan(B, false), texteBilan(B));
+    toast(r === true ? 'Bilan copié : colle-le dans un mail ou un document Word' : r ? 'Copié en texte seul' : 'Copie impossible');
+  };
+  $('#bilWord').onclick = () => {
+    const B = bilanCourant();
+    telechargerDocx(docxDe(B.blocs), B.nom.replace(/[\\/:*?"<>|]/g, '-') + '.docx');
+  };
+}
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
 
@@ -10528,6 +11847,9 @@ function initAffiche() {
      mail écrit à la main (François, 17/10/2026 : rien ne doit trahir un outil automatisé). */
 
 const MF = "'Segoe UI',Arial,Helvetica,sans-serif";
+/* exposant des mails (0.78) : « super » pour Outlook (moteur de Word), qui ignore la seconde déclaration ; ailleurs, le
+   haut de la lettre au haut des chiffres, comme dans la page (règle sup de styles.css) */
+const SUP_MAIL = 'font-size:70%;line-height:0;vertical-align:super;vertical-align:calc(1cap / 0.7 - 1ex)';
 const GRIS = '#5b6470',
   ENCRE = '#1f2933',
   FILET = '#e3e6ea';
@@ -10676,7 +11998,7 @@ function htmlMail(p, avenir) {
   const adr = reglage('adresse');
   if (adr) h += ligne(rich(adr), 12, GRIS, 'border-top:1px solid ' + FILET + ';padding-top:12px;');
   /* exposants (1re, 2e) sans écarter les lignes */
-  return (h + '</div>').replace(/<sup>/g, '<sup style="font-size:70%;line-height:0;vertical-align:super">');
+  return (h + '</div>').replace(/<sup>/g, '<sup style="' + SUP_MAIL + '">');
 }
 /** Version texte, dans le même ordre. */
 function texteMail(p, avenir) {
@@ -11185,6 +12507,20 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-21 08:58',
+    v: '0.78.12',
+    t: 'Bilans, lieux, exposants',
+    items: [
+      'Menu ⋯ → «\u00a0Bilans…\u00a0»\u00a0: le nombre de manifestations par type (concerts et représentations, auditions, Conservatoire à l’école, autres interventions), réalisées et à venir, par trimestre, par période ou pour toute la saison\u202f; et le bilan CCAS d’un trimestre (à la Conciergerie, ou le CCAS nommé dans la manifestation), avec l’organisation. «\u00a0Copier\u00a0» donne un tableau à coller dans un mail ou un Word\u202f; «\u00a0Document Word\u00a0» le télécharge.',
+      'Dans la fiche, «\u00a0Type\u00a0»\u00a0: Saison le devine d’après le titre et le lieu\u202f; choisis-le s’il se trompe. Dans les bilans, une ligne touchée ouvre sa fiche.',
+      'Lieu\u00a0: en tapant dans «\u00a0Autre lieu\u00a0» (ou après «\u00a0@\u00a0» dans la saisie rapide), Saison propose les lieux déjà utilisés, les plus fréquents d’abord.',
+      'Menu ⋯ → «\u00a0Lieux…\u00a0»\u00a0: change la couleur d’un lieu (onze couleurs) ou son nom complet, ajoute un lieu, ou fais entrer un lieu tapé en toutes lettres dans la liste. Pour une série (les écoles)\u00a0: «\u00a0École, Jean Moulin\u00a0», «\u00a0École, Paul Bert\u00a0»… le nouveau prend la couleur des précédents.',
+      'Les exposants (1re, 2e, 1er) montent à la hauteur du haut des chiffres, partout.',
+      'Une copie en double laissée par OneDrive dont on ne sait pas de quelle version elle part est désormais fusionnée avec prudence, au lieu de partir à la corbeille.',
+      'Au téléphone, «\u00a0Document Word\u00a0» demande le Compagnon 3.0.135 ou plus.'
+    ]
+  },
   {
     d: '2026-11-19 13:25',
     v: '0.77.11',
@@ -11950,6 +13286,8 @@ function initBoutons() {
       exporter: () => socle.exporter(),
       retrouver: ouvrirRetrouver,
       etapes: () => ouvrirEtapes(),
+      lieux: ouvrirLieux,
+      bilans: () => ouvrirBilans(),
       enligne: () => socle.reglerEnLigne(),
       outils: () => socle.reglerOutils(),
       actualiser: () => socle.actualiser(),
@@ -12028,6 +13366,9 @@ initMiniCal();
 initRecherche();
 initPropositions();
 initEtapes();
+initProp();
+initLieux();
+initBilans();
 initAffiche();
 initMail();
 document.addEventListener('keydown', raccourcis);
