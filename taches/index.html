@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261119123956">
+<meta name="officious-page" content="20261121081143">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7471,6 +7471,16 @@ html:has(.inote.plein) {
 .ned > div {
   scroll-margin: 0.6em 0;
 }
+
+/* 1re, 2e, 1er (3.20.21, comme Saison 0.78) : le haut de la lettre au niveau du haut des chiffres et des capitales,
+   quelle que soit la police. vertical-align se compte dans la taille de l'exposant : il faut monter de la hauteur des
+   capitales du texte (1cap / 0,68) moins la hauteur de la lettre (1ex). Ligne de secours pour un navigateur sans l'unité cap. */
+sup {
+  font-size: 0.68em;
+  line-height: 0;
+  vertical-align: 0.52em;
+  vertical-align: calc(1cap / 0.68 - 1ex);
+}
 </style>
 </head>
 <body>
@@ -8850,6 +8860,21 @@ function fusionner(B, M, T) {
   return r;
 }
 
+/** Copie en double (ou copie choisie au PC) : fusion avec l'état affiché. Depuis sa version de départ (« issu de »)
+    si on la connaît (la base, ou une version vue ici) ; sinon fusion prudente, à partir de rien, comme syncSave sans
+    base : ce que la copie a en plus est ajouté, rien n'est retiré, en cas de différence la version du fichier de travail
+    est gardée. « issu de » reste celui du fichier de travail (syncSave le refait en écrivant).
+    Rend { anc (texte ou null), avant, r (modèle fusionné), apres } ; ne change rien à l'état (1.19.1, commun au
+    ramassage du téléphone et à « Fusionner une copie… » du PC). */
+function fusionCopie(txt) {
+  const p = parentOf(txt),
+    anc = !p ? null : C.baseText != null && hash8(C.baseText) === p ? C.baseText : seenTexts.find(x => hash8(x) === p) || null,
+    avant = A.serialize(A.etat()),
+    r = fusionner(A.parse(anc != null ? anc : ''), A.parse(avant), A.parse(txt));
+  A.fixeReglage(r, 'issu de', A.reglage(A.parse(avant), 'issu de') || null);
+  return { anc, avant, r, apres: A.serialize(r) };
+}
+
 /** Refus d'écrire : l'erreur porte le message montré, avec « Écrire quand même ». */
 function refus(msg) {
   const e = new Error('refus:' + msg);
@@ -9745,7 +9770,9 @@ async function envoyerQuandMeme() {
    Fusion depuis leur version de départ (« issu de ») si on la connaît, puis corbeille de OneDrive (Tâches 2.22.1).
    1.19 (décisions de François du 18/11) : seulement les copies de plus d'une minute (au lieu de dix) ; au plus une fois
    par heure à l'ouverture, au retour et à la synchro du matin, mais à chaque « tirer pour actualiser » (force). Une
-   copie PDF sans données lisibles n'est ni fusionnée ni mise à la corbeille. ---- */
+   copie PDF sans données lisibles n'est ni fusionnée ni mise à la corbeille.
+   1.19.1 (21/11) : version de départ inconnue = fusion prudente (fusionCopie), plus jamais la corbeille sans fusion ;
+   copie vide ou illisible laissée (dite une fois) ; corbeille seulement une fois la fusion enregistrée. ---- */
 const DOUBLON_DELAI = 60e3;
 function ramasserDoublons(force) {
   /* une seule à la fois : tirer pendant le ramassage de l'ouverture attend la fin, puis repasse */
@@ -9766,52 +9793,82 @@ async function ramasser(force) {
   }
   mem.set('doublons', Date.now());
   const copies = liste.filter(f => A.doublon.test(f.name) && Date.now() - Date.parse(f.modified) > DOUBLON_DELAI);
-  let n = 0;
+  /* copies laissées (illisibles) : journalisées et dites une fois, tant qu'elles ne changent pas */
+  const dites = mem.get('doublons-laisses', []),
+    signe = f => f.name + '|' + f.modified;
+  let n = 0,
+    prudentes = 0;
+  const laissees = [];
   for (const f of copies) {
     const url = dossier + '/' + encodeURIComponent(f.name);
     const fait = await occupe('Rangement d’une copie en double…', async () => {
       const brut = JSON.parse(await spCall('spRead', url)).text;
-      let txt;
+      let txt,
+        pourquoi = '';
       try {
         txt = deballer(brut);
         if (txt == null) txt = brut;
+        if (!txt || !txt.trim()) pourquoi = 'vide';
       } catch (e) {
-        journal('copie en double', { fichier: f.name, fusion: 'PDF sans données, laissée telle quelle' });
+        pourquoi = 'PDF sans données';
+      }
+      if (pourquoi) {
+        /* rien à fusionner : la mettre à la corbeille perdrait peut-être quelque chose (1.19.1) */
+        laissees.push(f);
+        if (!dites.includes(signe(f)))
+          journal('copie en double', { fichier: f.name, fusion: pourquoi + ', laissée telle quelle' });
         return false;
       }
-      const p = parentOf(txt),
-        anc = p && seenTexts.find(x => hash8(x) === p);
-      if (anc) {
-        const avant = A.serialize(A.etat());
-        A.appliquer(fusionner(A.parse(anc), A.etat(), A.parse(txt)));
-        if (A.serialize(A.etat()) !== avant) {
-          C.dirty = true;
-          C.rev++;
-          await syncSave();
+      const { anc, avant, r, apres } = fusionCopie(txt);
+      if (apres !== avant) {
+        A.appliquer(r);
+        C.dirty = true;
+        C.rev++;
+        backup();
+        await syncSave();
+        /* pas enregistrée : la copie reste, elle sera reprise au prochain ramassage */
+        if (C.saveErr) {
+          journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente', corbeille: 'non, pas enregistré' });
+          return false;
         }
       }
-      journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'version de départ inconnue' });
+      journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente' });
       await spCall('spRecycle', url);
+      if (!anc) prudentes++;
       return true;
     });
     if (fait) n++;
   }
+  const nouvelles = laissees.filter(f => !dites.includes(signe(f)));
+  mem.set('doublons-laisses', laissees.map(signe));
+  const s = k => (k > 1 ? 's' : '');
+  const msg = [];
   if (n)
-    toast(
-      (n > 1 ? n + ' copies en double' : 'Une copie en double') +
+    msg.push(
+      (n > 1 ? n + '\u00a0copies en double' : 'Une copie en double') +
         ' de ' +
         nomDonnees() +
         ' (créée' +
-        (n > 1 ? 's' : '') +
+        s(n) +
         ' par OneDrive) fusionnée' +
-        (n > 1 ? 's' : '') +
+        s(n) +
+        (prudentes
+          ? ' (' + (n > 1 ? prudentes + '\u00a0' : '') + 'prudemment\u00a0: version de départ inconnue)'
+          : '') +
         ' et mise' +
-        (n > 1 ? 's' : '') +
-        ' à la corbeille de OneDrive',
-      null,
-      null,
-      6000
+        s(n) +
+        ' à la corbeille de OneDrive'
     );
+  if (nouvelles.length)
+    msg.push(
+      (nouvelles.length > 1 ? nouvelles.map(f => f.name).join(', ') + ' laissées' : nouvelles[0].name + ' laissée') +
+        ' telle' +
+        s(nouvelles.length) +
+        ' quelle' +
+        s(nouvelles.length) +
+        '\u00a0: aucune donnée lisible, rien à fusionner'
+    );
+  if (msg.length) toast(msg.join(' · '), null, null, prudentes || nouvelles.length ? 8000 : 6000);
   return n;
 }
 /* socle/js/19-versions.js : la chaîne des mises à jour, GitHub → Compagnon → OneDrive → PC.
@@ -11440,9 +11497,8 @@ function texteEcarts(r) {
 }
 
 /** PC : choisir une copie (PDF ou .md), dire ce qu'elle apporte, la fusionner, enregistrer, puis proposer de la supprimer.
-    Version de départ inconnue (« issu de » absent ou jamais vu ici) : fusion prudente, à partir de rien, comme syncSave
-    sans base : ce que la copie a en plus est ajouté, rien n'est retiré, et en cas de différence la version du fichier de
-    travail est gardée (décision du 19/11 : plutôt que refuser, puisque rien ne peut s'y perdre). */
+    Version de départ inconnue (« issu de » absent ou jamais vu ici) : fusion prudente (fusionCopie, 16-synchro.js),
+    décision du 19/11 : plutôt que refuser, puisque rien ne peut s'y perdre. */
 async function fusionnerCopie() {
   if (AND || !hasFS) return toast('«\u00a0Fusionner une copie…\u00a0» se fait au PC, dans Edge');
   if (!pret() || !C.ouvert || accesPerdu()) return toast('Ouvre d’abord le fichier de travail');
@@ -11471,14 +11527,8 @@ async function fusionnerCopie() {
     await enregistrer();
     if (C.saveErr) return;
   }
-  const p = parentOf(txt),
-    anc = !p ? null : C.baseText != null && hash8(C.baseText) === p ? C.baseText : seenTexts.find(x => hash8(x) === p) || null;
-  const avant = A.serialize(A.etat()),
-    r = fusionner(A.parse(anc != null ? anc : ''), A.parse(avant), A.parse(txt)),
+  const { anc, avant, r, apres } = fusionCopie(txt),
     nom = fichierPc.handle.name;
-  /* « issu de » reste celui du fichier de travail (syncSave le refait en écrivant) : pas une différence */
-  A.fixeReglage(r, 'issu de', A.reglage(A.parse(avant), 'issu de') || null);
-  const apres = A.serialize(r);
   if (apres === avant) {
     journal('copie à fusionner', { fichier: h.name, apport: 'rien' });
     const v = await question(
@@ -11679,7 +11729,7 @@ async function passerAuPdf() {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.19.0',
+  version: '1.19.1',
   demarrer,
   /* fichier */
   modifie,
@@ -13341,16 +13391,44 @@ function merge3(B, M, T) {
   return { items: out, done: hist, settings: st, notes: [...nNew, ...nts], trash: tr, conflicts };
 }
 /* ---------- affichage ---------- */
-function decorate(el, text) {
+/** 1re, 2e, 1er, 3es… en exposant (3.20.21), pour l'affichage non modifiable des titres. Construit des nœuds (texte et
+ *  <sup>) : jamais d'HTML tiré du titre, donc rien à échapper. Le fichier garde « 2e » tel quel. */
+const RX_EXPO = /(?<![\p{L}\p{N}_])(\d+)(res?|ers?|es?)(?![\p{L}\p{N}_])/gu;
+function expoNodes(s) {
+  const out = [];
+  let i = 0,
+    m;
+  s = String(s == null ? '' : s);
+  RX_EXPO.lastIndex = 0;
+  while ((m = RX_EXPO.exec(s))) {
+    out.push(document.createTextNode(s.slice(i, m.index) + m[1]));
+    const u = document.createElement('sup');
+    u.textContent = m[2];
+    out.push(u);
+    i = m.index + m[0].length;
+  }
+  out.push(document.createTextNode(s.slice(i)));
+  return out;
+}
+/** Remplace le contenu de el par le texte, exposants compris. */
+function setExpo(el, s) {
+  el.replaceChildren(...expoNodes(s));
+}
+/** Même chose pour une chaîne HTML (texte échappé, exposants en <sup>). */
+function expoHtml(s) {
+  return escHtml(String(s == null ? '' : s)).replace(RX_EXPO, '$1<sup>$2</sup>');
+}
+function decorate(el, text, expo) {
   el.textContent = '';
+  const put = (e, x) => (expo ? e.append(...expoNodes(x)) : e.append(document.createTextNode(x)));
   const m = /[   ]+:[   ]/.exec(text);
   if (m && m.index > 0) {
-    el.append(document.createTextNode(text.slice(0, m.index)));
+    put(el, text.slice(0, m.index));
     const s = document.createElement('span');
     s.className = 'note';
-    s.textContent = text.slice(m.index);
+    put(s, text.slice(m.index));
     el.append(s);
-  } else el.textContent = text;
+  } else put(el, text);
 }
 function editable(t) {
   try {
@@ -13674,7 +13752,7 @@ function render() {
         const b = document.createElement('div');
         b.className = 'insec';
         b.title = 'Changer de rubrique';
-        b.textContent = cur_h ? cur_h.text : 'Hors rubrique';
+        setExpo(b, cur_h ? cur_h.text : 'Hors rubrique');
         b.style.setProperty('--sc', cur_h ? cols['#' + cur_h.id] || CARD_COLOR : 'var(--muted)');
         card.append(b);
       }
@@ -13752,7 +13830,9 @@ function renderRubBar() {
       b.dataset.sec = h.id;
       b.title = 'Aller à la rubrique · glisser pour la déplacer · déposer ici des fichiers ou un lien : une tâche';
       b.style.setProperty('--c', cols['#' + h.id] || CARD_COLOR);
-      b.append(document.createElement('i'), h.text);
+      const nm = document.createElement('span');
+      setExpo(nm, h.text);
+      b.append(document.createElement('i'), nm);
       return b;
     })
   );
@@ -14000,7 +14080,7 @@ function renderDates(list, cols) {
       const b = document.createElement('div');
       b.className = 'insec';
         b.title = 'Changer de rubrique';
-      b.textContent = (h ? h.text : 'Hors rubrique') + (it.state === 'attente' ? ' · en attente' : '');
+      setExpo(b, (h ? h.text : 'Hors rubrique') + (it.state === 'attente' ? ' · en attente' : ''));
       b.style.setProperty('--sc', h ? cols['#' + h.id] || CARD_COLOR : 'var(--muted)');
       card.append(b);
       for (let j = i; j < blockEnd(i); j++) card.append(makeRow(items[j]));
@@ -16001,11 +16081,11 @@ function renderHist() {
       const l = document.createElement('div');
       if (k === 0) {
         l.className = 'top';
-        l.textContent = x.text;
+        setExpo(l, x.text);
       } else {
         l.className = 'sub' + (x.checked ? '' : ' open');
         l.style.setProperty('--lv', x.level - 1);
-        l.textContent = (x.checked ? '✓ ' : '○ ') + x.text;
+        setExpo(l, (x.checked ? '✓ ' : '○ ') + x.text);
       }
       body.append(l);
       if (x.links && x.links.length) body.append(mkLinks(x.links, false));
@@ -17505,7 +17585,7 @@ function intoAsk(srcId, tgtId, x, y) {
   if (!src || !tgt) return;
   const head = document.createElement('div');
   head.className = 'ctxh';
-  head.textContent = '«\u00a0' + src.text + '\u00a0» dans «\u00a0' + tgt.text + '\u00a0»';
+  setExpo(head, '«\u00a0' + src.text + '\u00a0» dans «\u00a0' + tgt.text + '\u00a0»');
   ctxOpen(
     [
       { el: () => head },
@@ -18805,7 +18885,7 @@ function qaddBuild(card, it) {
       ? B('who', 'qwho', it.waitFor ? 'de ' + escHtml(it.waitFor) : 'de qui ?', 'Qui doit répondre ou agir') +
         B('rel', 'qrel', 'relance ' + (it.relance ? shortDate(it.relance) : '…'), 'Date de relance')
       : '') +
-    B('sec', 'qsec', '<i class="qsd"></i>' + escHtml(h ? h.text : 'Hors rubrique'), 'Changer de rubrique') +
+    B('sec', 'qsec', '<i class="qsd"></i>' + expoHtml(h ? h.text : 'Hors rubrique'), 'Changer de rubrique') +
     '</div><div class="qrow2">' +
     B('sub', '', '+ sous-tâche', 'Ajouter une sous-tâche (Alt+Entrée puis Tab)') +
     (it.note ? '' : B('cmt', '', '+ commentaire', 'Ajouter un commentaire (Maj+Entrée)')) +
@@ -19156,7 +19236,7 @@ function renderRechHist(list) {
     s.textContent = e.section === NOTESEC ? 'Note' : e.section || 'Hors rubrique';
     const t = document.createElement('span');
     t.className = 'rht';
-    t.textContent = e.items[0] ? e.items[0].text.split('\n')[0] : '';
+    setExpo(t, e.items[0] ? e.items[0].text.split('\n')[0] : '');
     b.append(d, s, t);
     /* ce qui correspond ailleurs que dans le titre (sous-tâche, commentaire) : la première ligne concernée */
     if (!socle.correspond([e.section, ...e.path, e.items[0] && e.items[0].text], rech.mots)) {
@@ -19423,7 +19503,7 @@ function flyShowSec(secId) {
     d.style.animationDelay = Math.min(k, 8) * 16 + 'ms';
     const tt = document.createElement('span');
     tt.className = 'tt';
-    tt.textContent = t.text;
+    setExpo(tt, t.text);
     d.append(tt);
     if (fly.kind === 'note') {
       const z = document.createElement('div');
@@ -20484,7 +20564,7 @@ function offDayReason(d) {
   if (wd === 0 || wd === 6) return 'week-end';
   const fixes = {
     '01-01': 'jour de l’An',
-    '05-01': '1ᵉʳ Mai',
+    '05-01': '1er Mai',
     '05-08': '8 Mai',
     '07-14': '14 Juillet',
     '08-15': '15 Août',
@@ -20793,7 +20873,7 @@ function mCard(i, withSec) {
   }
   const tx = document.createElement('span');
   tx.className = 't';
-  decorate(tx, it.text);
+  decorate(tx, it.text, true);
   t.append(tx);
   if (it.due && it.state !== 'fait') {
     const dc = mDue(it);
@@ -20828,7 +20908,7 @@ function mCard(i, withSec) {
       const w = document.createElement('div');
       const tt = document.createElement('span');
       tt.className = 'tx';
-      tt.textContent = x.text;
+      setExpo(tt, x.text);
       w.append(tt);
       if (x.due && !x.checked) {
         const dc = mDue(x);
@@ -20851,7 +20931,7 @@ function mCard(i, withSec) {
   if (withSec && h) {
     const sn = document.createElement('span');
     sn.className = 'msecname';
-    sn.textContent = h.text;
+    setExpo(sn, h.text);
     ch.append(sn);
   }
   if (it.state === 'attente' && it.waitFor) ch.append(mChip('⏳ ' + it.waitFor, 'who'));
@@ -20951,7 +21031,9 @@ function mRender() {
             b.type = 'button';
             b.dataset.rub = h.text;
             b.style.setProperty('--c', COLORS[h.color] || CARD_COLOR);
-            b.append(document.createElement('i'), h.text);
+            const nm = document.createElement('span');
+            setExpo(nm, h.text);
+            b.append(document.createElement('i'), nm);
             return b;
           }))
     );
@@ -21248,7 +21330,7 @@ function mHistListe(box, H, tr, all) {
     c.style.setProperty('--c', cols[e.section] || CARD_COLOR);
     const t = document.createElement('div');
     t.className = 't';
-    t.textContent = e.items[0] ? e.items[0].text : '';
+    setExpo(t, e.items[0] ? e.items[0].text : '');
     const subs = e.items.slice(1).filter(x => x.kind !== 'h');
     const ctx = document.createElement('div');
     ctx.className = 'ctx';
@@ -21267,7 +21349,7 @@ function mHistListe(box, H, tr, all) {
           const l = document.createElement('div');
           l.className = 'sub' + (x.checked ? '' : ' open');
           l.style.setProperty('--lv', x.level - 1);
-          l.textContent = (x.checked ? '✓ ' : '○ ') + x.text;
+          setExpo(l, (x.checked ? '✓ ' : '○ ') + x.text);
           det.append(l);
         }
         if (x.note) {
@@ -21398,6 +21480,17 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-21 09:05',
+    type: 'web',
+    v: '3.20.21',
+    t: 'Exposants alignés',
+    items: [
+      'Dans « 1re », « 2e », « 1er », la lettre en exposant est maintenant alignée avec le haut des chiffres, quelle que soit la police (comme dans Saison). Au téléphone, c’est visible dans les titres des tâches et des rubriques ; au PC, dans la barre des rubriques et sur les étiquettes de rubrique.',
+      'Les titres que tu modifies (au PC, directement dans la liste) restent écrits tels quels, « 2e » compris ; ton fichier ne change pas.',
+      'Réparation : une copie en double dont la version de départ est inconnue est fusionnée prudemment au téléphone, au lieu d’aller à la corbeille sans fusion ; une copie vide ou un PDF sans données est laissé en place et signalé une fois.'
+    ]
+  },
   {
     d: '2026-11-19 13:45',
     type: 'web',
@@ -23256,7 +23349,7 @@ function mSection(key, title, count, color, fill, cls, alert) {
   hb.className = 'msech';
   hb.innerHTML =
     '<span class="dot"></span><span class="nm"></span><span class="al"></span><span class="n"></span><span class="car"></span>';
-  hb.querySelector('.nm').textContent = title;
+  setExpo(hb.querySelector('.nm'), title);
   hb.querySelector('.n').textContent = count;
   hb.querySelector('.al').textContent = alert || '';
   hb.querySelector('.car').textContent = ferme ? '▸' : '';
@@ -23570,7 +23663,7 @@ function mDragStart(c, x, y) {
     b.style.setProperty('--c', hd ? COLORS[hd.color] || CARD_COLOR : 'var(--fg)');
     b.innerHTML =
       '<span class="dot"></span><span class="nm"></span>' + (sec === cur ? '<span class="ici">ici</span>' : '');
-    b.querySelector('.nm').textContent = hd ? hd.text : 'Hors rubrique';
+    setExpo(b.querySelector('.nm'), hd ? hd.text : 'Hors rubrique');
     col.append(b);
     if (sec === cur) {
       anchor = b;
@@ -23594,7 +23687,7 @@ function mDragStart(c, x, y) {
             r.className = 'drow';
             r.dataset.id = x.id;
           }
-          r.textContent = x.text;
+          setExpo(r, x.text);
           lst.append(r);
         }
         col.append(lst);
@@ -23619,7 +23712,7 @@ function mDragStart(c, x, y) {
   }
   const g = document.createElement('div');
   g.className = 'dghost';
-  g.textContent = it.text;
+  setExpo(g, it.text);
   g.style.setProperty('--c', getComputedStyle(c).getPropertyValue('--c') || CARD_COLOR);
   mDragOpen(ov, col, g, anchor, { id, cur, c, kind: 'task' }, x, y);
 }
@@ -23663,7 +23756,7 @@ function mDragStartNote(c, x, y) {
     b.dataset.sec = h ? h.id : '';
     b.style.setProperty('--c', h ? COLORS[h.color] || CARD_COLOR : 'var(--fg)');
     b.innerHTML = '<span class="dot"></span><span class="nm"></span>';
-    b.querySelector('.nm').textContent = h ? h.text : 'Hors rubrique';
+    setExpo(b.querySelector('.nm'), h ? h.text : 'Hors rubrique');
     col.append(b);
   }
   const g = document.createElement('div');
@@ -23780,13 +23873,13 @@ function mDragOpenSec(tg) {
     if (d.kind === 'task') {
       r.innerHTML =
         '<span class="tx"></span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4v9a3 3 0 0 0 3 3h9"/><path d="M15 13l3 3-3 3"/></svg>';
-      r.querySelector('.tx').textContent = x.text;
+      setExpo(r.querySelector('.tx'), x.text);
       box.append(r);
       continue;
     }
     r.innerHTML =
       '<span class="tx"></span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z"/><path d="M12 8v5M9.5 10.5h5"/></svg>';
-    r.querySelector('.tx').textContent = x.text;
+    setExpo(r.querySelector('.tx'), x.text);
     box.append(r);
   }
   if (!box.children.length) {
@@ -23934,7 +24027,7 @@ function mIntoAsk(srcId, tgtId) {
   d.innerHTML = '';
   const t = document.createElement('p');
   t.className = 'mit';
-  t.textContent = '«\u00a0' + src.text + '\u00a0» dans «\u00a0' + tgt.text + '\u00a0»';
+  setExpo(t, '«\u00a0' + src.text + '\u00a0» dans «\u00a0' + tgt.text + '\u00a0»');
   d.append(t);
   for (const c of intoChoices(srcId)) {
     const b = document.createElement('button');
@@ -24918,7 +25011,7 @@ function mPickList() {
     const h = headingOf(i),
       b = document.createElement('button');
     b.type = 'button';
-    b.textContent = it.text;
+    setExpo(b, it.text);
     const sm = document.createElement('small');
     sm.textContent = (h ? h.text : 'Hors rubrique') + ' · ' + (it.state === 'attente' ? 'En attente' : 'À faire');
     b.append(sm);
@@ -25734,7 +25827,7 @@ function mAttList() {
     const h = headingOf(i),
       b = document.createElement('button');
     b.type = 'button';
-    b.textContent = it.text;
+    setExpo(b, it.text);
     const sm = document.createElement('small');
     sm.textContent = (h ? h.text : 'Hors rubrique') + ' · ' + (it.state === 'attente' ? 'En attente' : 'À faire');
     b.append(sm);
