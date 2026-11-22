@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261122202156">
+<meta name="officious-page" content="20261122205437">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -110,7 +110,8 @@
   opacity: 1;
   transform: translate(-50%, 0);
 }
-#s-toast.action {
+/* 1.21.1 : touchable seulement quand il se voit (un bouton invisible captait les touchers en bas de l’écran) */
+#s-toast.on.action {
   pointer-events: auto;
 }
 #s-toast button {
@@ -910,6 +911,17 @@ dialog.s-resiste {
   dialog.s-plein[open] {
     animation: none !important;
   }
+}
+
+/* copies en double au PC, fichier partagé (1.21) : bandeau discret sous l'en-tête, comme une information */
+.s-copies {
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.s-copies button[hidden] {
+  display: none;
 }
 :root {
   --fond: #f5f6f8;
@@ -4056,13 +4068,90 @@ dialog.programme .prog-garde {
   }
 }
 
-/* 0.81, bogue « Supprimer hors des heures » (François, 22/11) : un message à bouton qui a disparu (opacité 0) restait
-   touchable, car le socle (socle.css, « #s-toast.action ») ne regarde pas s'il est affiché. Après « tirer pour
-   actualiser » hors des heures, le bouton invisible « Synchroniser… » couvrait « Supprimer » au bas de la fiche et
-   ouvrait la fenêtre « Rien ne presse ». Ici, un message caché ne capte plus rien ; la correction de fond est pour le
-   socle 1.21. */
-#s-toast:not(.on) {
-  pointer-events: none;
+/* ---------- 0.82 : travail à deux (socle 1.21) ---------- */
+/* « modifié par Camille il y a 3 min », à côté de la ligne d'état : il cède la place avant elle (« Enregistré » reste
+   lisible), et la ligne d'état ne pousse plus le reste à droite tant qu'il est là */
+#ecritPar {
+  flex: 1 1000 auto;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--gris);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#ecritPar[hidden] {
+  display: none;
+}
+#tete:has(#ecritPar:not([hidden])) #etat {
+  flex: 0 1 auto;
+}
+@media (min-width: 701px) {
+  #tete:has(#ecritPar:not([hidden])) #titre {
+    flex-shrink: 0;
+  }
+}
+#ecritPar::before {
+  content: '· ';
+}
+@media (max-width: 700px) {
+  #ecritPar {
+    order: 9;
+    flex: 1 1 auto;
+    margin-top: -0.1rem;
+  }
+  #tete:has(#ecritPar:not([hidden])) #etat {
+    flex: 1 1 100%;
+  }
+  #ecritPar::before {
+    content: none;
+  }
+}
+.invite-prenom {
+  padding: 0.35rem 1rem;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+}
+.invite-prenom button {
+  padding: 0.25rem 0.8rem;
+}
+dialog.deux {
+  width: min(30rem, calc(100vw - 2rem));
+}
+dialog.deux .dx-garde {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+}
+dialog.deux .prog-champ input {
+  width: 100%;
+  box-sizing: border-box;
+}
+dialog.deux .prog-auto + .prog-auto {
+  margin-top: 0;
+  border-top: 0;
+}
+dialog.deux .prog-auto {
+  cursor: var(--s-cur-pointer);
+}
+@media (pointer: coarse) {
+  dialog.deux .prog-auto {
+    padding: 0.8rem 0;
+  }
+  dialog.deux .prog-auto input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.05rem;
+  }
+}
+/* profil « Sans Tâches » (réglage de l'appareil) : aucune passerelle avec Tâches */
+body.sans-taches #cTaches,
+body.sans-taches #mailVersTaches,
+body.sans-taches #menu [data-act='etapes'],
+body.sans-taches #fmRetro,
+body.sans-taches #fiche .rg[data-rg='retro'],
+body.sans-taches #propositions {
+  display: none !important;
 }
 </style>
 </head>
@@ -4079,6 +4168,7 @@ dialog.programme .prog-garde {
 <header id="tete">
   <h1 id="titre">Saison</h1>
   <span id="etat" title="Fichier et enregistrement"></span>
+  <span id="ecritPar" hidden></span>
   <label class="s-cherche" id="chercheW" title="Chercher dans les manifestations : titre, sous-titre, lieu, descriptif, élèves, remarques, date (Ctrl+K) · Échap pour tout revoir"><input id="cherche" type="search" placeholder="Rechercher (Ctrl+K)" aria-label="Rechercher" autocomplete="off" spellcheck="false" enterkeyhint="search"><span class="s-n"></span></label>
   <button id="chercheX" type="button" aria-label="Fermer la recherche">Fermer</button>
   <button id="bCherche" title="Rechercher" aria-label="Rechercher"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg></button>
@@ -4098,6 +4188,7 @@ dialog.programme .prog-garde {
     <button data-act="lieux" role="menuitem">Lieux…</button>
     <button data-act="bilans" role="menuitem">Bilans…</button>
     <button data-act="programme" role="menuitem">Programme partagé…</button>
+    <button data-act="deux" role="menuitem">Travail à deux…</button>
     <button data-act="horsheures" role="menuitemcheckbox" aria-checked="false" hidden title="Pour toute la suite, jusqu’à ce que tu l’arrêtes, au plus tard à la reprise suivante (9 h)">Synchroniser hors des heures<span class="inter" aria-hidden="true"></span></button>
     <button data-act="enligne" role="menuitem">Adresse en ligne (téléphone)…</button>
     <button data-act="outils" role="menuitem" hidden>Outils affichés…</button>
@@ -4109,6 +4200,8 @@ dialog.programme .prog-garde {
     <p id="mMatin" class="note-menu" hidden></p>
   </div>
 </header>
+<!-- 0.82 : fichier partagé, pas de prénom sur cet appareil : une ligne, une fois, qui mène à « Travail à deux… » -->
+<div id="invitePrenom" class="s-bandeau invite-prenom" role="status" hidden><span>Fichier partagé : dis qui tu es sur cet appareil, ton prénom ira dans l’historique 🕓.</span><span class="s-alerte-b"><button type="button" class="s-primaire" data-a="deux">Travail à deux…</button><button type="button" data-a="plustard">Plus tard</button></span></div>
 
 <main id="principal">
   <button id="bIci" class="flottant" hidden title="Revenir à la prochaine date" aria-label="Revenir à la prochaine date"><svg class="ico" aria-hidden="true"><use href="#i-ici"/></svg></button>
@@ -4398,6 +4491,18 @@ dialog.programme .prog-garde {
     <p class="aide">Au PC, rien ne part tout seul : l’envoi se fait depuis le téléphone (menu ⋯ → « Programme partagé… »). Pour un dépôt à la main, télécharge le PDF, puis remplace le fichier dans ton espace de partage par cette nouvelle version (le lien reste le même).</p>
     <div class="mail-pied prog-pied"><span></span><button type="button" id="pgPdfPc" class="primaire">Télécharger le PDF</button></div>
   </div>
+</dialog>
+
+<!-- 0.82 : travail à deux (socle 1.21) : prénom de l'appareil, fichier partagé, profil « Sans Tâches » -->
+<dialog id="deuxF" class="s-dialogue deux s-plein" aria-label="Travail à deux">
+  <div class="mail-tete">
+    <h2>Travail à deux</h2>
+    <button id="dxFermer" class="icone" title="Fermer (Échap)">×</button>
+  </div>
+  <label class="prog-champ">Ton prénom sur cet appareil<input id="dxPrenom" maxlength="40" placeholder="Prénom" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done"></label>
+  <p class="aide dx-garde">Gardé sur cet appareil ; écrit dans l’historique 🕓 de ce que tu modifies.</p>
+  <label class="prog-auto"><input type="checkbox" id="dxPartage"> <span>Fichier partagé<small id="dxPartageAide">pour vous deux ; relu toutes les 10 s au PC</small></span></label>
+  <label class="prog-auto dx-sans"><input type="checkbox" id="dxSansTaches"> <span>Sans Tâches sur cet appareil<small>ni rétroplanning ni propositions</small></span></label>
 </dialog>
 
 <dialog id="retrouver" class="s-dialogue" aria-label="Manifestations disparues">
@@ -4827,6 +4932,8 @@ function creerInterface() {
     $s('[data-a=copie]', ab).onclick = () =>
       nouveauFichier(null, sansExt(nomDonnees()) + ' (copie de secours)' + (C.format === 'pdf' ? '.pdf' : '.md'));
   }
+  /* copies en double au PC, fichier partagé (1.21, 27-partage.js) : bandeau discret sous l'en-tête */
+  creerBandeauCopies(tete);
   ajoute(
     `<dialog id="s-enligne" class="s-dialogue s-plein" aria-label="Adresse en ligne">
       <h2 id="s-elTitre">Adresse en ligne de ${A.fichier}</h2>
@@ -4866,8 +4973,16 @@ function creerInterface() {
   $s('#s-forcerOk').onclick = () => envoyerQuandMeme();
   $s('#s-libre').onchange = e => basculerLibre(e.target.checked);
   const e = A.etatEl ? $s(A.etatEl) : null;
+  /* 1.21 : la ligne d'état ne réagit qu'à un geste commencé sur elle. Un panneau ou une fenêtre qui se ferme pendant
+     le geste (au toucher, au relâcher, ou le clavier qui se replie et fait bouger la page) laisse sinon le clic tomber
+     dessous, sur la ligne d'état : au téléphone hors des heures, « Supprimer » dans une fiche ouvrait « Rien ne presse ». */
+  let appuiEtat = false;
+  if (e)
+    document.addEventListener('pointerdown', ev => (appuiEtat = !!(ev.target && e.contains(ev.target))), true);
   if (e)
     e.addEventListener('click', () => {
+      if (!appuiEtat) return;
+      appuiEtat = false;
       if (!AND && fichierPc.handle && !fichierPc.perm) reprendrePc();
       else if (AND && (horsHeures() || libreActif())) demanderEnvoi(); /* en pause ou synchro hors des heures : régler */
     });
@@ -4887,6 +5002,7 @@ function toast(msg, action, fn, ms) {
     b.textContent = action;
     b.onclick = e => {
       e.stopPropagation();
+      if (!t.classList.contains('on')) return; /* 1.21.1 : message déjà effacé, le bouton ne vaut plus */
       t.classList.remove('on');
       fn();
     };
@@ -5058,7 +5174,10 @@ function etat() {
     e.classList.toggle('libre', libreActif());
   }
   verifierVersionPc();
-  if (A && !AND) peindreAcces();
+  if (A && !AND) {
+    peindreAcces();
+    peindreCopies(); /* 1.21 */
+  }
   if (A && A.surEtat) A.surEtat();
 }
 
@@ -5580,17 +5699,100 @@ function restaurer() {
   return true;
 }
 
-/* ---- versions déjà vues ---- */
+/* ---- versions déjà vues ----
+   En mémoire, les 15 dernières (seenTexts : échos périmés, ancêtre perdu, synchrones). 1.21 : gardées aussi, par
+   empreinte, dans IndexedDB (50, clés « vu:<empreinte> » et l'ordre sous « vus », base officious-<appli>) : elles servent
+   à retrouver la version de départ d'une copie en double (« issu de »), y compris écrite par un autre appareil puis
+   lue ici. Pas dans le stockage local : commun à toutes les pages de la suite et limité à 5 Mo (journal du 21/11).
+   Migration : les 10 de l'ancienne clé <appli>-vus passent dans IndexedDB, puis la clé est retirée. Sans IndexedDB
+   (navigateur qui le refuse) : repli sur l'ancienne clé, 10 versions, comme avant. */
+const VUS_MAX = 50;
 let seenTexts = [];
+const vus = { idb: null /* promesse : true si IndexedDB sert, false sinon */, chaine: Promise.resolve(), attente: [] };
+/* IndexedDB qui ne répond pas (jamais vu, mais la WebView du Compagnon n'y avait jamais servi) : on n'attend pas plus de
+   quelques secondes, sinon le ramassage des copies resterait bloqué */
+function borne(p, ms, d) {
+  return Promise.race([p, new Promise(r => setTimeout(() => r(d), ms))]);
+}
 function chargerVus() {
   seenTexts = mem.get('vus', []);
+  vus.idb = borne((async () => {
+    try {
+      if (typeof indexedDB === 'undefined' || !indexedDB) return false;
+      const anciens = mem.get('vus', []);
+      await idbTx(st => {
+        const q = st.get('vus');
+        q.onsuccess = () => {
+          let ordre = Array.isArray(q.result) ? q.result : [];
+          for (const t of anciens) ordre = ajouterVu(st, ordre, t);
+          st.put(ordre, 'vus');
+        };
+      });
+      mem.set('vus', null); /* migré : le stockage local se libère */
+      return true;
+    } catch (e) {
+      return false;
+    }
+  })(), 5000, false);
+}
+/* dans une transaction ouverte : range t sous son empreinte, la met en dernier dans l'ordre, retire les plus anciennes */
+function ajouterVu(st, ordre, t) {
+  const h = hash8(t);
+  ordre = ordre.filter(x => x !== h);
+  ordre.push(h);
+  st.put(t, 'vu:' + h);
+  while (ordre.length > VUS_MAX) st.delete('vu:' + ordre.shift());
+  return ordre;
 }
 function remember(t) {
   if (t == null || seenTexts[seenTexts.length - 1] === t) return;
   seenTexts = seenTexts.filter(x => x !== t);
   seenTexts.push(t);
   if (seenTexts.length > 15) seenTexts.shift();
-  mem.set('vus', seenTexts.slice(-10));
+  if (!vus.idb) return mem.set('vus', seenTexts.slice(-10));
+  /* une écriture à la fois, dans l'ordre ; plusieurs versions arrivées pendant une écriture partent ensemble */
+  vus.attente.push(t);
+  if (vus.attente.length > 1) return;
+  vus.chaine = vus.chaine
+    .then(() => vus.idb)
+    .then(async ok => {
+      const L = vus.attente.splice(0);
+      if (!ok) return mem.set('vus', seenTexts.slice(-10));
+      await idbTx(st => {
+        const q = st.get('vus');
+        q.onsuccess = () => {
+          let ordre = Array.isArray(q.result) ? q.result : [];
+          for (const x of L) ordre = ajouterVu(st, ordre, x);
+          st.put(ordre, 'vus');
+        };
+      });
+    })
+    .catch(() => {});
+}
+/** Une version vue ici, par son empreinte (base, mémoire, puis IndexedDB, ou l'ancienne clé en repli) ; null sinon. */
+async function versionVueDe(h) {
+  if (!h) return null;
+  if (C.baseText != null && hash8(C.baseText) === h) return C.baseText;
+  const m = seenTexts.find(x => hash8(x) === h);
+  if (m != null) return m;
+  if (!vus.idb || !(await vus.idb)) return (mem.get('vus', []) || []).find(x => hash8(x) === h) || null;
+  await borne(vus.chaine, 3000); /* ce qui s'écrit encore */
+  try {
+    const t = await borne(idbGet('vu:' + h), 3000, null);
+    return typeof t === 'string' && hash8(t) === h ? t : null;
+  } catch (e) {
+    return null;
+  }
+}
+/** Empreintes des versions gardées dans IndexedDB, de la plus ancienne à la plus récente (tests, journal). */
+async function versionsVues() {
+  if (!vus.idb || !(await vus.idb)) return seenTexts.map(hash8);
+  await borne(vus.chaine, 3000);
+  try {
+    return (await borne(idbGet('vus'), 3000, null)) || [];
+  } catch (e) {
+    return [];
+  }
 }
 function parentOf(t) {
   const m = /^- issu de : ([0-9a-f]{8})\s*$/m.exec(t || '');
@@ -5632,7 +5834,12 @@ async function enregistrer() {
 
 /** Fusion : le métier (A.merge3), plus les règles des réglages communs. */
 function fusionner(B, M, T) {
+  /* 1.21 : « écrit par » change à chaque écriture : jamais un conflit ; le résultat garde celui du fichier lu (T), et
+     l'écriture qui suit pose celui de cet appareil. B et T sont toujours des modèles relus (A.parse) : on peut y toucher. */
+  const ep = A.reglage(T, ECRIT_PAR) || null;
+  A.fixeReglage(B, ECRIT_PAR, A.reglage(M, ECRIT_PAR) || null);
   const r = A.merge3(B, M, T);
+  A.fixeReglage(r, ECRIT_PAR, ep);
   /* tampon de la page déposée pour le PC : le plus récent des deux, jamais un conflit */
   const vm = A.reglage(M, 'version') || '',
     vt = A.reglage(T, 'version') || '';
@@ -5644,11 +5851,10 @@ function fusionner(B, M, T) {
     si on la connaît (la base, ou une version vue ici) ; sinon fusion prudente, à partir de rien, comme syncSave sans
     base : ce que la copie a en plus est ajouté, rien n'est retiré, en cas de différence la version du fichier de travail
     est gardée. « issu de » reste celui du fichier de travail (syncSave le refait en écrivant).
-    Rend { anc (texte ou null), avant, r (modèle fusionné), apres } ; ne change rien à l'état (1.19.1, commun au
-    ramassage du téléphone et à « Fusionner une copie… » du PC). */
-function fusionCopie(txt) {
-  const p = parentOf(txt),
-    anc = !p ? null : C.baseText != null && hash8(C.baseText) === p ? C.baseText : seenTexts.find(x => hash8(x) === p) || null,
+    Rend (promesse, 1.21 : versions vues dans IndexedDB) { anc (texte ou null), avant, r (modèle fusionné), apres } ;
+    ne change rien à l'état (1.19.1, commun au ramassage des copies et à « Fusionner une copie… » du PC). */
+async function fusionCopie(txt) {
+  const anc = await versionVueDe(parentOf(txt)),
     avant = A.serialize(A.etat()),
     r = fusionner(A.parse(anc != null ? anc : ''), A.parse(avant), A.parse(txt));
   A.fixeReglage(r, 'issu de', A.reglage(A.parse(avant), 'issu de') || null);
@@ -5738,21 +5944,26 @@ async function syncSave() {
         if (base != null) matin.b.recues += ecarts(base, cur);
       }
       A.appliquer(r);
+      const qui = ecritParAutre(cur);
       toast(
         r.conflits
-          ? 'Fusionné avec des modifications faites ailleurs · ' +
+          ? 'Fusionné avec des modifications ' +
+              (qui ? 'de ' + qui : 'faites ailleurs') +
+              ' · ' +
               r.conflits +
               ' conflit' +
               (r.conflits > 1 ? 's' : '') +
               ' : la version de cet appareil a été gardée'
-          : 'Fusionné avec des modifications faites ailleurs'
+          : 'Fusionné avec des modifications ' + (qui ? 'de ' + qui : 'faites ailleurs')
       );
     }
     fixeReglage('issu de', parentOf(cur));
+    fixeReglage(ECRIT_PAR, reglageDe(cur, ECRIT_PAR)); /* 1.21 : seul, il ne justifie pas d'écrire */
     const at = C.rev;
     let out = A.serialize(A.etat());
     if (out !== cur) {
       if (cur && cur.trim()) fixeReglage('issu de', hash8(cur)); /* ce qu'on écrit part de la version lue */
+      fixeReglage(ECRIT_PAR, signature()); /* 1.21 : le prénom de cet appareil et l'heure, ou rien */
       out = A.serialize(A.etat());
     }
     const perdus = C.forcer ? [] : elementsPerdus(cur, out, base, mien);
@@ -5827,10 +6038,17 @@ async function syncSave() {
   }
 }
 
-/** Relecture : le fichier a-t-il été modifié ailleurs ? (au retour sur la page, toutes les 30 s) */
+/** Relecture : le fichier a-t-il été modifié ailleurs ? (au retour sur la page, toutes les 30 s ; 1.21 : toutes les
+    10 s au PC quand le fichier est partagé). 1.21 : au PC, ensuite, ramassage des copies en double si le dossier est
+    autorisé (au plus une fois par minute environ, 27-partage.js). */
 async function checkExternal() {
   if (!C.backend || C.saving || C.dirty || horsHeures() || (A.enSaisie && A.enSaisie())) return;
   if (C.backend === pcBackend && !fichierPc.perm) return; /* accès à redonner : le bandeau le dit (1.18) */
+  await relire();
+  if (C.backend === pcBackend && fichierPc.perm && !C.dirty && !C.saving && !accesPerdu())
+    await ramasserDoublons(false).catch(() => {});
+}
+async function relire() {
   try {
     const change = !C.backend.changedSince || (await C.backend.changedSince());
     if (C.backend === pcBackend && fichierPc.introuvable) {
@@ -5852,7 +6070,8 @@ async function checkExternal() {
     C.baseText = cur;
     backup();
     etat();
-    toast('Mis à jour : le fichier a été modifié ailleurs');
+    const qui = ecritParAutre(cur);
+    toast(qui ? 'Mis à jour par ' + qui : 'Mis à jour : le fichier a été modifié ailleurs');
   } catch (e) {
     if (C.backend === pcBackend) {
       accesEchec(e); /* 1.18 : premier échec d'une relecture → bandeau */
@@ -5868,13 +6087,28 @@ async function checkExternal() {
    disait) ; tant que la page ne peut ni lire ni écrire son fichier, un bandeau en haut de la page le dit, avec
    « Reprendre » (et « Ouvrir… » si Edge a refusé, ou si le fichier a disparu). Voir accesPerdu, peindreAcces. */
 
+/* base IndexedDB de l'outil (officious-<appli>, magasin « kv ») : poignées du fichier et du dossier, versions vues (1.21).
+   Une connexion gardée pour toute la page (1.21 : les versions vues y écrivent à chaque lecture). */
+let idbP = null;
 function idb() {
-  return new Promise((res, rej) => {
-    const r = indexedDB.open('officious-' + C.appli, 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('kv');
-    r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error);
-  });
+  if (!idbP)
+    idbP = new Promise((res, rej) => {
+      const r = indexedDB.open('officious-' + C.appli, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => {
+        const db = r.result;
+        db.onversionchange = () => {
+          db.close();
+          idbP = null;
+        };
+        res(db);
+      };
+      r.onerror = () => rej(r.error);
+    }).catch(e => {
+      idbP = null;
+      throw e;
+    });
+  return idbP;
 }
 async function idbGet(k) {
   const db = await idb();
@@ -5885,12 +6119,17 @@ async function idbGet(k) {
   });
 }
 async function idbSet(k, v) {
+  return idbTx(st => st.put(v, k));
+}
+/** Une transaction d'écriture sur « kv » : fn(magasin) y fait ses demandes ; la promesse se termine avec elle. */
+async function idbTx(fn) {
   const db = await idb();
   return new Promise((res, rej) => {
     const tx = db.transaction('kv', 'readwrite');
-    tx.objectStore('kv').put(v, k);
+    fn(tx.objectStore('kv'));
     tx.oncomplete = () => res();
     tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error);
   });
 }
 
@@ -6556,10 +6795,11 @@ async function envoyerQuandMeme() {
 const DOUBLON_DELAI = 60e3;
 function ramasserDoublons(force) {
   /* une seule à la fois : tirer pendant le ramassage de l'ouverture attend la fin, puis repasse */
-  const p = (ramasserDoublons.p || Promise.resolve()).catch(() => {}).then(() => ramasser(force));
+  const p = (ramasserDoublons.p || Promise.resolve()).catch(() => {}).then(() => (AND ? ramasser(force) : ramasserPc(force)));
   ramasserDoublons.p = p;
   return p;
 }
+/* téléphone : par l'accès direct (spList, spRead, spRecycle) */
 async function ramasser(force) {
   if (!AND || horsHeures() || C.backend !== spBackend || !A.doublon) return 0;
   if (!force && Date.now() - mem.get('doublons', 0) < 3600e3) return 0;
@@ -6572,55 +6812,82 @@ async function ramasser(force) {
     throw e;
   }
   mem.set('doublons', Date.now());
-  const copies = liste.filter(f => A.doublon.test(f.name) && Date.now() - Date.parse(f.modified) > DOUBLON_DELAI);
-  /* copies laissées (illisibles) : journalisées et dites une fois, tant qu'elles ne changent pas */
-  const dites = mem.get('doublons-laisses', []),
+  const url = f => dossier + '/' + encodeURIComponent(f.name);
+  const r = await ramasserCopies({
+    copies: liste
+      .filter(f => A.doublon.test(f.name))
+      .map(f => ({ name: f.name, modified: Date.parse(f.modified) }))
+      .filter(f => Date.now() - f.modified > DOUBLON_DELAI),
+    lire: async f => JSON.parse(await spCall('spRead', url(f))).text,
+    jeter: f => spCall('spRecycle', url(f)),
+    jetee: (n, s) => ' et mise' + s + ' à la corbeille de OneDrive',
+    laisses: 'doublons-laisses'
+  });
+  return r.n;
+}
+/**
+ * Ramassage commun au téléphone et au PC (1.21) : src = {copies: [{name, modified (ms)}] (déjà filtrées : motif
+ * A.doublon, plus d'une minute), lire(f) → contenu brut, jeter(f) (corbeille de OneDrive, ou suppression au PC),
+ * jetee(n, s) → fin du message (« et mise à la corbeille de OneDrive »), laisses : clé des copies illisibles déjà dites}.
+ * Chaque copie : déballée ; vide ou PDF sans données → laissée (dite une fois) ; sinon fusionnée (fusionCopie : version
+ * de départ connue → trois voies, inconnue → prudente), enregistrée, puis jetée ; pas enregistrée → gardée pour la
+ * prochaine fois. Rend {n (copies fusionnées et jetées), restantes (noms des copies lisibles non jetées)}.
+ */
+async function ramasserCopies(src) {
+  const dites = mem.get(src.laisses, []),
     signe = f => f.name + '|' + f.modified;
   let n = 0,
     prudentes = 0;
-  const laissees = [];
-  for (const f of copies) {
-    const url = dossier + '/' + encodeURIComponent(f.name);
-    const fait = await occupe('Rangement d’une copie en double…', async () => {
-      const brut = JSON.parse(await spCall('spRead', url)).text;
-      let txt,
-        pourquoi = '';
-      try {
-        txt = deballer(brut);
-        if (txt == null) txt = brut;
-        if (!txt || !txt.trim()) pourquoi = 'vide';
-      } catch (e) {
-        pourquoi = 'PDF sans données';
-      }
-      if (pourquoi) {
-        /* rien à fusionner : la mettre à la corbeille perdrait peut-être quelque chose (1.19.1) */
-        laissees.push(f);
-        if (!dites.includes(signe(f)))
-          journal('copie en double', { fichier: f.name, fusion: pourquoi + ', laissée telle quelle' });
-        return false;
-      }
-      const { anc, avant, r, apres } = fusionCopie(txt);
-      if (apres !== avant) {
-        A.appliquer(r);
-        C.dirty = true;
-        C.rev++;
-        backup();
-        await syncSave();
-        /* pas enregistrée : la copie reste, elle sera reprise au prochain ramassage */
-        if (C.saveErr) {
-          journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente', corbeille: 'non, pas enregistré' });
-          return false;
+  const laissees = [],
+    restantes = [];
+  for (const f of src.copies) {
+    let fait = false;
+    try {
+      fait = await occupe('Rangement d’une copie en double…', async () => {
+        const brut = await src.lire(f);
+        let txt,
+          pourquoi = '';
+        try {
+          txt = deballer(brut);
+          if (txt == null) txt = brut;
+          if (!txt || !txt.trim()) pourquoi = 'vide';
+        } catch (e) {
+          pourquoi = 'PDF sans données';
         }
-      }
-      journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente' });
-      await spCall('spRecycle', url);
-      if (!anc) prudentes++;
-      return true;
-    });
+        if (pourquoi) {
+          /* rien à fusionner : la jeter perdrait peut-être quelque chose (1.19.1) */
+          laissees.push(f);
+          if (!dites.includes(signe(f)))
+            journal('copie en double', { fichier: f.name, fusion: pourquoi + ', laissée telle quelle' });
+          return null;
+        }
+        const { anc, avant, r, apres } = await fusionCopie(txt);
+        if (apres !== avant) {
+          A.appliquer(r);
+          C.dirty = true;
+          C.rev++;
+          backup();
+          await syncSave();
+          /* pas enregistrée : la copie reste, elle sera reprise au prochain ramassage */
+          if (C.saveErr) {
+            journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente', suppression: 'non, pas enregistré' });
+            return false;
+          }
+        }
+        journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente' });
+        await src.jeter(f);
+        if (!anc) prudentes++;
+        return true;
+      });
+    } catch (e) {
+      journal('copie en double', { fichier: f.name, erreur: sansCode(e) });
+      fait = false;
+    }
     if (fait) n++;
+    else if (fait === false) restantes.push(f.name);
   }
   const nouvelles = laissees.filter(f => !dites.includes(signe(f)));
-  mem.set('doublons-laisses', laissees.map(signe));
+  mem.set(src.laisses, laissees.length ? laissees.map(signe) : null);
   const s = k => (k > 1 ? 's' : '');
   const msg = [];
   if (n)
@@ -6635,9 +6902,7 @@ async function ramasser(force) {
         (prudentes
           ? ' (' + (n > 1 ? prudentes + '\u00a0' : '') + 'prudemment\u00a0: version de départ inconnue)'
           : '') +
-        ' et mise' +
-        s(n) +
-        ' à la corbeille de OneDrive'
+        src.jetee(n, s(n))
     );
   if (nouvelles.length)
     msg.push(
@@ -6649,7 +6914,7 @@ async function ramasser(force) {
         '\u00a0: aucune donnée lisible, rien à fusionner'
     );
   if (msg.length) toast(msg.join(' · '), null, null, prudentes || nouvelles.length ? 8000 : 6000);
-  return n;
+  return { n, restantes };
 }
 /* socle/js/19-versions.js : la chaîne des mises à jour, GitHub → Compagnon → OneDrive → PC.
    - La page publiée porte un tampon <meta name="officious-page" content="AAAAMMJJhhmmss"> (outils/publier.sh).
@@ -7034,6 +7299,13 @@ function annoncerNouveautes() {
  *   aujourdhui, bilan (cet outil), tous, texte, ligne} ; « ligne » est prête à afficher (« Synchro du matin : 9 h 02,
  *   1 modification envoyée, page déposée pour le PC »), par exemple dans le menu.
  * Accès au fichier perdu au PC (1.18) : rien à fournir ; le bandeau se place avant A.entete.
+ * Travail à deux (1.21, 27-partage.js) : rien à fournir. L'outil peut régler le prénom de l'appareil
+ *   (socle.auteur(), socle.reglerAuteur(prénom) : commun à la suite), lire qui a écrit la version lue
+ *   (socle.ecritPar() → null ou {prenom, quand, moi}), poser le fichier comme partagé (socle.partage(),
+ *   socle.reglerPartage(bool) : réglage commun « partagé : oui », relecture à 10 s au PC). Le socle écrit « écrit par »
+ *   à chaque écriture, dit « Mis à jour par Camille » à la relecture, et ramasse les copies en double au PC si le
+ *   dossier est autorisé (bandeau sinon, fichier partagé). socle.heuresBureau(date?) : heures de travail, sans
+ *   l'interrupteur « Synchroniser hors des heures ».
  * Fichiers discrets (1.19, 25-pdf.js, 26-discrets.js) : le fichier de travail peut être un vrai PDF. Le socle lit les deux
  *   formats (« %PDF » en tête du contenu, quel que soit le nom) et écrit dans le format lu. Champs facultatifs :
  *   fichierPdf   'Suivi tâches et régie.pdf'                nom proposé par « Passer au PDF… » (sinon fichier en .pdf)
@@ -7087,15 +7359,21 @@ async function demarrer(adaptateur) {
   initBoite();
   relever();
   annoncerMatin(); /* téléphone : bilan de la synchro du matin, une fois (1.18) */
-  /* relecture : au retour sur la page et toutes les 30 s ; ce qui attend part */
+  /* relecture : au retour sur la page et toutes les 30 s ; ce qui attend part. 1.21 : au PC, toutes les 10 s quand le
+     fichier est partagé (réglage « partagé : oui », 27-partage.js) ; un tour toutes les 10 s, dont un sur trois sinon */
   addEventListener('focus', () => !AND && checkExternal());
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !AND) checkExternal();
   });
+  let tours = 0;
   setInterval(() => {
+    tours++;
+    if (tours % (RELECTURE / RELECTURE_PARTAGE) && !relectureSerree()) return;
     if (C.dirty && !C.saving && pret()) enregistrer();
     else checkExternal();
-  }, 30000);
+  }, RELECTURE_PARTAGE);
+  /* 1.21 : au PC, copies en double ramassées dès l'ouverture si le dossier est autorisé */
+  if (!AND && pret() && !C.dirty) ramasserDoublons(false).catch(() => {});
   addEventListener('beforeunload', ev => {
     if (C.dirty && pret() && !AND) {
       enregistrer();
@@ -8316,7 +8594,7 @@ async function fusionnerCopie() {
     await enregistrer();
     if (C.saveErr) return;
   }
-  const { anc, avant, r, apres } = fusionCopie(txt),
+  const { anc, avant, r, apres } = await fusionCopie(txt),
     nom = fichierPc.handle.name;
   if (apres === avant) {
     journal('copie à fusionner', { fichier: h.name, apport: 'rien' });
@@ -8515,10 +8793,206 @@ async function passerAuPdf() {
     8000
   );
 }
+/* socle/js/27-partage.js : deux personnes dans le même fichier (1.21, décisions de François du 21/11,
+   docs/proposition-partage-2026-11-21.md § 0 bis et § 2.6, piste P1 : même fichier dans un dossier OneDrive partagé,
+   la même page sur les deux PC).
+   - Prénom de l'auteur, par appareil : socle.auteur(), socle.reglerAuteur(prénom). Clé commune à la suite
+     (officious-auteur, sans préfixe d'outil, comme la synchro hors des heures) : une personne = un appareil, et Tâches
+     comme Saison, sur ce PC ou ce téléphone, sont à la même personne. Jamais dans un dépôt ni une page publiée :
+     seulement dans ce navigateur et dans le fichier de données.
+   - À chaque écriture, réglage commun « écrit par : Camille (2026-11-22 10:41) » (rien si aucun prénom n'est réglé :
+     le réglage est retiré, pour qu'il ne nomme jamais à tort la personne précédente). Il change à chaque écriture : la
+     fusion ne le compte jamais comme conflit (fusionner, 16-synchro.js), et seul il ne justifie pas d'écrire.
+   - Relecture : « Mis à jour par Camille » quand la version lue a été écrite par un autre prénom que celui de cet
+     appareil ; socle.ecritPar() pour l'outil (« modifié par Camille il y a 3 min »).
+   - Fichier partagé : réglage commun « partagé : oui », posé par l'outil (socle.reglerPartage(true)), lu par
+     socle.partage() ; au PC, relecture toutes les 10 s au lieu de 30 (20-demarrage.js).
+   - Copies en double au PC : ramassées à chaque relecture si le dossier du fichier est autorisé (1.7) ; sinon, fichier
+     partagé, un bandeau discret propose d'autoriser le dossier ou « Fusionner une copie… ». */
+
+/* ---- prénom de l'auteur, par appareil ---- */
+const CLE_AUTEUR = 'officious-auteur',
+  ECRIT_PAR = 'écrit par';
+function auteur() {
+  try {
+    return localStorage.getItem(CLE_AUTEUR) || '';
+  } catch (e) {
+    return '';
+  }
+}
+/** Règle le prénom de cet appareil (pour toute la suite) ; '' ou null le retire. Rend le prénom retenu, nettoyé :
+    sans parenthèses, deux-points ni retours à la ligne (il est écrit tel quel dans le fichier), 40 caractères au plus. */
+function reglerAuteur(prenom) {
+  const p = String(prenom || '')
+    .replace(/[():\r\n\t]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 40)
+    .trim();
+  try {
+    if (p) localStorage.setItem(CLE_AUTEUR, p);
+    else localStorage.removeItem(CLE_AUTEUR);
+  } catch (e) {}
+  journal('prénom de cet appareil', { prénom: p || '–' });
+  return p;
+}
+function memePrenom(a, b) {
+  return plier(a || '') === plier(b || '');
+}
+/** Valeur du réglage « écrit par » pour une écriture d'ici : « Camille (2026-11-22 10:41) », ou '' sans prénom. */
+function signature() {
+  const p = auteur();
+  if (!p) return '';
+  const d = maintenant();
+  return (
+    p +
+    ' (' +
+    isoDe(d) +
+    ' ' +
+    String(d.getHours()).padStart(2, '0') +
+    ':' +
+    String(d.getMinutes()).padStart(2, '0') +
+    ')'
+  );
+}
+/** « Camille (2026-11-22 10:41) » → {prenom, quand (Date ou null), moi} ; null si vide. */
+function lireSignature(v) {
+  v = String(v || '').trim();
+  if (!v) return null;
+  const m = /^(.*?)\s*\((\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)\)$/.exec(v);
+  const prenom = (m ? m[1] : v).trim();
+  if (!prenom) return null;
+  return {
+    prenom,
+    quand: m ? new Date(+m[2], +m[3] - 1, +m[4], +m[5], +m[6]) : null,
+    moi: memePrenom(prenom, auteur())
+  };
+}
+/** Réglage commun lu sur le texte brut (« - clé : valeur », la forme que lit déjà parentOf pour « issu de »). */
+function reglageDe(t, cleR) {
+  const m = new RegExp('^- ' + cleR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' : (.*?)\\s*$', 'm').exec(t || '');
+  return m ? m[1] : '';
+}
+/** Prénom de l'auteur de ce texte s'il n'est pas celui de cet appareil, sinon ''. */
+function ecritParAutre(t) {
+  const s = lireSignature(reglageDe(t, ECRIT_PAR));
+  return s && !s.moi ? s.prenom : '';
+}
+/** Qui a écrit la version lue (ou écrite) en dernier : null, ou {prenom, quand (Date ou null), moi (même prénom que cet
+    appareil)}. */
+function ecritPar() {
+  return A ? lireSignature(reglage(ECRIT_PAR)) : null;
+}
+
+/* ---- fichier partagé ---- */
+function partage() {
+  return !!A && C.ouvert && reglage('partagé') === 'oui';
+}
+/** Pose (true) ou retire (false) le réglage commun « partagé : oui » ; enregistré comme toute modification. Rend
+    l'état retenu. */
+function reglerPartage(on) {
+  on = !!on;
+  if (!A || !C.ouvert) return partage();
+  if (on === partage()) return on;
+  if (A.avantModif) A.avantModif();
+  fixeReglage('partagé', on ? 'oui' : null);
+  journal('fichier partagé : ' + (on ? 'oui' : 'non'));
+  modifie();
+  return on;
+}
+/* relecture : toutes les 30 s ; au PC, toutes les 10 s quand le fichier est partagé (la date de modification ne coûte
+   rien). Au téléphone, chaque relecture est une lecture en ligne : 30 s, partagé ou non. */
+const RELECTURE = 30e3,
+  RELECTURE_PARTAGE = 10e3;
+function relectureSerree() {
+  return !AND && partage();
+}
+
+/* ---- copies en double, au PC ----
+   Même ramassage qu'au téléphone (ramasserCopies, 18-onedrive.js), par le dossier autorisé : liste, lecture, puis
+   suppression (removeEntry) une fois la fusion enregistrée. Au plus une fois toutes les 50 s (la relecture passe
+   toutes les 10 ou 30 s : environ une fois par minute). */
+const RAMASSAGE_PC = 50e3;
+const copiesPc = { autorise: null /* dossier accessible sans rien demander */, restantes: [], plusTard: false };
+async function ramasserPc(force) {
+  if (AND || !hasFS || !A.doublon || !fichierPc.handle || !fichierPc.perm) return 0;
+  const d = await accesDossier(false).catch(() => null),
+    avant = copiesPc.autorise;
+  copiesPc.autorise = !!d;
+  if (avant !== copiesPc.autorise) etat();
+  if (!d) return 0;
+  if (!force && Date.now() - (ramasserPc.dernier || 0) < RAMASSAGE_PC) return 0;
+  ramasserPc.dernier = Date.now();
+  const nom = fichierPc.handle.name,
+    copies = [];
+  for await (const [n, h] of d.entries()) {
+    if (h.kind !== 'file' || n === nom || !A.doublon.test(n)) continue;
+    try {
+      const f = await (await d.getFileHandle(n)).getFile();
+      copies.push({ name: n, modified: f.lastModified });
+    } catch (e) {}
+  }
+  const r = await ramasserCopies({
+    copies: copies.filter(f => Date.now() - f.modified > DOUBLON_DELAI),
+    lire: async f => (await (await d.getFileHandle(f.name)).getFile()).text(),
+    jeter: f => d.removeEntry(f.name),
+    jetee: (n, s) => ' et supprimée' + s,
+    laisses: 'doublons-laisses-pc'
+  });
+  copiesPc.restantes = r.restantes;
+  etat();
+  return r.n;
+}
+/** Bandeau discret (#s-copies, au PC) : fichier partagé et dossier non autorisé (les copies en double ne peuvent pas
+    être fusionnées d'elles-mêmes : le navigateur ne voit pas le dossier, ni donc les copies), ou copies trouvées mais
+    pas encore fusionnées (enregistrement impossible). */
+function peindreCopies() {
+  const b = $s('#s-copies');
+  if (!b) return;
+  const n = copiesPc.restantes.length,
+    cas = accesPerdu() ? '' : n ? 'restantes' : partage() && copiesPc.autorise === false && !copiesPc.plusTard ? 'dossier' : '';
+  b.hidden = !cas;
+  if (!cas) return;
+  b.dataset.cas = cas;
+  $s('.s-copies-txt', b).textContent =
+    cas === 'restantes'
+      ? (n > 1 ? n + ' copies en double' : '1 copie en double') +
+        ' à fusionner : ' +
+        copiesPc.restantes.join(', ')
+      : 'Fichier partagé : pour que les copies en double de ' +
+        nomDonnees() +
+        ' (créées par OneDrive quand deux PC écrivent en même temps) soient fusionnées d’elles-mêmes, autorise son dossier.';
+  $s('[data-a=dossier]', b).hidden = cas !== 'dossier';
+  $s('[data-a=plustard]', b).hidden = cas !== 'dossier';
+}
+function creerBandeauCopies(tete) {
+  if (AND || !hasFS) return;
+  const b = document.createElement('div');
+  b.id = 's-copies';
+  b.className = 's-bandeau s-copies';
+  b.setAttribute('role', 'status');
+  b.hidden = true;
+  b.innerHTML =
+    '<span class="s-copies-txt"></span><span class="s-alerte-b"><button class="s-primaire" data-a="dossier">Autoriser le dossier…</button><button data-a="fusionner">Fusionner une copie…</button><button data-a="plustard">Plus tard</button></span>';
+  if (tete) tete.after(b);
+  else document.body.prepend(b);
+  $s('[data-a=dossier]', b).onclick = async () => {
+    const d = await accesDossier(true);
+    if (!d) return;
+    copiesPc.autorise = true;
+    etat();
+    ramasserDoublons(true).catch(() => {});
+  };
+  $s('[data-a=fusionner]', b).onclick = () => fusionnerCopie();
+  $s('[data-a=plustard]', b).onclick = () => {
+    copiesPc.plusTard = true; /* pour cette session : rouvrir la page le redira */
+    etat();
+  };
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.20.0',
+  version: '1.21.1',
   demarrer,
   /* fichier */
   modifie,
@@ -8598,6 +9072,15 @@ return {
   deposerFichierVoisin,
   supprimerFichierVoisin,
   listerDossierVoisin,
+  /* travail à deux (1.21, 27-partage.js) */
+  auteur,
+  reglerAuteur,
+  ecritPar,
+  partage,
+  reglerPartage,
+  /* heures de travail (9 h – 18 h 30, jours ouvrés), sans compter « Synchroniser hors des heures » ni « Envoyer cette
+     fois » (1.21) */
+  heuresBureau: d => heuresBureau(d instanceof Date ? d : undefined),
   /* boîte d'échange entre outils (1.6) */
   envoyer,
   enAttenteDans,
@@ -8655,7 +9138,11 @@ return {
     mem,
     nomPage,
     deposerAutres,
-    lireDonnees
+    lireDonnees,
+    versionVueDe,
+    versionsVues,
+    copiesPc,
+    ramasserPc
   }
 };
 })();
@@ -10232,7 +10719,9 @@ function horodatage() {
   const d = window.__now ? new Date(window.__now) : new Date();
   return isoDe(d) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
-const appareil = () => (TACTILE ? 'au téléphone' : 'au PC');
+/* 0.82 (travail à deux) : « au PC par Camille » quand un prénom est réglé sur cet appareil (socle.auteur(), commun à la
+   suite) ; sans prénom, comme avant. Texte libre de l'historique : le format du fichier ne change pas. */
+const appareil = () => (TACTILE ? 'au téléphone' : 'au PC') + (socle.auteur() ? ' par ' + socle.auteur() : '');
 function noter(e, texte) {
   e.histoire = (e.histoire ? e.histoire + '\n' : '') + horodatage() + ' · ' + texte.replace(/\s*\n\s*/g, ' ');
 }
@@ -11371,6 +11860,9 @@ function envoyerRetro(id) {
 
 /** Après une modification : une manifestation déjà dans Tâches a changé de date → Tâches décale ses échéances. */
 function suivreDates() {
+  /* 0.82 : un appareil « Sans Tâches » n'envoie rien et laisse le jeton : le premier appareil avec Tâches qui modifie
+     quelque chose enverra le décalage (sinon Tâches ne l'apprendrait jamais) */
+  if (sansTaches()) return;
   for (const e of doc.evts)
     if (e.taches && estDatee(e) && e.d1 !== e.taches) {
       socle.envoyer('taches', 'date', { evt: e.id, date: e.d1, avant: e.taches, titre: titreSimple(e) });
@@ -11399,14 +11891,14 @@ function recevoirMessage(m) {
   if (m.type === 'planning') {
     const d = m.donnees || {};
     fixePropositions([...propositions().filter(p => p.tache !== d.tache), { id: m.id, tache: d.tache, titre: d.titre || '', date: d.date || '' }]);
-    toast('Tâches propose une manifestation : « ' + (d.titre || '') + ' »', null, null, 6000);
+    if (!sansTaches()) toast('Tâches propose une manifestation : « ' + (d.titre || '') + ' »', null, null, 6000);
   }
   return true;
 }
 function afficherPropositions() {
   const box = $('#propositions');
   if (!box) return;
-  const L = propositions();
+  const L = sansTaches() ? [] : propositions(); /* 0.82 : gardées, pas montrées, sur un appareil « Sans Tâches » */
   box.hidden = !L.length;
   box.innerHTML = L.map(
     p =>
@@ -12501,7 +12993,7 @@ function suiviCcas(e) {
     out = [];
   if (cree) out.push('au planning depuis le ' + dateCourte(cree.slice(0, 10)));
   if (modifs.length) out.push(pluriel(modifs.length, 'mise à jour', 'mises à jour') + ', la dernière le ' + dateCourte(modifs[modifs.length - 1].slice(0, 10)));
-  if (e.taches || H.some(l => /rétroplanning envoyé/.test(l))) out.push('rétroplanning dans Tâches');
+  if (!sansTaches() && (e.taches || H.some(l => /rétroplanning envoyé/.test(l)))) out.push('rétroplanning dans Tâches');
   return out.length ? majuscule(out.join(' ; ')) : '';
 }
 function bilanCcas(c) {
@@ -13425,7 +13917,7 @@ function peindreFiche(e) {
     r.classList.toggle('manque', manque.has(n));
     $('.rg-v', r).innerHTML = (vide ? RG_VIDE[n] : v) + (manque.has(n) ? POINT : '');
   }
-  rgEl('retro').hidden = !(fiche.retro || e.taches);
+  rgEl('retro').hidden = sansTaches() || !(fiche.retro || e.taches); /* 0.82 : profil « Sans Tâches » */
   /* libellés proposés (le titre, le sous-titre ou les élèves en parlent) : un geste les pose, rangée fermée ou non */
   const props = libellesProposes(e, doc),
     lp = $('#vLibsProp');
@@ -13618,7 +14110,7 @@ function ouvrirFMenu(bouton) {
     c = enCreation();
   $('#fmDupliquer').hidden = !tel || c;
   $('#fmHist').hidden = c;
-  $('#fmRetro').hidden = c || !estDatee(e) || e.statut === 'annulé';
+  $('#fmRetro').hidden = sansTaches() || c || !estDatee(e) || e.statut === 'annulé';
   $('#fmSupprimer').firstChild.textContent = c ? 'Annuler la création ' : 'Supprimer ';
   /* une couche à la fois : un message encore affiché en bas de l'écran ne doit pas couvrir le menu (bogue du 22/11) */
   const t = document.getElementById('s-toast');
@@ -13787,6 +14279,141 @@ function allerSection(s) {
   sec.scrollIntoView({ block: 'start', behavior: 'smooth' });
   const t = $('.rg:not([hidden]) .rg-t', sec);
   if (t) t.focus({ preventScroll: true });
+}
+/* 06l-deux.js : travail à deux (0.82, socle 1.21 ; décisions de François du 21/11,
+   socle/docs/proposition-partage-2026-11-21.md § 0 bis, § 2.1 P1 et § 2.6 étape 3) : la collègue ouvre le même fichier,
+   dans un dossier OneDrive partagé, avec la même page sur son PC.
+   - Menu ⋯ → « Travail à deux… » (#deuxF) : « Ton prénom sur cet appareil » (socle.reglerAuteur, commun à la suite sur
+     l'appareil), « Fichier partagé » (socle.reglerPartage : réglage « partagé : oui » du fichier, relu toutes les 10 s au
+     PC), « Sans Tâches sur cet appareil » (profil équipe : saison-sans-taches, sur l'appareil seulement, jamais dans le
+     fichier ; toutes les passerelles avec Tâches masquées).
+   - Prénom dans l'historique 🕓 : appareil() (06-liste.js) lit socle.auteur().
+   - « modifié par Camille il y a 3 min » (#ecritPar, à côté de la ligne d'état) : fichier partagé, dernière version lue
+     écrite par un autre prénom (socle.ecritPar()), moins d'une heure ; mis à jour toutes les 10 s.
+   - Fichier partagé sans prénom sur l'appareil : une ligne (#invitePrenom), une fois, qui mène à « Travail à deux… ». */
+
+/* ---- profil « Sans Tâches » (appareil seulement) ---- */
+const CLE_SANS_TACHES = 'saison-sans-taches',
+  CLE_INVITE = 'saison-invite-prenom';
+function sansTaches() {
+  try {
+    return localStorage.getItem(CLE_SANS_TACHES) === 'oui';
+  } catch (e) {
+    return false;
+  }
+}
+function reglerSansTaches(on) {
+  try {
+    if (on) localStorage.setItem(CLE_SANS_TACHES, 'oui');
+    else localStorage.removeItem(CLE_SANS_TACHES);
+  } catch (e) {}
+  appliquerProfil();
+}
+/** Montre ou masque tout ce qui parle de Tâches (feuille de style : body.sans-taches ; le reste est recalculé). */
+function appliquerProfil() {
+  document.body.classList.toggle('sans-taches', sansTaches());
+  afficherPropositions();
+  if (selId && !$('#fiche').hidden) remplirFiche();
+}
+/** Notes de version sans ce qui parle de Tâches, pour un appareil « Sans Tâches » (une entrée vidée disparaît, sauf la
+ *  plus récente, qui dit la version installée). */
+function nouveautesProfil(L) {
+  if (!sansTaches()) return L;
+  return L.map(n => ({ ...n, items: n.items.filter(x => !/Tâches/.test(x)) })).filter((n, i) => n.items.length || i === 0);
+}
+
+/* ---- « modifié par Camille il y a 3 min » ---- */
+const nbsp = ' ';
+/** Texte de la ligne, '' s'il n'y a rien à dire. */
+function texteEcritPar() {
+  if (!socle.ouvert || !socle.partage()) return '';
+  const e = socle.ecritPar();
+  if (!e || e.moi || !e.quand) return '';
+  const min = Math.floor((maintenantSaison() - e.quand) / 60000);
+  if (min >= 60 || min < -5) return ''; /* au-delà d'une heure, ou horloge d'un autre PC très en avance */
+  return 'modifié par ' + e.prenom + ' ' + (min < 1 ? 'à l’instant' : 'il y a ' + min + nbsp + 'min');
+}
+const maintenantSaison = () => (window.__now ? new Date(window.__now) : new Date());
+function majEcritPar() {
+  const el = $('#ecritPar');
+  if (!el) return;
+  const t = texteEcritPar();
+  if (el.textContent !== t) el.textContent = t;
+  el.hidden = !t;
+  const e = t && socle.ecritPar();
+  el.title = e ? 'Dernière modification du fichier : ' + e.prenom + ', ' + typo(libHeures(String(e.quand.getHours()).padStart(2, '0') + ':' + String(e.quand.getMinutes()).padStart(2, '0'))) : '';
+}
+
+/* ---- invitation à dire son prénom : fichier partagé, aucun prénom sur l'appareil ; une fois ---- */
+function majInvite() {
+  const b = $('#invitePrenom');
+  if (!b) return;
+  if (!b.hidden) {
+    if (socle.auteur() || !socle.partage()) b.hidden = true;
+    return;
+  }
+  if (!socle.ouvert || !socle.partage() || socle.auteur() || b.dataset.vue) return;
+  let deja = false;
+  try {
+    deja = !!localStorage.getItem(CLE_INVITE);
+    localStorage.setItem(CLE_INVITE, '1');
+  } catch (e) {}
+  b.dataset.vue = '1';
+  if (!deja) b.hidden = false;
+}
+/** A.surEtat : après chaque mise à jour de la ligne d'état (lecture, écriture, relecture). */
+function surEtatDeux() {
+  majEcritPar();
+  majInvite();
+}
+
+/* ---- fenêtre « Travail à deux… » ---- */
+function afficherDeux() {
+  $('#dxPrenom').value = socle.auteur();
+  $('#dxPartage').checked = socle.partage();
+  $('#dxPartage').disabled = !socle.ouvert;
+  $('#dxSansTaches').checked = sansTaches();
+}
+function ouvrirDeux() {
+  afficherDeux();
+  $('#invitePrenom').hidden = true;
+  $('#deuxF').showModal();
+  if (!socle.auteur() && !TACTILE) $('#dxPrenom').focus();
+}
+function garderPrenom() {
+  const avant = socle.auteur(),
+    p = socle.reglerAuteur($('#dxPrenom').value);
+  $('#dxPrenom').value = p;
+  if (p === avant) return;
+  toast(p ? 'Prénom de cet appareil : ' + p : 'Plus de prénom sur cet appareil');
+  surEtatDeux();
+}
+function initDeux() {
+  $('#dxFermer').onclick = () => $('#deuxF').close();
+  $('#deuxF').addEventListener('close', garderPrenom);
+  $('#dxPrenom').onchange = garderPrenom;
+  $('#dxPrenom').onkeydown = ev => {
+    if (ev.key === 'Enter') ev.preventDefault(), garderPrenom(), $('#dxPrenom').blur();
+  };
+  $('#dxPartage').onchange = () => {
+    if (!socle.ouvert) return afficherDeux();
+    const on = socle.reglerPartage($('#dxPartage').checked);
+    $('#dxPartage').checked = on;
+    toast(on ? 'Fichier partagé' + nbsp + ': relu toutes les 10' + nbsp + 's au PC' : 'Fichier non partagé');
+    surEtatDeux();
+  };
+  $('#dxSansTaches').onchange = () => {
+    reglerSansTaches($('#dxSansTaches').checked);
+    toast($('#dxSansTaches').checked ? 'Sans Tâches sur cet appareil' : 'Passerelles avec Tâches de retour sur cet appareil');
+  };
+  $('#invitePrenom').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-a]');
+    if (!b) return;
+    $('#invitePrenom').hidden = true;
+    if (b.dataset.a === 'deux') ouvrirDeux();
+  });
+  setInterval(majEcritPar, 10e3);
+  document.body.classList.toggle('sans-taches', sansTaches());
 }
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
@@ -14975,6 +15602,19 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-11-22 21:52',
+    v: '0.82.16',
+    t: 'Travail à deux',
+    items: [
+      'Menu ⋯ → « Travail à deux… », au PC et au téléphone : écris ton prénom, une fois sur chaque appareil. L’historique 🕓 d’une date dit alors « modifiée au PC par Camille : lieu… », « créée au téléphone par Camille » ; sans prénom, rien ne change.',
+      '« Fichier partagé » (pour vous deux, gardé dans le fichier) : au PC, la page relit le fichier toutes les 10 s au lieu de 30. Quand l’autre a modifié quelque chose, la page dit « Mis à jour par Camille », et la ligne d’état garde « modifié par Camille il y a 3 min » pendant une heure.',
+      'Fichier partagé et pas de prénom sur cet appareil : une ligne sous l’en-tête le propose, une fois.',
+      '« Sans Tâches sur cet appareil », pour le PC de ta collègue : ni rétroplanning, ni propositions de Tâches, ni « Copier pour Tâches » sur cet appareil. Rien ne change dans le fichier ni chez toi.',
+      'Au PC, les copies en double que OneDrive laisse quand deux PC écrivent en même temps sont fusionnées toutes seules si le dossier du fichier est autorisé ; sinon, un bandeau propose « Autoriser le dossier… ».',
+      'Pour la mise en place (déménagement du fichier, partage, aide d’installation de ta collègue) : la liste du déménagement, dans le dossier docs de Saison.'
+    ]
+  },
+  {
     d: '2026-11-22 21:30',
     v: '0.81.15',
     t: 'Une fiche qui se lit',
@@ -15793,6 +16433,7 @@ function initBoutons() {
       lieux: ouvrirLieux,
       bilans: () => ouvrirBilans(),
       programme: ouvrirProgramme,
+      deux: ouvrirDeux,
       enligne: () => socle.reglerEnLigne(),
       outils: () => socle.reglerOutils(),
       actualiser: () => socle.actualiser(),
@@ -15889,6 +16530,7 @@ initProp();
 initLieux();
 initBilans();
 initProgramme();
+initDeux();
 initAffiche();
 initMail();
 document.addEventListener('keydown', raccourcis);
@@ -15935,7 +16577,9 @@ socle.demarrer({
   /* programme partagé (0.80) : après chaque lecture en accès direct, synchro du matin comprise (attendu) */
   apresLecture: programmeAuto,
   surAppli: n => ($('#mMaj').hidden = !n),
-  nouveautes: NOUVEAUTES
+  /* travail à deux (0.82) : « modifié par Camille il y a 3 min », invitation à dire son prénom */
+  surEtat: surEtatDeux,
+  nouveautes: nouveautesProfil(NOUVEAUTES)
 });
 </script>
 </body>
