@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261121130729">
+<meta name="officious-page" content="20261122202156">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3356,6 +3356,714 @@ dialog.programme .prog-garde {
     min-height: 2.6rem;
   }
 }
+
+/* ---------- 0.81 : la fiche en rangées (maquette docs/maquettes/fiche.html, § 4) ---------- */
+@media (min-width: 701px) {
+  .tel-seul {
+    display: none !important;
+  }
+}
+@media (max-width: 700px) {
+  .pc-seul {
+    display: none !important;
+  }
+}
+#fiche {
+  gap: 0.55rem;
+  padding: 0.7rem 1rem 0;
+}
+#fiche .fiche-tete {
+  gap: 0.4rem;
+  font: 0.85rem Inter, sans-serif;
+  color: var(--gris);
+}
+#fiche .ft-txt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#ficheNouv {
+  color: var(--encre);
+  font: italic 500 1.1rem Lora, Georgia, serif;
+}
+/* le résumé : la ligne telle qu'elle paraîtra ; chaque partie se montre du doigt */
+.f-resume {
+  display: grid;
+  grid-template-columns: 4.2rem 1fr;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem 0.6rem 0.3rem;
+  border: 1px solid var(--filet);
+  border-radius: 10px;
+  background: var(--papier);
+}
+.f-resume .r-corps {
+  min-width: 0;
+}
+.f-resume .r-t {
+  font-weight: 600;
+  line-height: 1.35;
+}
+.f-resume .r-corps.annule .r-t > span:first-child {
+  text-decoration: line-through;
+  color: var(--pale);
+}
+.f-resume .r-s {
+  font-size: 0.9rem;
+}
+.f-resume .r-m {
+  font-size: 0.88rem;
+  color: var(--gris);
+  margin-top: 0.15rem;
+}
+.f-resume [data-rg] {
+  cursor: var(--s-cur-pointer);
+  border-radius: 4px;
+}
+.f-resume .r-date[data-rg] {
+  border-radius: 8px;
+}
+.f-resume [data-rg]:hover,
+.f-resume [data-rg].allume {
+  background: color-mix(in srgb, #f3d43f 35%, transparent);
+}
+.f-resume .r-vide {
+  color: var(--accent);
+}
+/* sommaire (PC) */
+.f-sommaire {
+  display: flex;
+  gap: 0.2rem;
+  border-bottom: 1px solid var(--filet);
+  padding-bottom: 0.4rem;
+}
+.f-sommaire button {
+  border: 0;
+  background: none;
+  border-radius: 99px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.88rem;
+  color: var(--gris);
+}
+.f-sommaire button:hover {
+  background: var(--survol);
+  color: var(--encre);
+}
+.f-sommaire button.manque::after,
+.rg .point {
+  content: '';
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #b07a1e;
+  margin-left: 0.35rem;
+  vertical-align: 0.12em;
+}
+@media (max-width: 700px) {
+  .f-sommaire {
+    display: none;
+  }
+}
+/* sections et rangées */
+.f-sec {
+  display: flex;
+  flex-direction: column;
+  scroll-margin-top: 0.5rem;
+}
+.f-sec h3 {
+  margin: 0.3rem 0 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gris);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rg {
+  border-bottom: 1px solid var(--filet);
+  scroll-margin-bottom: 4.5rem; /* une rangée qui s'ouvre se montre au-dessus du pied */
+}
+.rg:last-child {
+  border-bottom: 0;
+}
+.rg-t {
+  display: grid;
+  grid-template-columns: 7.6rem 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.42rem 0.35rem;
+  border-radius: 6px;
+  cursor: var(--s-cur-pointer);
+  outline-offset: -2px;
+}
+.rg-t:focus:not(:focus-visible) {
+  outline: none;
+}
+.rg-t:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.rg-t:hover,
+.rg.allume > .rg-t {
+  background: var(--survol);
+}
+.rg-l {
+  font-size: 0.85rem;
+  color: var(--gris);
+}
+.rg-v {
+  min-width: 0;
+  font-size: 0.93rem;
+  color: var(--encre);
+  overflow-wrap: anywhere;
+  /* une valeur longue : trois lignes au plus quand la rangée est fermée */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rg-v small {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--gris);
+}
+.rg-v small.cle {
+  display: inline;
+}
+.rg-v .devine {
+  font-size: 0.78rem;
+  color: var(--pale);
+  font-style: italic;
+}
+.rg.vide .rg-l {
+  display: none;
+}
+.rg.vide .rg-t {
+  grid-template-columns: 1fr;
+}
+.rg.vide .rg-v {
+  color: var(--accent);
+}
+.pt-lieu {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--c);
+  margin-right: 0.45rem;
+  vertical-align: 0.05em;
+}
+.rg-alerte {
+  margin: -0.15rem 0 0.35rem 8.55rem;
+  font-size: 0.82rem;
+  color: #7a5200;
+}
+.rg-alerte::before {
+  content: '';
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #b07a1e;
+  margin-right: 0.4rem;
+  vertical-align: 0.1em;
+}
+#vLibsProp::before {
+  display: none;
+}
+#vLibsProp .lib-et {
+  font-size: 0.82rem;
+  border-style: dashed;
+  color: var(--accent);
+  background: var(--papier);
+  cursor: var(--s-cur-pointer);
+}
+.rg-c {
+  display: none;
+}
+.rg.ouverte {
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  margin: 0.15rem -0.35rem;
+  padding: 0 0.35rem 0.6rem;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.06);
+  background: var(--papier);
+}
+.rg.ouverte > .rg-t {
+  background: none;
+}
+.rg.ouverte > .rg-t .rg-l {
+  color: var(--accent);
+  font-weight: 600;
+}
+.rg.ouverte > .rg-t .rg-v {
+  visibility: hidden;
+  height: 0;
+}
+.rg.ouverte.vide > .rg-t {
+  grid-template-columns: 7.6rem 1fr;
+}
+.rg.ouverte.vide .rg-l {
+  display: block;
+}
+.rg.ouverte > .rg-c {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.1rem 0.35rem 0;
+  animation: rg-vient 0.16s ease-out;
+}
+@keyframes rg-vient {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rg.ouverte > .rg-c {
+    animation: none;
+  }
+}
+.rg-c input,
+.rg-c textarea,
+.rg-c select {
+  font-size: 0.95rem;
+  color: var(--encre);
+  border: 1px solid var(--filet);
+  border-radius: 7px;
+  padding: 0.4rem 0.6rem;
+  background: var(--papier);
+  width: 100%;
+  box-sizing: border-box;
+}
+.rg-c textarea {
+  resize: vertical;
+  field-sizing: content;
+  min-height: 2.4rem;
+}
+.rg-c input[type='checkbox'] {
+  width: auto;
+}
+.rg-c .lien {
+  align-self: flex-start;
+  font-size: 0.85rem;
+}
+#fTitre {
+  font-weight: 600;
+  font-size: 1.02rem;
+  resize: none;
+}
+/* état, diffusion : la liste des choix */
+.choix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.choix button {
+  color: var(--encre);
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.93rem;
+}
+.choix button b {
+  font-weight: 500;
+}
+.choix button small {
+  color: var(--gris);
+  font-size: 0.8rem;
+}
+.choix button[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--papier));
+}
+.choix button[aria-pressed='true'] b {
+  font-weight: 600;
+}
+#fStatut {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+#fStatut button {
+  flex: 1;
+  justify-content: center;
+}
+#fFlou {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+#fFlou[hidden] {
+  display: none;
+}
+/* lieu : la liste qui se filtre */
+.f-lieux {
+  display: flex;
+  flex-direction: column;
+  max-height: 15.5rem;
+  overflow: auto;
+  margin: 0 -0.35rem;
+}
+.f-lieux .fl-g {
+  margin: 0.35rem 0.7rem 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pale);
+}
+.f-lieux button {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.9rem;
+}
+.f-lieux button:hover,
+.f-lieux button[aria-selected='true'] {
+  background: var(--survol);
+}
+.f-lieux button.actuel {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.f-lieux .fl-nom {
+  flex: 1;
+  min-width: 0;
+}
+.f-lieux .fl-nom b {
+  font-weight: 600;
+  margin-right: 0.3rem;
+}
+.f-lieux .fl-n {
+  font-size: 0.78rem;
+  color: var(--pale);
+  white-space: nowrap;
+}
+.f-lieux .fl-plus {
+  color: var(--accent);
+}
+/* blocs Public et Équipe seulement (filet bleu, filet prune) */
+.f-bloc {
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.1rem 0 0.1rem 0.7rem;
+  margin: 0.45rem 0 0.1rem;
+}
+.f-bloc h4 {
+  margin: 0.25rem 0 0.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.f-bloc.interne {
+  border-left-color: var(--equipe);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--equipe) 7%, transparent), transparent 70%);
+}
+.f-bloc.interne h4 {
+  color: var(--equipe);
+}
+.f-bloc .rg-t {
+  grid-template-columns: 7.25rem 1fr;
+}
+.f-bloc .rg-alerte {
+  margin-left: 8.2rem;
+}
+.f-bloc[hidden] {
+  display: none;
+}
+.f-modif:empty {
+  display: none;
+}
+#fHistBloc ol {
+  margin-top: 0.2rem;
+}
+#fHistFermer {
+  font-size: 1rem;
+  padding: 0 0.3rem;
+}
+/* pied : Dupliquer, ⋯, Fermer */
+#fiche .fiche-pied {
+  margin-top: auto;
+  bottom: 0;
+  padding: 0.6rem 0 0.8rem;
+  align-items: center;
+}
+#fValider kbd {
+  margin-left: 0.45rem;
+  font: 0.75rem Inter, sans-serif;
+  border: 1px solid color-mix(in srgb, #fff 55%, transparent);
+  border-radius: 4px;
+  padding: 0 0.25rem;
+  opacity: 0.85;
+}
+#fPlus {
+  padding: 0.3rem 0.6rem;
+}
+/* menu ⋯ de la fiche : il naît du bouton */
+.f-menu {
+  position: fixed;
+  right: auto;
+  top: auto;
+  z-index: 50;
+  min-width: 15rem;
+}
+.f-menu kbd {
+  font: 0.78rem Inter, sans-serif;
+  color: var(--pale);
+  margin-left: 0.4rem;
+}
+.f-menu .danger {
+  color: var(--rouge);
+}
+.rg-barre {
+  display: none;
+}
+/* « + » (téléphone) : en bas à droite, comme dans Tâches ; le bouton « recentrer » passe au-dessus */
+.fab {
+  display: none;
+}
+@media (max-width: 700px) {
+  #ajout {
+    display: none;
+  }
+  #bCherche,
+  body.cherche #chercheX {
+    display: none !important;
+  }
+  #tete #chercheW {
+    display: flex;
+    order: 10;
+    flex: 1 1 100%;
+    width: 100%;
+    margin-top: 0.35rem;
+  }
+  #tete .s-cherche input,
+  #tete .s-cherche input:focus,
+  #tete .s-cherche input:not(:placeholder-shown) {
+    width: 100%;
+    height: 2.5rem;
+    font-size: 1rem;
+  }
+  body.cherche #tete > :not(#chercheW, #chercheX) {
+    display: revert;
+  }
+  .fab {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    right: max(1.2rem, env(safe-area-inset-right));
+    bottom: max(1.2rem, env(safe-area-inset-bottom));
+    z-index: 8;
+    width: 3.6rem;
+    height: 3.6rem;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.22);
+  }
+  .fab:active {
+    transform: scale(0.94);
+  }
+  .flottant {
+    bottom: calc(max(1.2rem, env(safe-area-inset-bottom)) + 4.4rem);
+    right: max(1.5rem, env(safe-area-inset-right));
+  }
+  body.avec-fiche .fab {
+    display: none;
+  }
+
+  /* la fiche se lit comme les réglages du téléphone : une rangée par chose, la valeur dessous */
+  #fiche {
+    background: var(--fond);
+    padding: 0 0.8rem 1.5rem;
+    gap: 0.7rem;
+  }
+  #fiche .fiche-tete {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    margin: 0 -0.8rem;
+    padding: 0.5rem 0.5rem;
+    background: var(--papier);
+    border-bottom: 1px solid var(--filet);
+    font: italic 500 1.25rem Lora, Georgia, serif;
+    color: var(--encre);
+  }
+  #fiche .fiche-tete button.icone {
+    width: 2.6rem;
+    height: 2.6rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    font-size: 1.3rem;
+  }
+  #fCreerTel {
+    padding: 0.4rem 0.9rem;
+  }
+  .f-resume {
+    grid-template-columns: 4rem 1fr;
+  }
+  .f-sec,
+  .f-bloc {
+    background: var(--papier);
+    border: 1px solid var(--filet);
+    border-radius: 12px;
+    padding: 0.2rem 0 0.1rem;
+  }
+  .f-sec h3,
+  .f-bloc h4 {
+    padding: 0.5rem 0.9rem 0;
+  }
+  .f-sec .f-bloc {
+    margin: 0.5rem 0 0;
+    border-left: 3px solid var(--accent);
+  }
+  .f-sec .f-bloc.interne {
+    border-left-color: var(--equipe);
+  }
+  .rg-t,
+  .f-bloc .rg-t,
+  .rg.vide .rg-t,
+  .rg.ouverte.vide > .rg-t {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.65rem 2.2rem 0.65rem 0.9rem;
+    position: relative;
+    border-radius: 0;
+  }
+  .rg-t::after {
+    content: '›';
+    position: absolute;
+    right: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--pale);
+    font-size: 1.3rem;
+  }
+  .rg-l {
+    font-size: 1rem;
+    color: var(--encre);
+  }
+  .rg-v {
+    font-size: 0.9rem;
+    color: var(--gris);
+    -webkit-line-clamp: 2;
+  }
+  .rg.vide .rg-l {
+    display: none;
+  }
+  .rg.vide .rg-v {
+    font-size: 1rem;
+  }
+  .rg-alerte,
+  .f-bloc .rg-alerte {
+    margin: -0.35rem 0 0.5rem 0.9rem;
+  }
+  .rg.ouverte {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  /* une rangée touchée s'ouvre en plein écran (charte, principe 8) : « ‹ Quand … OK » en haut */
+  .rg.ouverte > .rg-c {
+    position: fixed;
+    inset: 3.6rem 0 0 0;
+    z-index: 41;
+    background: var(--fond);
+    padding: 1rem 1rem 2rem;
+    overflow: auto;
+    gap: 0.8rem;
+  }
+  #fiche.rg-plein {
+    overflow: hidden;
+  }
+  .rg-barre:not([hidden]) {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 3.6rem;
+    box-sizing: border-box;
+    z-index: 42;
+    padding: 0 0.8rem 0 0.5rem;
+    background: var(--papier);
+    border-bottom: 1px solid var(--filet);
+  }
+  .rg-barre b {
+    flex: 1;
+    font: italic 500 1.25rem Lora, Georgia, serif;
+  }
+  .rg-barre .icone {
+    width: 2.6rem;
+    height: 2.6rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+  #rgOk {
+    padding: 0.45rem 1.1rem;
+    border-radius: 8px;
+  }
+  .rg-c input,
+  .rg-c textarea,
+  .rg-c select {
+    font-size: 1rem;
+    padding: 0.6rem 0.7rem;
+  }
+  .choix button {
+    padding: 0.75rem 0.9rem;
+    font-size: 1rem;
+  }
+  .f-lieux {
+    max-height: none;
+    margin: 0;
+  }
+  .f-lieux button {
+    min-height: 2.8rem;
+    font-size: 1rem;
+    align-items: center;
+  }
+  #fiche .fiche-pied {
+    display: none;
+  }
+  .f-menu {
+    min-width: 14rem;
+  }
+  .f-menu button {
+    min-height: 2.8rem;
+    font-size: 1rem;
+  }
+}
+
+/* 0.81, bogue « Supprimer hors des heures » (François, 22/11) : un message à bouton qui a disparu (opacité 0) restait
+   touchable, car le socle (socle.css, « #s-toast.action ») ne regarde pas s'il est affiché. Après « tirer pour
+   actualiser » hors des heures, le bouton invisible « Synchroniser… » couvrait « Supprimer » au bas de la fiche et
+   ouvrait la fenêtre « Rien ne presse ». Ici, un message caché ne capte plus rien ; la correction de fond est pour le
+   socle 1.21. */
+#s-toast:not(.on) {
+  pointer-events: none;
+}
 </style>
 </head>
 <body>
@@ -3420,84 +4128,158 @@ dialog.programme .prog-garde {
   </div>
 </main>
 
+<!-- 0.81 : la fiche en rangées « libellé · valeur » (maquette docs/maquettes/fiche.html, § 4 et 6) : un résumé
+     cliquable en tête, quatre sections dans l'ordre de la création (quoi, quand, où, pour qui), une rangée s'ouvre sur
+     place (au téléphone : en plein écran, « OK ») ; l'occasionnel derrière ⋯. -->
 <aside id="fiche" hidden aria-label="Fiche de l’événement">
   <div class="fiche-tete">
-    <span><b id="ficheNouv" hidden>Nouvelle date · </b><span id="ficheDate"></span></span>
-    <button id="ficheFermer" class="icone" title="Fermer (Échap)">×</button>
+    <button id="ficheRetour" class="icone tel-seul" aria-label="Fermer la fiche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <span class="ft-txt"><b id="ficheNouv" hidden>Nouvelle date</b><span id="ficheDate"></span></span>
+    <button id="fCreerTel" class="primaire tel-seul" hidden>Créer</button>
+    <button id="fPlusTete" class="icone tel-seul" aria-haspopup="menu" aria-label="Plus d’actions">⋯</button>
+    <button id="ficheFermer" class="icone pc-seul" title="Fermer (Échap)">×</button>
   </div>
-  <label class="champ">Titre<textarea id="fTitre" rows="1" title="Entrée : choisir où le titre passe à la ligne s’il ne tient pas sur une ligne"></textarea></label>
-  <label class="champ">Sous-titre<textarea id="fSousTitre" rows="1" placeholder="avec Félix Bacik · élèves de la classe de violon (Entrée pour aller à la ligne)"></textarea></label>
-  <div class="champ">Date
-    <div id="fPrec" class="bascule large" role="group">
-      <button data-v="precise">Précise</button><button data-v="mois">Mois</button><button data-v="periode">Période</button><button data-v="aucune">Inconnue</button>
+  <div id="fResume" class="f-resume"></div>
+  <nav id="fSommaire" class="f-sommaire" aria-label="Sections de la fiche">
+    <button type="button" data-sec="quoi" title="Alt+1">Quoi</button><button type="button" data-sec="quand" title="Alt+2">Quand</button><button type="button" data-sec="ou" title="Alt+3">Où</button><button type="button" data-sec="pourqui" title="Alt+4">Pour qui</button>
+  </nav>
+  <section class="f-sec" data-sec="quoi" aria-label="Quoi">
+    <h3>Quoi</h3>
+    <div class="rg" data-rg="titre">
+      <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Titre</span><span class="rg-v" id="vTitre"></span></div>
+      <div class="rg-c"><textarea id="fTitre" rows="1" aria-label="Titre" placeholder="Titre" title="Entrée : où le titre passe à la ligne s’il ne tient pas"></textarea></div>
     </div>
-  </div>
-  <div id="fDatePrecise">
-    <div class="ligne2">
-      <label class="champ">Du<input id="fD1" type="date"></label>
-      <label class="champ">Au<input id="fD2" type="date"></label>
+    <div class="rg" data-rg="soustitre">
+      <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Sous-titre</span><span class="rg-v" id="vSousTitre"></span></div>
+      <div class="rg-c"><textarea id="fSousTitre" rows="1" aria-label="Sous-titre" placeholder="Sous-titre"></textarea></div>
     </div>
-    <label class="coche"><input id="fSemaine" type="checkbox"> Écrire « semaine du… »</label>
-  </div>
-  <p class="alerte-vac" id="fVacAlerte" hidden></p>
-  <label class="champ" id="fMoisBloc" hidden>Mois<input id="fMois" type="month"></label>
-  <label class="champ" id="fPeriodeBloc" hidden>Période<select id="fPeriode"></select></label>
-  <p class="aide" id="fAucuneAide" hidden>L’événement reste dans « À dater », en haut de la liste ; il n’ira ni sur les affiches ni dans « Demandez le programme ».</p>
-  <div class="ligne2">
-    <label class="champ">Heure<input id="fHeures" placeholder="18h30 · 14h-14h45 et 15h15-16h · l’après-midi" title="Des heures (« 18h30 », « 14h-14h45 et 15h15-16h »), ou un horaire en toutes lettres, écrit tel quel (« l’après-midi », « entre 14h et 19h »)"></label>
-    <label class="coche bas"><input id="fHeureInc" type="checkbox"> horaire à préciser</label>
-  </div>
-  <div class="champ">Lieu
-    <div id="fLieux" class="puces"></div>
-    <div class="lieu-champ"><input id="fLieuLibre" placeholder="Autre lieu, en toutes lettres" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lieuProp"></div>
-  </div>
-  <div class="champ">État
-    <div id="fStatut" class="bascule large" role="group">
-      <button data-v="">Confirmé</button><button data-v="à confirmer">À confirmer</button><button data-v="en attente">En attente</button><button data-v="annulé">Annulé</button>
+    <div class="rg" data-rg="type">
+      <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Type</span><span class="rg-v" id="vType"></span></div>
+      <div class="rg-c"><select id="fType" aria-label="Type"></select></div>
     </div>
-  </div>
-  <div class="champ">Diffusion
-    <div id="fDiffusion" class="bascule large" role="group" aria-label="Diffusion">
-      <button data-v="" title="Partout : affiches, « Demandez le programme », page du PDF">Public</button><button data-v="hors" title="Une vraie manifestation, mais ni sur les affiches publiques, ni dans « Demandez le programme », ni sur la page du PDF ; partout ailleurs (liste, calendrier, version équipe, mails d’équipe), et comptée dans les bilans">Pas sur l’affiche</button><button data-v="interne" title="Réservée à l’équipe : ni affiches publiques, ni « Demandez le programme »">Équipe seulement</button>
+    <div class="rg" data-rg="libs">
+      <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Libellés</span><span class="rg-v" id="vLibs"></span></div>
+      <p class="rg-alerte" id="vLibsProp" hidden></p>
+      <div class="rg-c">
+        <div id="fLibs" class="puces libs"></div>
+        <div class="lieu-champ"><input id="fLibAjout" placeholder="Libellé" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lieuProp" aria-label="Ajouter un libellé" maxlength="40"></div>
+      </div>
     </div>
-  </div>
-  <p class="diff-aide" id="fDiffAide" hidden><span>Elle compte dans les bilans : « Pas sur l’affiche » serait peut-être plus juste.</span> <button type="button" class="lien" id="fDiffHors">Basculer</button></p>
-  <label class="champ type-champ">Type<select id="fType" title="Pour les bilans (menu ⋯ → Bilans…) ; sans choix, Saison le devine d’après le titre, le lieu et la diffusion"></select></label>
-  <div class="champ">Libellés
-    <div id="fLibs" class="puces libs"></div>
-    <div class="lieu-champ"><input id="fLibAjout" placeholder="Ajouter un libellé : CHAM, Orchestre…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lieuProp" aria-label="Ajouter un libellé" maxlength="40"></div>
-  </div>
-  <!-- trois blocs (19/10/2026) : ce qui est au-dessus va partout ; puis le public, masqué pour une manifestation
-       réservée à l'équipe ; puis l'équipe -->
-  <fieldset id="fPublic" class="public">
-    <legend id="fPublicTitre">Pour « Demandez le programme »</legend>
-    <label class="champ">Descriptif<textarea id="fDetail" rows="2" placeholder="Une ligne « - 18 h : … » par créneau devient une liste"></textarea></label>
-    <label class="champ">Élèves concernés<input id="fEleves" placeholder="classe de piano, ateliers de musiques actuelles…"></label>
-    <div class="champ">Infos pratiques<div id="fTarifs" class="puces tarifs" role="group" aria-label="Infos pratiques toutes faites"></div><textarea id="fPratique" rows="2" aria-label="Infos pratiques" placeholder="Ou écris-les toi-même (Entrée pour aller à la ligne)"></textarea></div>
-  </fieldset>
-  <fieldset class="interne">
-    <legend>Pour l’équipe seulement</legend>
-    <label class="champ">Accompagnement<input id="fAccomp" list="accomps"></label>
-    <label class="champ">Remarque<textarea id="fRemarque" rows="2" placeholder="Organisation, matériel, qui fait quoi…"></textarea></label>
-    <div id="fRetro" class="retro"></div>
-  </fieldset>
-  <details class="plus">
-    <summary>Libellé de date imposé</summary>
-    <input id="fLibelle" placeholder="mardi 13 ou mercredi 14 avril">
-    <p class="aide">À n’utiliser que si le libellé calculé ne convient pas : la date ne sert alors plus qu’au tri.</p>
-  </details>
-  <details class="plus histoire" id="fHistBloc">
-    <summary>Historique de cette date</summary>
+  </section>
+  <section class="f-sec" data-sec="quand" aria-label="Quand">
+    <h3>Quand</h3>
+    <div class="rg" data-rg="quand">
+      <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Quand</span><span class="rg-v" id="vQuand"></span></div>
+      <p class="rg-alerte alerte-vac" id="fVacAlerte" hidden></p>
+      <div class="rg-c">
+        <div id="fPrec" class="bascule large" role="group" aria-label="Date">
+          <button type="button" data-v="jour">Un jour</button><button type="button" data-v="plusieurs">Plusieurs jours</button><button type="button" data-v="flou">Pas encore fixée</button>
+        </div>
+        <div id="fDatePrecise" class="ligne2">
+          <label class="champ"><span id="fD1Lib">Date</span><input id="fD1" type="date"></label>
+          <label class="champ" id="fD2Bloc">Au<input id="fD2" type="date"></label>
+        </div>
+        <label class="coche" id="fSemaineBloc"><input id="fSemaine" type="checkbox"> Écrire « semaine du… »</label>
+        <div id="fFlou" hidden>
+          <div id="fFlouChoix" class="bascule large" role="group" aria-label="Pas encore fixée">
+            <button type="button" data-v="mois">Un mois</button><button type="button" data-v="periode">Une période</button><button type="button" data-v="aucune">Sans date</button>
+          </div>
+          <input id="fMois" type="month" aria-label="Mois" hidden>
+          <select id="fPeriode" aria-label="Période" hidden></select>
+        </div>
+        <div class="ligne2">
+          <label class="champ">Heure<input id="fHeures" placeholder="19 h" title="Des heures (« 18h30 », « 14h-14h45 et 15h15-16h »), ou un horaire en toutes lettres (« l’après-midi »)"></label>
+          <label class="coche bas"><input id="fHeureInc" type="checkbox"> à préciser</label>
+        </div>
+        <button type="button" class="lien" id="fLibelleLien">Libellé imposé…</button>
+        <label class="champ" id="fLibelleBloc" hidden>Libellé imposé<input id="fLibelle" placeholder="mardi 13 ou 14"></label>
+      </div>
+    </div>
+    <div class="rg" data-rg="etat">
+      <div class="rg-t" role="button" tabindex="0"><span class="rg-l">État</span><span class="rg-v" id="vEtat"></span></div>
+      <div class="rg-c"><div id="fStatut" class="choix" role="group" aria-label="État"></div></div>
+    </div>
+  </section>
+  <section class="f-sec" data-sec="ou" aria-label="Où">
+    <h3>Où</h3>
+    <div class="rg" data-rg="lieu">
+      <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Lieu</span><span class="rg-v" id="vLieu"></span></div>
+      <div class="rg-c">
+        <input id="fLieuLibre" placeholder="Lieu" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="fLieuListe" aria-label="Lieu">
+        <div id="fLieuListe" class="f-lieux" role="listbox" aria-label="Lieux"></div>
+      </div>
+    </div>
+  </section>
+  <section class="f-sec" data-sec="pourqui" aria-label="Pour qui">
+    <h3>Pour qui</h3>
+    <div class="rg" data-rg="diffusion">
+      <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Diffusion</span><span class="rg-v" id="vDiffusion"></span></div>
+      <p class="rg-alerte diff-aide" id="fDiffAide" hidden><span>Plutôt « Pas sur l’affiche » ?</span> <button type="button" class="lien" id="fDiffHors">Basculer</button></p>
+      <div class="rg-c">
+        <div id="fDiffusion" class="choix" role="group" aria-label="Diffusion">
+          <button type="button" data-v=""><b>Public</b><small>affiches et mails</small></button><button type="button" data-v="hors"><b>Pas sur l’affiche</b><small>compte dans les bilans</small></button><button type="button" data-v="interne"><b>Équipe seulement</b><small>ni affiche ni mail</small></button>
+        </div>
+      </div>
+    </div>
+    <div id="fPublic" class="f-bloc public">
+      <h4><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg><span id="fPublicTitre">Public</span></h4>
+      <div class="rg" data-rg="detail">
+        <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Descriptif</span><span class="rg-v" id="vDetail"></span></div>
+        <div class="rg-c"><textarea id="fDetail" rows="2" aria-label="Descriptif" placeholder="Quelques mots"></textarea></div>
+      </div>
+      <div class="rg" data-rg="eleves">
+        <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Élèves</span><span class="rg-v" id="vEleves"></span></div>
+        <div class="rg-c"><input id="fEleves" aria-label="Élèves concernés" placeholder="Classe, ensemble…"></div>
+      </div>
+      <div class="rg" data-rg="pratique">
+        <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Infos pratiques</span><span class="rg-v" id="vPratique"></span></div>
+        <div class="rg-c"><div id="fTarifs" class="puces tarifs" role="group" aria-label="Infos pratiques toutes faites"></div><textarea id="fPratique" rows="2" aria-label="Infos pratiques" placeholder="Autre texte"></textarea></div>
+      </div>
+    </div>
+    <div class="f-bloc interne">
+      <h4><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>Équipe seulement</h4>
+      <div class="rg" data-rg="remarque">
+        <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Remarque</span><span class="rg-v" id="vRemarque"></span></div>
+        <div class="rg-c"><textarea id="fRemarque" rows="2" aria-label="Remarque" placeholder="Matériel, organisation…"></textarea></div>
+      </div>
+      <div class="rg" data-rg="accomp">
+        <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Accompagnement</span><span class="rg-v" id="vAccomp"></span></div>
+        <div class="rg-c"><input id="fAccomp" list="accomps" aria-label="Accompagnement" placeholder="Qui accompagne"></div>
+      </div>
+      <div class="rg" data-rg="retro" hidden>
+        <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Rétroplanning</span><span class="rg-v" id="vRetro"></span></div>
+        <div class="rg-c"><div id="fRetro" class="retro"></div></div>
+      </div>
+    </div>
+  </section>
+  <section class="f-sec histoire" id="fHistBloc" hidden aria-label="Historique">
+    <h3>Historique <button type="button" class="icone" id="fHistFermer" aria-label="Masquer l’historique">×</button></h3>
     <ol id="fHist"></ol>
     <p class="aide" id="fHistCtx"></p>
-  </details>
+  </section>
+  <p class="f-modif" id="fModif"></p>
   <div class="fiche-pied">
-    <button id="fSupprimer" class="danger">Supprimer</button>
+    <button id="fAnnuler" hidden>Annuler</button>
     <button id="fDupliquer">Dupliquer</button>
-    <button id="fValider" class="primaire">Valider</button>
+    <button id="fPlus" aria-haspopup="menu" title="Historique, libellé imposé, rétroplanning, supprimer">⋯</button>
+    <button id="fValider" class="primaire">Fermer</button>
+  </div>
+  <div id="rgBarre" class="rg-barre" hidden>
+    <button type="button" id="rgRetour" class="icone" aria-label="Revenir à la fiche"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <b id="rgTitre"></b>
+    <button type="button" id="rgOk" class="primaire">OK</button>
   </div>
   <datalist id="accomps"></datalist>
 </aside>
+<div id="fMenu" class="menu f-menu" role="menu" hidden>
+  <button id="fmDupliquer" role="menuitem">Dupliquer</button>
+  <button id="fmHist" role="menuitem">Historique de cette date</button>
+  <button id="fmLibelle" role="menuitem">Libellé de date imposé…</button>
+  <button id="fmRetro" role="menuitem">Rétroplanning vers Tâches…</button>
+  <hr>
+  <button id="fmSupprimer" role="menuitem" class="danger">Supprimer <kbd class="pc-seul">Suppr</kbd></button>
+</div>
+<button id="bNouv" class="fab" type="button" title="Nouvelle date" aria-label="Nouvelle date"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 
 <div id="lieuProp" class="lieu-prop" role="listbox" aria-label="Lieux déjà utilisés" hidden></div>
 
@@ -3641,7 +4423,7 @@ dialog.programme .prog-garde {
   </table>
   <p class="aide">L’export « Complet » reprend tout. Avant d’envoyer « Demandez le programme », chaque date doit avoir date, heure, lieu, titre, descriptif, élèves concernés et infos pratiques ; un sous-titre qui parle d’élèves compte pour « élèves concernés ». Une manifestation « Pas sur l’affiche » ou « Équipe seulement » (Diffusion, dans la fiche) n’apparaît ni sur les affiches publiques ni dans « Demandez le programme ».</p>
   <h3>Recherche</h3>
-  <p class="aide">Le champ en haut (la loupe au téléphone) filtre la liste, le calendrier et le mini-mois à chaque lettre. L’affiche et les mails ne sont jamais filtrés.</p>
+  <p class="aide">Le champ de recherche (en haut de l’écran au téléphone) filtre la liste, le calendrier et le mini-mois à chaque lettre. L’affiche et les mails ne sont jamais filtrés.</p>
   <h3>Saisie rapide</h3>
   <p class="aide">Jour, date, heure, titre, puis le lieu (« au CCED », « salle Bach » ou « @Bach »). Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ». « … pour les élèves de la classe de violon » devient le sous-titre ; « , élèves de CHAM 5e » remplit « Élèves concernés » ; « entrée libre », « gratuit », un tarif ou un numéro de téléphone vont dans les infos pratiques. Sans jour précis (« en mai Concert », « mars-avril Projet », ou pas de date du tout), l’événement va dans « À dater », en haut de la liste : il ne part ni sur les affiches ni dans « Demandez le programme », et apparaît en fin de mail d’équipe sous « Dates à fixer ».</p>
   <div id="aideClavier">
@@ -3652,7 +4434,10 @@ dialog.programme .prog-garde {
     <dt>Ctrl+Z / Ctrl+Y</dt><dd>annuler / rétablir</dd>
     <dt>Alt+P</dt><dd>affiche</dd>
     <dt>Alt+M</dt><dd>mail « Demandez le programme »</dd>
-    <dt>Échap</dt><dd>fermer la fiche ou la fenêtre</dd>
+    <dt>Alt+1 à Alt+4</dt><dd>fiche : aller à Quoi, Quand, Où, Pour qui</dd>
+    <dt>Entrée</dt><dd>fiche : ouvrir la rangée choisie</dd>
+    <dt>Suppr</dt><dd>supprimer la date (liste, ou fiche hors d’un champ) ; Ctrl+Z la remet</dd>
+    <dt>Échap</dt><dd>refermer la rangée ouverte, puis la fiche ou la fenêtre</dd>
   </dl>
   </div>
   <form method="dialog"><button class="primaire">Fermer</button></form>
@@ -9270,7 +10055,9 @@ function viseProchaine() {
   return c ? (c.parentElement.firstElementChild === c ? c.closest('.periode') : c) : null;
 }
 function hautUtile() {
-  return ($('#ajout').hidden ? $('#tete') : $('#ajout')).getBoundingClientRect().bottom + 8;
+  /* au téléphone (0.81), la ligne d'ajout est masquée par la feuille de style : l'en-tête, avec la recherche */
+  const a = $('#ajout');
+  return (a.hidden || !a.offsetParent ? $('#tete') : a).getBoundingClientRect().bottom + 8;
 }
 /** Amène la prochaine date sous la barre d'ajout. Calcul à la main : la liste arrondie (débordement caché) fausse
  *  scrollIntoView sous l'en-tête collé. */
@@ -9591,7 +10378,7 @@ function ouvrirRetrouver() {
 function evSel() {
   return doc.evts.find(e => e.id === selId);
 }
-let ficheAvant = ''; /* l'événement à l'ouverture de la fiche, pour dire au « Valider » s'il a changé */
+let ficheAvant = ''; /* l'événement à l'ouverture de la fiche, pour dire au « Fermer » s'il a changé */
 /** Fiche quittée (fermée, ou une autre ouverte par-dessus) : ce qui a changé va dans l'historique de la date. */
 function noterFiche() {
   const e = evSel();
@@ -9607,25 +10394,54 @@ function noterFiche() {
   changed();
 }
 function ouvrirFiche(id) {
-  if (selId && selId !== id) noterFiche();
+  if (selId && selId !== id) {
+    fermerRangees({ muet: true });
+    noterFiche();
+  }
+  fermerFMenu();
+  /* 0.81, bogue « Supprimer hors des heures » : un message à bouton encore affiché en bas de l'écran (« Hors des
+     heures… Synchroniser… », 7 s) recouvre le bas de la fiche, au téléphone. La fiche est une nouvelle couche : le
+     message précédent s'efface (la cause de fond, un message caché qui restait touchable, est dans styles.css et
+     au journal du 22/11). */
+  if (ficheTel() && $('#fiche').hidden) {
+    const t = document.getElementById('s-toast');
+    if (t) t.classList.remove('on');
+  }
   selId = id;
   precChoisie = '';
+  fiche.retro = fiche.libelle = fiche.hist = false;
   ficheAvant = JSON.stringify(doc.evts.find(e => e.id === id) || {});
   if (creation !== id) creation = null;
   majCreation();
   $('#fiche').hidden = false;
+  $('#fiche').scrollTop = 0;
   document.body.classList.add('avec-fiche');
   majIci();
   remplirFiche();
   $$('.ev.sel').forEach(x => x.classList.remove('sel'));
   const li = $('.ev[data-id="' + id + '"]');
   if (li) li.classList.add('sel');
-  if (!TACTILE) $('#fTitre').focus(); /* au téléphone, pas de clavier qui surgit à l'ouverture */
+  /* 0.81 : les rangées sont fermées ; au PC, le clavier est dans la fiche (Entrée ouvre la rangée, Suppr supprime) */
+  if (!TACTILE) $('#fiche .rg-t').focus({ preventScroll: true });
 }
 let creation = null; /* id de la date en cours de création (fiche « Nouvelle date ») */
+/** Fiche « Nouvelle date » (en attendant la création à étapes, maquette A) : les rangées essentielles s'ouvrent
+ *  d'emblée (titre, quand, lieu au PC ; le titre en plein écran au téléphone). */
 function ouvrirCreation(id) {
   creation = id;
   ouvrirFiche(id);
+  /* sans date : « Un jour », le champ date prêt (plutôt que « Pas encore fixée ») */
+  const e = evSel();
+  if (e && !e.d1) {
+    precChoisie = 'jour';
+    remplirFiche();
+  }
+  if (ficheTel()) ouvrirRg('titre', { selection: true });
+  else {
+    ouvrirRg('lieu', { champ: false });
+    ouvrirRg('quand', { champ: false });
+    ouvrirRg('titre', { selection: true });
+  }
   const li = $('.ev[data-id="' + id + '"]');
   if (li) {
     li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -9635,11 +10451,14 @@ function ouvrirCreation(id) {
 function majCreation() {
   const c = !!creation && creation === selId;
   $('#ficheNouv').hidden = !c;
-  $('#fSupprimer').textContent = c ? 'Annuler' : 'Supprimer';
-  $('#fValider').textContent = c ? 'Créer' : 'Valider';
+  $('#fiche').classList.toggle('creation', c);
+  $('#fAnnuler').hidden = !c;
+  $('#fValider').innerHTML = c ? 'Créer' : 'Fermer<kbd class="pc-seul">Échap</kbd>';
   $('#fDupliquer').hidden = c;
+  $('#fCreerTel').hidden = !c;
 }
-/** « Nouvelle date… » : une date vide (« Nouvelle date », date inconnue) dans la fiche de création. */
+/** « Nouvelle date… » (PC) et le bouton « + » (téléphone) : une date vide (« Nouvelle date », date inconnue) dans la
+ *  fiche de création. */
 function nouvelleDate() {
   if (!socle.ouvert) return toast('Ouvre d’abord le fichier de suivi');
   ajouter({ titre: 'Nouvelle date', origine: 'par « Nouvelle date… »' }, true);
@@ -9647,6 +10466,9 @@ function nouvelleDate() {
 }
 function fermerFiche() {
   const id = selId;
+  fermerFMenu();
+  if (document.activeElement && $('#fiche').contains(document.activeElement)) document.activeElement.blur();
+  fermerRangees({ muet: true });
   const creee = creation === id ? doc.evts.find(e => e.id === id) : null;
   creation = null;
   majCreation();
@@ -9691,6 +10513,7 @@ function fermerFiche() {
   }
   return false;
 }
+/** Remplit les champs des rangées (sauf celui où l'on écrit) et peint ce qui se lit (06k-fiche.js). */
 function remplirFiche() {
   const e = evSel();
   if (!e) return;
@@ -9698,24 +10521,26 @@ function remplirFiche() {
     const el = $(s);
     if (document.activeElement !== el) el.value = v;
   };
-  $('#ficheDate').textContent = typo(majuscule(libDate(e)));
   set('#fTitre', (e.titre || '').replace(/\s*\|\s*/g, '\n'));
   set('#fSousTitre', e.soustitre);
+  /* date : un jour, plusieurs jours, pas encore fixée (un mois, une période, sans date) */
+  const flou = !e.d1 ? 'aucune' : e.aDater ? (moisEntier(e) >= 0 ? 'mois' : 'periode') : '';
+  let mode = precChoisie || (flou ? 'flou' : e.d2 !== e.d1 || e.semaine ? 'plusieurs' : 'jour');
+  const sousFlou = ['mois', 'periode', 'aucune'].includes(mode) ? mode : mode === 'flou' ? flou : '';
+  if (sousFlou) mode = 'flou';
+  $$('#fPrec button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === mode)));
+  $$('#fFlouChoix button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === sousFlou)));
+  $('#fDatePrecise').hidden = mode === 'flou';
+  $('#fD2Bloc').hidden = mode !== 'plusieurs';
+  $('#fSemaineBloc').hidden = mode !== 'plusieurs';
+  $('#fD1Lib').textContent = mode === 'plusieurs' ? 'Du' : 'Date';
+  $('#fFlou').hidden = mode !== 'flou';
+  $('#fMois').hidden = sousFlou !== 'mois';
+  $('#fPeriode').hidden = sousFlou !== 'periode';
   set('#fD1', estDatee(e) ? e.d1 : '');
   set('#fD2', estDatee(e) && e.d2 !== e.d1 ? e.d2 : '');
   $('#fSemaine').checked = e.semaine;
-  /* précision de la date : précise, mois, période, inconnue (19/10/2026) */
   const pers = periodes(doc);
-  const mode = precChoisie || (!e.d1 ? 'aucune' : !e.aDater ? 'precise' : moisEntier(e) >= 0 ? 'mois' : 'periode');
-  $$('#fPrec button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === mode)));
-  $('#fDatePrecise').hidden = mode !== 'precise';
-  $('#fMoisBloc').hidden = mode !== 'mois';
-  $('#fPeriodeBloc').hidden = mode !== 'periode';
-  $('#fAucuneAide').hidden = mode !== 'aucune';
-  /* pendant des vacances scolaires : le signaler (19/10/2026) */
-  const vac = vacancesDe(e);
-  $('#fVacAlerte').hidden = !vac;
-  if (vac) $('#fVacAlerte').textContent = 'Pendant les ' + libVacances(vac) + ' (du ' + jourMois(jour(vac.d1)) + ' au ' + jourMois(jour(vac.d2)) + ').';
   set('#fMois', e.aDater && moisEntier(e) >= 0 ? e.d1.slice(0, 7) : '');
   $('#fPeriode').innerHTML =
     '<option value="">Choisir…</option>' +
@@ -9723,33 +10548,15 @@ function remplirFiche() {
   $('#fPeriode').value = (e.aDater && (pers.find(p => p.d1 === e.d1 && p.d2 === e.d2) || {}).nom) || '';
   set('#fHeures', e.horaire || e.heures);
   $('#fHeureInc').checked = e.heureInconnue;
-  const L = lieux(doc);
-  $('#fLieux').innerHTML =
-    Object.values(L)
-      .map(
-        l =>
-          '<button type="button" class="pastille' +
-          (e.lieu === l.cle ? ' choisi' : '') +
-          '" style="--c:' +
-          lieuDe({ lieu: l.cle }).hex /* couleur de sa famille, s'il en a une (0.79) */ +
-          '" data-cle="' +
-          esc(l.cle) +
-          '" title="' +
-          esc(l.nom) +
-          '">' +
-          esc(l.cle) +
-          '</button>'
-      )
-      .join('') +
-    '<button type="button" class="pastille aucun' +
-    (!e.lieu ? ' choisi' : '') +
-    '" data-cle="">aucun</button>';
-  set('#fLieuLibre', L[e.lieu] ? '' : e.lieu);
   set('#fDetail', e.detail);
   set('#fEleves', e.eleves);
   set('#fPratique', e.pratique);
   $('#fTarifs').innerHTML = pucesTarifs(e.pratique);
-  $$('#fStatut button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === e.statut)));
+  /* état (0.81) : trois choix ; « En attente » seulement pour une date qui l'est déjà (lue, gardée telle quelle) */
+  const E = e.statut === 'en attente' ? [...ETATS, ['en attente', 'En attente']] : ETATS;
+  $('#fStatut').innerHTML = E.map(
+    ([v, t]) => '<button type="button" data-v="' + esc(v) + '" aria-pressed="' + (v === e.statut) + '">' + t + '</button>'
+  ).join('');
   /* type (0.78, pour les bilans) : « deviné » tant que rien n'est choisi ; le jeton n'est écrit qu'à un choix */
   const ty = typeDe(e),
     nomT = c => TYPES.find(t => t[0] === c)[2];
@@ -9759,21 +10566,18 @@ function remplirFiche() {
   $('#fType').value = ty.devine ? '' : ty.cle;
   $('#fType').classList.toggle('devine', ty.devine);
   /* diffusion (0.79) : public, pas sur l'affiche, équipe seulement */
-  const dv = e.interne ? 'interne' : e.horsAffiche ? 'hors' : '';
+  const dv = diffDe(e);
   $$('#fDiffusion button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === dv)));
-  /* réservée à l'équipe mais d'un type compté : sans doute une vraie manifestation qu'on voulait seulement cacher */
-  $('#fDiffAide').hidden = !(e.interne && typeDe(e).cle !== 'organisation');
-  $('#fPublic').hidden = e.interne; /* réservé à l'équipe : les champs du public ne servent à rien (19/10/2026) */
-  $('#fPublicTitre').textContent = e.horsAffiche ? 'Pour le mail « Complet » et les bilans' : 'Pour « Demandez le programme »';
   afficherLibs(e);
   set('#fAccomp', e.accomp);
   set('#fRemarque', e.remarque);
   set('#fLibelle', e.libelle);
-  if (e.libelle) $('#fiche details.plus').open = true;
+  if (fiche.ouvertes.has('lieu')) afficherLieuListe();
   afficherRetro(e);
-  afficherHistoire(e);
+  if (fiche.hist) afficherHistoire(e);
   const acc = [...new Set(doc.evts.map(x => x.accomp).filter(Boolean))].sort();
   $('#accomps').innerHTML = acc.map(a => '<option value="' + esc(a) + '">').join('');
+  peindreFiche(e);
 }
 /* une seule étape d'annulation par champ modifié (comme Tâches) */
 let editSnap = null;
@@ -9827,12 +10631,10 @@ function modifier(champ, val, rendre = true) {
   if (rendre) {
     afficherListe();
     afficherControles();
-    $('#ficheDate').textContent = typo(majuscule(libDate(e)));
-    /* 0.79 : libellés proposés et indication de diffusion suivent le titre, le sous-titre, les élèves, le lieu */
-    if (['titre', 'soustitre', 'eleves', 'lieu'].includes(champ)) {
-      afficherLibs(e);
-      $('#fDiffAide').hidden = !(e.interne && typeDe(e).cle !== 'organisation');
-    }
+    /* 0.79 : libellés proposés et indication de diffusion suivent le titre, le sous-titre, les élèves, le lieu ;
+       0.81 : le résumé et les valeurs des rangées suivent la saisie */
+    if (['titre', 'soustitre', 'eleves', 'lieu'].includes(champ)) afficherLibs(e);
+    peindreFiche(e);
   }
 }
 
@@ -9946,7 +10748,7 @@ function initListe() {
     e.d1 = v;
     e.d2 = plusJours(v, duree);
     e.aDater = false;
-    precChoisie = '';
+    if (precChoisie !== 'plusieurs') precChoisie = '';
     changed();
     toutAfficher();
     const vac = vacancesDe(e);
@@ -9961,16 +10763,44 @@ function initListe() {
     changed();
     toutAfficher();
   };
+  /* 0.81 : un jour, plusieurs jours, pas encore fixée (maquette, rangée « Quand ») */
   $('#fPrec').addEventListener('click', ev => {
     const b = ev.target.closest('button');
     const e = evSel();
     if (!b || !e) return;
+    const v = b.dataset.v;
+    if (v === 'jour') {
+      if (estDatee(e) && (e.d2 !== e.d1 || e.semaine)) {
+        snapshot();
+        e.d2 = e.d1;
+        e.semaine = false;
+        precChoisie = '';
+        changed();
+        toutAfficher();
+      } else {
+        precChoisie = estDatee(e) ? '' : 'jour';
+        remplirFiche();
+      }
+      $('#fD1').focus();
+    } else if (v === 'plusieurs') {
+      precChoisie = 'plusieurs';
+      remplirFiche();
+      (estDatee(e) ? $('#fD2') : $('#fD1')).focus();
+    } else {
+      precChoisie = 'flou';
+      remplirFiche();
+    }
+  });
+  $('#fFlouChoix').addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (!b || !evSel()) return;
     precChoisie = b.dataset.v;
     if (precChoisie === 'aucune') {
       precChoisie = '';
-      fixeFenetre('', '', false);
-    } else remplirFiche();
-    if (b.dataset.v === 'precise') $('#fD1').focus();
+      return fixeFenetre('', '', false);
+    }
+    remplirFiche();
+    (precChoisie === 'mois' ? $('#fMois') : $('#fPeriode')).focus();
   });
   $('#fMois').addEventListener('change', () => {
     const v = $('#fMois').value;
@@ -10050,28 +10880,6 @@ function initListe() {
     editSnap = null;
     modifier('heureInconnue', $('#fHeureInc').checked);
   };
-  $('#fLieux').addEventListener('click', ev => {
-    const b = ev.target.closest('button');
-    if (!b) return;
-    editSnap = null;
-    modifier('lieu', b.dataset.cle);
-    $('#fLieuLibre').value = '';
-    remplirFiche();
-  });
-  $('#fLieuLibre').addEventListener('input', () => {
-    modifier('lieu', $('#fLieuLibre').value.trim());
-    $$('#fLieux .pastille').forEach(b =>
-      b.classList.toggle('choisi', b.dataset.cle === '' && !$('#fLieuLibre').value.trim())
-    );
-  });
-  $('#fLieuLibre').addEventListener('blur', () => (editSnap = null));
-  $('#fStatut').addEventListener('click', ev => {
-    const b = ev.target.closest('button');
-    if (!b) return;
-    editSnap = null;
-    modifier('statut', b.dataset.v);
-    remplirFiche();
-  });
   $('#fType').onchange = () => {
     const e = evSel();
     if (!e) return;
@@ -10098,26 +10906,15 @@ function initListe() {
   };
   $('#fDiffusion').addEventListener('click', ev => {
     const b = ev.target.closest('button');
-    if (b) diffuser(b.dataset.v);
+    if (!b) return;
+    diffuser(b.dataset.v);
+    fermerRg('diffusion', { retour: !ficheTel() }); /* un choix referme la rangée */
   });
   $('#fDiffHors').onclick = () => {
     diffuser('hors');
     toast('Pas sur l’affiche : comptée dans les bilans, absente de l’affiche et de « Demandez le programme »', 'Annuler', annuler);
   };
   initLibs();
-  $('#fSupprimer').onclick = () => {
-    if (creation && creation === selId) {
-      const id = selId;
-      creation = null;
-      snapshot();
-      doc.evts = doc.evts.filter(x => x.id !== id);
-      fermerFiche();
-      changed();
-      toutAfficher();
-      return toast('Création annulée');
-    }
-    supprimer(selId);
-  };
   $('#ajoutNouv').onclick = nouvelleDate;
   $('#fHistCtx').addEventListener('click', ev => {
     const b = ev.target.closest('[data-ouvrir]');
@@ -10138,6 +10935,7 @@ function initListe() {
     toutAfficher();
     ouvrirFiche(c.id);
     toast('Copie créée : change sa date');
+    ouvrirRg('quand');
     $('#fD1').focus();
   };
 }
@@ -10631,15 +11429,14 @@ function initPropositions() {
     if (!p || b.dataset.prop !== 'ajouter') return;
     const champ = $('#ajoutTxt');
     champ.value = (p.date ? +p.date.slice(8) + '/' + +p.date.slice(5, 7) + ' ' : '') + p.titre;
-    /* au PC (0.64) : directement la fiche « Nouvelle date », date et titre remplis, à compléter */
-    if (!TACTILE) {
-      const r = lireSaisie(champ.value, periodes(doc), lieux(doc));
-      if (!r.erreur) {
-        champ.value = '';
-        apercuSaisie();
-        ajouter({ ...r, origine: 'proposée par Tâches (tâche ' + citer(p.titre) + ')' }, true);
-        return toast('Proposé par Tâches : complète l’heure, le lieu… puis « Créer »');
-      }
+    /* au PC (0.64), et au téléphone depuis la 0.81 (le champ d'ajout y a laissé la place à la recherche) : directement
+       la fiche « Nouvelle date », date et titre remplis, à compléter */
+    const r = lireSaisie(champ.value, periodes(doc), lieux(doc));
+    if (!r.erreur || TACTILE) {
+      champ.value = '';
+      apercuSaisie();
+      ajouter({ ...(r.erreur ? { titre: p.titre } : r), origine: 'proposée par Tâches (tâche ' + citer(p.titre) + ')' }, true);
+      return toast('Proposé par Tâches : complète l’heure, le lieu… puis « Créer »');
     }
     origineEnAttente = 'proposée par Tâches (tâche ' + citer(p.titre) + ')';
     champ.dispatchEvent(new Event('input', { bubbles: true }));
@@ -10728,7 +11525,9 @@ function initEtapes() {
    accompagnement, remarques, état, et la date en toutes lettres (« mars », « samedi »). Tous les mots sont requis,
    sans accents ni majuscules. L'affiche et les mails ne sont jamais filtrés.
    - PC : champ dans l'en-tête, Ctrl+K ; Entrée va au premier résultat (Entrée encore : sa fiche) ;
-   - téléphone : loupe dans l'en-tête, qui devient le champ ; « Fermer » ou le bouton retour rendent tout.
+   - téléphone : depuis la 0.81 (François : « j'ai envie de cliquer sur le champ en haut de l'écran »), le champ du haut
+     est la recherche, toujours là (la loupe et la ligne d'ajout ont disparu ; on crée par le « + » en bas à droite) ;
+     la croix ou le bouton retour rendent tout.
    Ce qui correspond est calculé à chaque frappe : une date modifiée pendant la recherche reste affichée jusqu'à la
    frappe suivante, et une date créée pendant la recherche reste visible. */
 
@@ -10771,6 +11570,7 @@ function rechChange(q) {
   rech.q = q;
   rechCalcul();
   document.body.classList.toggle('recherche', rechActive());
+  if (!rechActive()) rech.champ.compte(null); /* 0.81 : le champ reste visible au téléphone ; plus de compte périmé */
   afficherListe();
   afficherCalendrier();
   afficherMiniCal();
@@ -10835,6 +11635,7 @@ function initRecherche() {
     fermer: () => document.body.classList.remove('cherche')
   });
   $('#bCherche').onclick = rechOuvrir;
+  if (TACTILE) $('#cherche').placeholder = 'Rechercher';
   $('#chercheX').onclick = () => {
     rechFermer();
     $('#cherche').blur();
@@ -10982,24 +11783,7 @@ function initProp() {
     fermerProp();
     ch(l);
   });
-  /* fiche : « Autre lieu, en toutes lettres » */
-  brancherProp(
-    $('#fLieuLibre'),
-    () => $('#fLieuLibre').value,
-    l => {
-      editSnap = null;
-      if (l.cle) {
-        modifier('lieu', l.cle);
-        $('#fLieuLibre').value = '';
-        remplirFiche();
-      } else {
-        $('#fLieuLibre').value = l.nom;
-        modifier('lieu', l.nom);
-        $$('#fLieux .pastille').forEach(b => b.classList.remove('choisi'));
-      }
-      editSnap = null;
-    }
-  );
+  /* fiche : depuis la 0.81, la rangée « Lieu » a sa propre liste (06k-fiche.js) */
   /* saisie rapide : ce qui suit « @ » */
   const apresArobase = () => {
     const m = /(?:^|\s)@([^@]*)$/.exec($('#ajoutTxt').value);
@@ -12432,6 +13216,578 @@ function initProgramme() {
       toast(s, null, null, 7000);
     }, 2500);
 }
+/* 06k-fiche.js : la fiche en rangées (0.81, maquette docs/maquettes/fiche.html § 4 et § 6, décision de François du
+   21-22/11 : « Pour modifier, ta recommandation est sans doute la bonne aussi »).
+   - Un résumé cliquable en tête : la ligne telle qu'elle paraîtra ; un clic sur une partie ouvre sa rangée.
+   - Quatre sections, dans l'ordre de la création (quoi, quand, où, pour qui), sommaire et Alt+1 à Alt+4 au PC.
+   - Des rangées « libellé · valeur » : fermées, la valeur seule ; un clic l'ouvre sur place (au téléphone : en plein
+     écran, « OK » ou le bouton retour la referme) ; une rangée vide n'est qu'un lien « + … ».
+   - Bloc « Public » et bloc « Équipe seulement » séparés ; Dupliquer, Historique, libellé imposé, rétroplanning et
+     Supprimer derrière ⋯.
+   Remarques de François (21/11, « l'écran d'édition est brouillon ») : textes indicatifs d'un ou deux mots, plus de
+   phrases de commentaire (seules restent les alertes qui demandent un geste, en une ligne ou un point ocre), le lieu
+   par une liste qui se filtre au lieu de toutes les pastilles, l'état et la diffusion réduits à la valeur choisie.
+   Rien ne change dans le fichier : tout s'enregistre au fil de la saisie, comme avant. */
+
+const RG_NOMS = {
+  titre: 'Titre',
+  soustitre: 'Sous-titre',
+  type: 'Type',
+  libs: 'Libellés',
+  quand: 'Quand',
+  etat: 'État',
+  lieu: 'Lieu',
+  diffusion: 'Diffusion',
+  detail: 'Descriptif',
+  eleves: 'Élèves concernés',
+  pratique: 'Infos pratiques',
+  remarque: 'Remarque',
+  accomp: 'Accompagnement',
+  retro: 'Rétroplanning'
+};
+/* « + … » d'une rangée vide */
+const RG_VIDE = {
+  soustitre: '+ sous-titre',
+  libs: '+ libellé',
+  lieu: '+ lieu',
+  detail: '+ descriptif',
+  eleves: '+ élèves concernés',
+  pratique: '+ infos pratiques',
+  remarque: '+ remarque',
+  accomp: '+ accompagnement'
+};
+/* État : trois choix ; « en attente » n'est plus proposé (son sens, « pas public », se retrouve dans « À confirmer » et
+   la diffusion « Pas sur l'affiche ») ; une date déjà « en attente » le garde tant qu'on ne choisit rien d'autre. */
+const ETATS = [
+  ['', 'Confirmée'],
+  ['à confirmer', 'À confirmer'],
+  ['annulé', 'Annulée']
+];
+const NOM_ETAT = { '': 'Confirmée', 'à confirmer': 'À confirmer', annulé: 'Annulée', 'en attente': 'En attente' };
+const NOM_DIFF = { '': 'Public', hors: 'Pas sur l’affiche', interne: 'Équipe seulement' };
+const SECTIONS = ['quoi', 'quand', 'ou', 'pourqui'];
+
+/** Mise en page du téléphone (fiche en plein écran, rangée ouverte en plein écran). */
+const ficheTel = () => matchMedia('(max-width: 700px)').matches;
+const fiche = { ouvertes: new Set(), avant: '', retro: false, libelle: false, hist: false };
+const rgEl = n => $('#fiche .rg[data-rg="' + n + '"]');
+const enCreation = () => !!creation && creation === selId;
+const diffDe = e => (e.interne ? 'interne' : e.horsAffiche ? 'hors' : '');
+
+/** Ce qui manque à une date publique à venir pour « Demandez le programme » (mêmes règles que manques(), 08-mail.js) :
+ *  un point ocre sur la rangée et dans le sommaire. */
+function manquesFiche(e) {
+  const m = new Set();
+  if (!e || !estPublic(e) || !estDatee(e) || e.aDater || e.statut === 'annulé' || e.d2 < auj()) return m;
+  const programme = /^\s*[-•]\s.*\b\d{1,2}\s?h\b/m.test(e.detail || '');
+  if (!e.heures && !e.horaire && !e.libelle && !programme) m.add('quand');
+  if (!e.lieu) m.add('lieu');
+  if (!e.detail) m.add('detail');
+  if (!e.eleves && !/élève/i.test(e.soustitre || '')) m.add('eleves');
+  if (!e.pratique) m.add('pratique');
+  return m;
+}
+const POINT =
+  '<i class="point" aria-label="manque pour « Demandez le programme »" title="Manque pour « Demandez le programme »"></i>';
+
+/** La valeur d'une rangée fermée : HTML, '' si vide. */
+function valeurRg(n, e) {
+  switch (n) {
+    case 'titre': {
+      const p = (e.titre || '')
+        .split('|')
+        .map(x => x.trim())
+        .filter(Boolean);
+      return (
+        rich(p.join(' ')) +
+        (p.length > 1 ? '<small>passe à la ligne après « ' + rich(p.slice(0, -1).join(' ')) + ' »</small>' : '')
+      );
+    }
+    case 'soustitre':
+      return e.soustitre ? richLignes(e.soustitre) : '';
+    case 'type': {
+      const ty = typeDe(e),
+        t = TYPES.find(x => x[0] === ty.cle) || TYPES[3];
+      return esc(t[2]) + (ty.devine ? ' <span class="devine">deviné</span>' : '');
+    }
+    case 'libs':
+      return (e.libelles || []).map(x => '<span class="lib-et">' + rich(x) + '</span>').join(' ');
+    case 'quand': {
+      if (!e.d1) return 'Pas encore fixée';
+      if (e.aDater) return 'À dater : ' + esc(typo(libFlou(e)));
+      const h = libHoraire(e);
+      return (
+        esc(typo(e.libelle ? e.libelle : libDate(e))) +
+        (h ? ', ' + esc(typo(h)) : '') +
+        (e.heureInconnue ? ', <span class="flou">horaire à préciser</span>' : '')
+      );
+    }
+    case 'etat':
+      return esc(NOM_ETAT[e.statut] || e.statut);
+    case 'lieu': {
+      const L = lieuDe(e);
+      if (!e.lieu) return '';
+      return (
+        '<i class="pt-lieu" style="--c:' +
+        (L ? L.hex : 'var(--pale)') +
+        '"></i>' +
+        rich(L ? L.nom : e.lieu) +
+        (L && L.nom !== L.cle ? ' <small class="cle">' + rich(L.cle) + '</small>' : '')
+      );
+    }
+    case 'diffusion':
+      return esc(NOM_DIFF[diffDe(e)]);
+    case 'detail':
+      return e.detail ? rich(e.detail).replace(/\n/g, '<br>') : '';
+    case 'eleves':
+      return e.eleves ? rich(e.eleves) : '';
+    case 'pratique':
+      return e.pratique ? rich(e.pratique).replace(/\n/g, '<br>') : '';
+    case 'remarque':
+      return e.remarque ? rich(e.remarque).replace(/\n/g, '<br>') : '';
+    case 'accomp':
+      return e.accomp ? rich(e.accomp) : '';
+    case 'retro':
+      return e.taches ? 'envoyé à Tâches' : estDatee(e) ? 'pas encore envoyé' : 'il faut une date';
+  }
+  return '';
+}
+
+/** Le résumé en tête : la ligne telle qu'elle paraîtra ; chaque partie ouvre sa rangée. */
+function resumeHtml(e) {
+  const L = lieuDe(e),
+    tags = [];
+  if (e.statut)
+    tags.push(
+      '<span class="tag t-' +
+        (e.statut === 'annulé' ? 'annule' : e.statut === 'en attente' ? 'attente' : 'confirmer') +
+        '" data-rg="etat">' +
+        ETIQUETTES[e.statut] +
+        '</span>'
+    );
+  if (e.interne) tags.push('<span class="tag t-interne" data-rg="diffusion">équipe</span>');
+  else if (e.horsAffiche) tags.push('<span class="tag t-hors" data-rg="diffusion">pas sur l’affiche</span>');
+  const meta = metaQuand(e);
+  return (
+    '<div class="r-date" data-rg="quand">' +
+    blocDate(e) +
+    '</div><div class="r-corps' +
+    (e.statut === 'annulé' ? ' annule' : '') +
+    '"><div class="r-t"><span data-rg="titre">' +
+    titreHtml(e.titre) +
+    '</span>' +
+    (tags.length ? ' ' + tags.join(' ') : '') +
+    '</div>' +
+    (e.soustitre ? '<div class="r-s" data-rg="soustitre">' + richLignes(e.soustitre) + '</div>' : '') +
+    '<div class="r-m">' +
+    (meta ? '<span data-rg="quand">' + meta + '</span> ' : '') +
+    (L ? '<span data-rg="lieu">' + pastille(L) + '</span>' : '<span data-rg="lieu" class="r-vide">+ lieu</span>') +
+    '</div></div>'
+  );
+}
+
+/** Peint ce qui se lit dans la fiche : résumé, en-tête, valeurs des rangées, alertes, sommaire. */
+function peindreFiche(e) {
+  const tel = ficheTel(),
+    manque = manquesFiche(e);
+  $('#fResume').innerHTML = resumeHtml(e);
+  /* en-tête : au PC, le type et la dernière modification (« Concert · modifiée le 9 oct. ») ; au téléphone, le titre */
+  const H = (e.histoire || '').split('\n').filter(l => /^\d{4}-\d{2}-\d{2} /.test(l)),
+    der = H.length ? H[H.length - 1].slice(0, 10) : '',
+    ty = typeDe(e),
+    court = {
+      concert: 'Concert',
+      audition: 'Audition',
+      école: 'À l’école',
+      autre: 'Autre intervention',
+      organisation: 'Organisation'
+    }[ty.cle];
+  $('#ficheDate').innerHTML = enCreation()
+    ? ''
+    : tel
+      ? rich((e.titre || '').replace(/\s*\|\s*/g, ' '))
+      : esc(
+          (court || '') +
+            (der
+              ? ' · ' +
+                (H.length > 1 ? 'modifiée' : 'créée') +
+                ' le ' +
+                (+der.slice(8) === 1 ? '1er' : +der.slice(8)) +
+                '\u00a0' +
+                MOIS_COURTS[+der.slice(5, 7) - 1]
+              : '')
+        );
+  for (const r of $$('#fiche .rg')) {
+    const n = r.dataset.rg,
+      v = valeurRg(n, e),
+      vide = !v && !!RG_VIDE[n];
+    r.classList.toggle('vide', vide);
+    r.classList.toggle('manque', manque.has(n));
+    $('.rg-v', r).innerHTML = (vide ? RG_VIDE[n] : v) + (manque.has(n) ? POINT : '');
+  }
+  rgEl('retro').hidden = !(fiche.retro || e.taches);
+  /* libellés proposés (le titre, le sous-titre ou les élèves en parlent) : un geste les pose, rangée fermée ou non */
+  const props = libellesProposes(e, doc),
+    lp = $('#vLibsProp');
+  lp.innerHTML = props
+    .map(x => '<button type="button" class="lib-et propose" data-ajouter="' + esc(x) + '">+ ' + esc(x) + '</button>')
+    .join(' ');
+  lp.hidden = !props.length || fiche.ouvertes.has('libs');
+  /* pendant des vacances scolaires : une ligne courte (19/10/2026) */
+  const vac = vacancesDe(e);
+  $('#fVacAlerte').hidden = !vac;
+  if (vac) $('#fVacAlerte').textContent = 'Pendant les ' + libVacances(vac);
+  /* réservée à l'équipe mais d'un type compté : sans doute une vraie manifestation qu'on voulait seulement cacher */
+  $('#fDiffAide').hidden = !(e.interne && typeDe(e).cle !== 'organisation');
+  $('#fPublic').hidden = e.interne; /* réservée à l'équipe : les champs du public ne servent à rien (19/10/2026) */
+  $('#fPublicTitre').textContent = e.horsAffiche ? 'Pour le mail « Complet »' : 'Public';
+  /* sommaire : un point ocre où quelque chose manque pour « Demandez le programme » */
+  const ou = { quand: ['quand'], ou: ['lieu'], pourqui: ['detail', 'eleves', 'pratique'], quoi: [] };
+  for (const b of $$('#fSommaire button'))
+    b.classList.toggle(
+      'manque',
+      ou[b.dataset.sec].some(x => manque.has(x))
+    );
+  $('#fHistBloc').hidden = !fiche.hist;
+  const nh = (e.histoire || '').split('\n').filter(l => l.trim()).length;
+  $('#fmHist').textContent = 'Historique de cette date' + (nh ? ' (' + nh + ')' : '');
+  $('#fLibelleBloc').hidden = !(e.libelle || fiche.libelle);
+  $('#fLibelleLien').hidden = !$('#fLibelleBloc').hidden;
+}
+
+/* ---------- ouvrir et refermer une rangée ---------- */
+function premierChamp(r) {
+  return $('textarea, input:not([type=checkbox]):not([type=date]):not([type=month]), select', r.querySelector('.rg-c'));
+}
+/** Ouvre une rangée ; o.champ : faut-il y mettre le curseur (par défaut au PC, et au téléphone pour un texte). */
+function ouvrirRg(n, o = {}) {
+  const r = rgEl(n),
+    e = evSel();
+  if (!r || r.hidden || !e) return;
+  const tel = ficheTel();
+  if (tel || !enCreation()) for (const x of [...fiche.ouvertes]) if (x !== n) fermerRg(x, { muet: true });
+  if (!fiche.ouvertes.has(n)) fiche.avant = JSON.stringify(e);
+  fiche.ouvertes.add(n);
+  r.classList.add('ouverte');
+  $('.rg-t', r).setAttribute('aria-expanded', 'true');
+  if (n === 'libs') $('#vLibsProp').hidden = true;
+  if (n === 'lieu') {
+    $('#fLieuLibre').value = '';
+    lieuListe.i = 0;
+    lieuListe.fleche = false;
+    afficherLieuListe();
+  }
+  if (n === 'retro') afficherRetro(e);
+  if (tel) {
+    /* au téléphone, en plein écran (charte, principe 8) : « ‹ Quand … OK » en haut */
+    $('#rgTitre').textContent = RG_NOMS[n];
+    $('#rgBarre').hidden = false;
+    $('#fiche').classList.add('rg-plein');
+    $('.rg-c', r).scrollTop = 0;
+  }
+  const c = premierChamp(r);
+  if (c && o.champ !== false && (!tel || /^(TEXTAREA|INPUT)$/.test(c.tagName))) {
+    c.focus({ preventScroll: tel });
+    if (o.selection && c.select) c.select();
+  }
+  if (!tel) requestAnimationFrame(() => r.scrollIntoView({ block: 'nearest' }));
+}
+/** Referme une rangée. o.muet : sans message (une autre s'ouvre, la fiche se ferme) ; o.retour : rendre le focus. */
+function fermerRg(n, o = {}) {
+  const r = rgEl(n);
+  if (!r || !fiche.ouvertes.has(n)) return;
+  /* le champ quitté d'abord : ses « change » s'appliquent avant de repeindre */
+  if (r.contains(document.activeElement)) document.activeElement.blur();
+  fermerProp();
+  fiche.ouvertes.delete(n);
+  r.classList.remove('ouverte');
+  $('.rg-t', r).setAttribute('aria-expanded', 'false');
+  editSnap = null;
+  const e = evSel();
+  if (!fiche.ouvertes.size) {
+    $('#rgBarre').hidden = true;
+    $('#fiche').classList.remove('rg-plein');
+  }
+  if (e) {
+    remplirFiche();
+    /* au téléphone, pas de Ctrl+Z : le message propose d'annuler ce qu'on vient de faire dans la rangée */
+    const avant = fiche.avant;
+    if (!o.muet && ficheTel() && avant && JSON.stringify(e) !== avant)
+      toast('Enregistré', 'Annuler', () => {
+        const x = doc.evts.find(y => y.id === e.id);
+        if (!x) return;
+        snapshot();
+        Object.assign(x, JSON.parse(avant));
+        changed();
+        toutAfficher();
+      });
+  }
+  if (o.retour) $('.rg-t', r).focus({ preventScroll: true });
+}
+function fermerRangees(o = {}) {
+  for (const n of [...fiche.ouvertes]) fermerRg(n, o);
+}
+
+/* ---------- lieu : une liste qui se filtre en tapant (écran A3 de la maquette) ---------- */
+const lieuListe = { L: [], i: 0, fleche: false };
+function afficherLieuListe() {
+  const e = evSel(),
+    q = $('#fLieuLibre').value.trim(),
+    box = $('#fLieuListe');
+  if (!e) return;
+  /* le lieu de la date ouverte ne compte pas dans « déjà tapés » ; tous les mots tapés, sans accents ni majuscules */
+  const mots = plat(q).split(/\s+/).filter(Boolean),
+    tous = lieuxConnus(e.id).filter(l => mots.every(m => plat(l.cle + ' ' + l.nom).includes(m)));
+  const ref = tous.filter(l => !l.libre),
+    libres = tous.filter(l => l.libre).slice(0, q ? 6 : 5);
+  const L = [];
+  for (const l of ref) L.push({ sorte: 'lieu', l });
+  for (const l of libres) L.push({ sorte: 'lieu', l, tape: true });
+  const exact = q && tous.some(l => plat(l.cle || l.nom) === plat(q) || plat(l.nom) === plat(q));
+  if (q && !exact) L.push({ sorte: 'nouveau', q });
+  if (e.lieu && !q) L.push({ sorte: 'aucun' });
+  L.push({ sorte: 'lieux' });
+  lieuListe.L = L;
+  if (lieuListe.i >= L.length) lieuListe.i = 0;
+  const actuel = l => (l.cle ? e.lieu === l.cle : plat(e.lieu) === plat(l.nom));
+  let h = '',
+    groupe = '';
+  L.forEach((x, k) => {
+    const g = x.sorte === 'lieu' ? (x.tape ? 'Déjà tapés' : 'Lieux') : '';
+    if (g && g !== groupe) h += '<p class="fl-g">' + g + '</p>';
+    if (g) groupe = g;
+    const sel = k === lieuListe.i && (q || lieuListe.fleche) ? ' aria-selected="true"' : '';
+    if (x.sorte === 'lieu')
+      h +=
+        '<button type="button" role="option" data-k="' +
+        k +
+        '"' +
+        sel +
+        (actuel(x.l) ? ' class="actuel"' : '') +
+        '>' +
+        '<i class="pt-lieu" style="--c:' +
+        x.l.hex +
+        '"></i><span class="fl-nom">' +
+        (x.l.cle && x.l.cle !== x.l.nom ? '<b>' + rich(x.l.cle) + '</b> ' + rich(x.l.nom) : rich(x.l.nom)) +
+        '</span><span class="fl-n">' +
+        (x.tape && x.l.n ? x.l.n + ' fois' : '') +
+        '</span></button>';
+    else if (x.sorte === 'nouveau')
+      h +=
+        '<button type="button" role="option" data-k="' +
+        k +
+        '"' +
+        sel +
+        ' class="fl-plus">+ Nouveau lieu « ' +
+        esc(x.q) +
+        ' »</button>';
+    else if (x.sorte === 'aucun')
+      h += '<button type="button" role="option" data-k="' + k + '" class="fl-plus">Sans lieu</button>';
+    else h += '<button type="button" role="option" data-k="' + k + '" class="fl-plus">Lieux…</button>';
+  });
+  box.innerHTML = h;
+}
+function choisirLieu(k, clavier) {
+  const x = lieuListe.L[k],
+    e = evSel();
+  if (!x || !e) return;
+  if (x.sorte === 'lieux') {
+    fermerRg('lieu', { muet: true });
+    return ouvrirLieux();
+  }
+  const v = x.sorte === 'lieu' ? x.l.cle || x.l.nom : x.sorte === 'nouveau' ? nomSur(x.q) : '';
+  editSnap = null;
+  modifier('lieu', v);
+  editSnap = null;
+  fermerRg('lieu', { retour: clavier && !ficheTel() });
+  if (x.sorte === 'nouveau') toast('Lieu écrit tel quel : ' + typo(v), 'Lieux…', ouvrirLieux);
+}
+
+/* ---------- menu ⋯ de la fiche ---------- */
+function fermerFMenu() {
+  if ($('#fMenu').hidden) return;
+  $('#fMenu').hidden = true;
+  socle.finCouche();
+}
+function ouvrirFMenu(bouton) {
+  const m = $('#fMenu');
+  if (!m.hidden) return fermerFMenu();
+  const e = evSel();
+  if (!e) return;
+  const tel = ficheTel(),
+    c = enCreation();
+  $('#fmDupliquer').hidden = !tel || c;
+  $('#fmHist').hidden = c;
+  $('#fmRetro').hidden = c || !estDatee(e) || e.statut === 'annulé';
+  $('#fmSupprimer').firstChild.textContent = c ? 'Annuler la création ' : 'Supprimer ';
+  /* une couche à la fois : un message encore affiché en bas de l'écran ne doit pas couvrir le menu (bogue du 22/11) */
+  const t = document.getElementById('s-toast');
+  if (t) t.classList.remove('on');
+  m.hidden = false;
+  /* le menu naît du bouton qui l'ouvre (charte, principe 4) : au-dessus du ⋯ du pied, sous celui de l'en-tête */
+  const r = bouton.getBoundingClientRect(),
+    h = m.offsetHeight,
+    w = m.offsetWidth;
+  m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + 'px';
+  m.style.top = (r.top - h - 6 > 8 ? r.top - h - 6 : r.bottom + 6) + 'px';
+  socle.couche(m, fermerFMenu);
+}
+
+function initFiche() {
+  const f = $('#fiche');
+  /* rangées : un clic ouvre, un clic sur la même referme ; Entrée ou Espace au clavier */
+  f.addEventListener('click', ev => {
+    const t = ev.target.closest('.rg-t');
+    if (t && !ev.target.closest('button, a')) {
+      const n = t.parentElement.dataset.rg;
+      return fiche.ouvertes.has(n) && !ficheTel() ? fermerRg(n, { retour: true }) : ouvrirRg(n);
+    }
+    const p = ev.target.closest('#fResume [data-rg]');
+    if (p) return ouvrirRg(p.dataset.rg);
+    const s = ev.target.closest('#fSommaire [data-sec]');
+    if (s) return allerSection(s.dataset.sec);
+  });
+  f.addEventListener('keydown', ev => {
+    const t = ev.target.closest('.rg-t');
+    if (!t || (ev.key !== 'Enter' && ev.key !== ' ')) return;
+    ev.preventDefault();
+    ouvrirRg(t.parentElement.dataset.rg);
+  });
+  /* survol (PC) : la rangée allume la partie du résumé qui lui correspond, et inversement */
+  const allumer = n => {
+    $$('#fiche .allume').forEach(x => x.classList.remove('allume'));
+    if (!n) return;
+    $$('#fResume [data-rg="' + n + '"]').forEach(x => x.classList.add('allume'));
+    const r = rgEl(n);
+    if (r) r.classList.add('allume');
+  };
+  f.addEventListener('mouseover', ev => {
+    const x = ev.target.closest('#fResume [data-rg], #fiche .rg');
+    allumer(x ? x.dataset.rg : '');
+  });
+  f.addEventListener('mouseleave', () => allumer(''));
+  /* un clic ailleurs (PC) referme la rangée ouverte ; pas pendant une création, où plusieurs restent ouvertes */
+  document.addEventListener(
+    'click',
+    ev => {
+      if (!selId || !fiche.ouvertes.size || ficheTel() || enCreation()) return;
+      const t = ev.target;
+      if (!(t instanceof Element) || !t.isConnected) return;
+      if (t.closest('.rg.ouverte, .rg-t, #fResume [data-rg], #lieuProp, #fMenu, dialog, #s-toast, .s-voile')) return;
+      fermerRangees({ muet: true });
+    },
+    true
+  );
+  $('#vLibsProp').addEventListener('click', ev => {
+    const a = ev.target.closest('[data-ajouter]');
+    if (a) ajouterLib(a.dataset.ajouter);
+    remplirFiche();
+  });
+  /* lieu */
+  $('#fLieuLibre').addEventListener('input', () => {
+    lieuListe.i = 0;
+    lieuListe.fleche = false;
+    afficherLieuListe();
+  });
+  $('#fLieuLibre').addEventListener('keydown', ev => {
+    const n = lieuListe.L.length;
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      /* sans rien taper, la première flèche prend le premier lieu */
+      if (!lieuListe.fleche && !$('#fLieuLibre').value.trim()) lieuListe.i = ev.key === 'ArrowDown' ? -1 : 0;
+      lieuListe.fleche = true;
+      lieuListe.i = ev.key === 'ArrowDown' ? (lieuListe.i + 1) % n : (lieuListe.i - 1 + n) % n;
+      afficherLieuListe();
+      const s = $('#fLieuListe [aria-selected]');
+      if (s) s.scrollIntoView({ block: 'nearest' });
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if ($('#fLieuListe [aria-selected]')) choisirLieu(lieuListe.i, true);
+    }
+  });
+  $('#fLieuListe').addEventListener('mousedown', ev => ev.preventDefault());
+  $('#fLieuListe').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-k]');
+    if (b) choisirLieu(+b.dataset.k);
+  });
+  /* état et diffusion : un choix referme la rangée */
+  $('#fStatut').addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    editSnap = null;
+    modifier('statut', b.dataset.v);
+    fermerRg('etat', { retour: !ficheTel() });
+  });
+  $('#fType').addEventListener('change', () =>
+    setTimeout(() => fiche.ouvertes.has('type') && fermerRg('type', { retour: !ficheTel() }), 0)
+  );
+  /* téléphone : « ‹ » et « OK » referment la rangée */
+  $('#rgOk').onclick = $('#rgRetour').onclick = () => fermerRangees();
+  $('#ficheRetour').onclick = () => $('#fValider').click();
+  $('#fCreerTel').onclick = () => $('#fValider').click();
+  /* ⋯ */
+  $('#fPlus').onclick = ev => (ev.stopPropagation(), ouvrirFMenu(ev.currentTarget));
+  $('#fPlusTete').onclick = ev => (ev.stopPropagation(), ouvrirFMenu(ev.currentTarget));
+  $('#fMenu').addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    fermerFMenu();
+    const e = evSel();
+    if (!e) return;
+    if (b.id === 'fmDupliquer') $('#fDupliquer').click();
+    else if (b.id === 'fmSupprimer') supprimerFiche();
+    else if (b.id === 'fmHist') {
+      fiche.hist = true;
+      remplirFiche();
+      requestAnimationFrame(() => $('#fHistBloc').scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+    } else if (b.id === 'fmLibelle') {
+      fiche.libelle = true;
+      ouvrirRg('quand', { champ: false });
+      remplirFiche();
+      $('#fLibelle').focus();
+    } else if (b.id === 'fmRetro') {
+      fiche.retro = true;
+      remplirFiche();
+      ouvrirRg('retro');
+    }
+  });
+  $('#fHistFermer').onclick = () => {
+    fiche.hist = false;
+    remplirFiche();
+  };
+  $('#fLibelleLien').onclick = () => {
+    fiche.libelle = true;
+    remplirFiche();
+    $('#fLibelle').focus();
+  };
+  $('#fAnnuler').onclick = supprimerFiche;
+  $('#bNouv').onclick = () => nouvelleDate();
+}
+/** Supprimer (menu ⋯, Suppr) : la date part, Ctrl+Z ou « Annuler » dans le message la remet. Pendant une création :
+ *  la date n'a jamais existé. */
+function supprimerFiche() {
+  if (!selId) return;
+  if (enCreation()) {
+    const id = selId;
+    creation = null;
+    snapshot();
+    doc.evts = doc.evts.filter(x => x.id !== id);
+    fermerFiche();
+    changed();
+    toutAfficher();
+    return toast('Création annulée');
+  }
+  supprimer(selId);
+}
+/** Alt+1 à Alt+4, sommaire : la section vient en haut de la fiche. */
+function allerSection(s) {
+  const sec = $('#fiche .f-sec[data-sec="' + s + '"]');
+  if (!sec) return;
+  sec.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  const t = $('.rg:not([hidden]) .rg-t', sec);
+  if (t) t.focus({ preventScroll: true });
+}
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
 
@@ -13619,6 +14975,20 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-11-22 21:30',
+    v: '0.81.15',
+    t: 'Une fiche qui se lit',
+    items: [
+      'La fiche d’une manifestation se lit comme une fiche d’identité : une rangée par chose (« Titre », « Quand », « Lieu »…), la valeur seule. Clique (ou touche) une rangée pour la modifier ; Échap ou un clic ailleurs la referme. Une rangée vide n’est qu’un lien « + … ».',
+      'En tête, la ligne telle qu’elle paraîtra : clique sur l’heure, le lieu ou le titre pour aller droit à sa rangée. Quatre sections, dans l’ordre : Quoi, Quand, Où, Pour qui (Alt+1 à Alt+4 au PC) ; le public et l’équipe à part. Un point ocre dit ce qui manque pour « Demandez le programme ».',
+      'Lieu : plus de rangée de pastilles ; la rangée ouverte est une liste qui se filtre en tapant (tes lieux avec leur couleur, puis ceux déjà tapés, « Nouveau lieu », « Lieux… »).',
+      'État : Confirmée, À confirmer ou Annulée. « En attente » n’est plus proposé (pour une date pas encore publique : « À confirmer » et la diffusion « Pas sur l’affiche ») ; une date déjà en attente le reste tant que tu ne choisis rien d’autre.',
+      'Dupliquer, l’historique, le libellé imposé, le rétroplanning et Supprimer sont derrière ⋯ ; Ctrl+Z (ou « Annuler » dans le message) remet une date supprimée.',
+      'Au téléphone : la fiche se lit comme les réglages du téléphone, une rangée touchée s’ouvre en plein écran (« OK » ou le geste retour). Le champ du haut de la liste sert maintenant à chercher ; pour créer une date, le bouton « + » en bas à droite.',
+      'Au téléphone, hors des heures de travail : « Supprimer » supprime pour de bon (sur le téléphone, envoyé à la reprise) au lieu d’ouvrir « Rien ne presse » : le bouton d’un message déjà effacé restait touchable par-dessus.'
+    ]
+  },
+  {
     d: '2026-11-21 14:06',
     v: '0.80.14',
     t: 'Programme partagé',
@@ -14441,6 +15811,12 @@ function initBoutons() {
 function raccourcis(ev) {
   const k = ev.key.toLowerCase();
   const dansChamp = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  /* 0.81 : Suppr dans la fiche, hors d'un champ (la liste a le sien) : la date part, Ctrl+Z la remet */
+  if (ev.key === 'Delete' && selId && !dansChamp && !ev.ctrlKey && !ev.altKey && $('#fiche').contains(document.activeElement)) {
+    if (document.querySelector('dialog[open]')) return;
+    ev.preventDefault();
+    return supprimerFiche();
+  }
   if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) {
     if (k === 'z' && !ev.shiftKey && !dansChamp) {
       ev.preventDefault();
@@ -14460,6 +15836,11 @@ function raccourcis(ev) {
     return;
   }
   if (ev.altKey && !ev.ctrlKey) {
+    /* 0.81 : sections de la fiche, Alt+1 à Alt+4 (quoi, quand, où, pour qui) */
+    if (selId && /^[1-4]$/.test(ev.key) && !document.querySelector('dialog[open]')) {
+      ev.preventDefault();
+      return allerSection(SECTIONS[+ev.key - 1]);
+    }
     if (k === 'n') {
       ev.preventDefault();
       fermerAffiche();
@@ -14477,6 +15858,7 @@ function raccourcis(ev) {
     if (document.querySelector('dialog[open]')) return; /* les fenêtres se ferment d'elles-mêmes */
     if (!$('#menu').hidden) return ($('#menu').hidden = true), socle.finCouche();
     if (!$('#affiche').hidden) fermerAffiche();
+    else if (selId && fiche.ouvertes.size && !enCreation()) fermerRangees({ retour: true }); /* 0.81 : la rangée, puis la fiche */
     else if (selId) fermerFiche();
     else if (document.activeElement === $('#ajoutTxt')) {
       $('#ajoutTxt').value = '';
@@ -14490,12 +15872,14 @@ function raccourcis(ev) {
 function retour() {
   if (!$('#menu').hidden) return ($('#menu').hidden = true), socle.finCouche(), true;
   if (!$('#affiche').hidden) return (fermerAffiche(), true);
-  if (selId) return (fermerFiche(), true);
+  if (selId && fiche.ouvertes.size) return (fermerRangees(), true); /* 0.81 : une couche à la fois : la rangée, puis la fiche */
+  if (selId) return ($('#fValider').click(), true);
   return false;
 }
 
 initBoutons();
 initListe();
+initFiche();
 initCalendrier();
 initMiniCal();
 initRecherche();
