@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261123221541">
+<meta name="officious-page" content="20261123232251">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4687,6 +4687,473 @@ body.sans-taches #propositions {
   margin: 0.5rem 0 0;
   font-size: 0.92rem;
 }
+
+/* ---------- 0.85 : la fiche est une affiche qu'on clique (piste C, docs/maquettes/fiche-C-E.html) ---------- */
+/* les voyants : où la date paraîtra (vert), n'ira pas (gris), ce qui manque (ocre, cliquable) */
+.f-sante {
+  display: flex;
+  gap: 0.35rem;
+}
+.f-v {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 0;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.32rem 0.3rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  cursor: var(--s-cur-default);
+  background: color-mix(in srgb, var(--vert) 10%, var(--papier));
+  color: var(--vert);
+}
+.f-v span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.f-v .f-ic {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.f-v.non {
+  background: var(--fond);
+  color: var(--pale);
+}
+.f-v.manque {
+  background: color-mix(in srgb, #b07a1e 10%, var(--papier));
+  color: #8a5a12;
+  outline: 1px dashed #c99a55;
+  outline-offset: -1px;
+  font-weight: 600;
+  cursor: var(--s-cur-pointer);
+}
+.f-v-n {
+  flex: none;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  line-height: 1.05rem;
+  border-radius: 99px;
+  background: #b07a1e;
+  color: #fff;
+  font-size: 0.7rem;
+  text-align: center;
+}
+.f-v.manque:hover {
+  background: color-mix(in srgb, #b07a1e 18%, var(--papier));
+}
+/* l'affiche */
+.f-aff {
+  border: 1px solid var(--filet);
+  border-radius: 14px;
+  background: var(--papier);
+}
+.fa-haut {
+  display: grid;
+  grid-template-columns: 5.6rem 1fr;
+  gap: 0.8rem;
+  padding: 0.8rem 0.9rem 0.75rem;
+}
+#fiche .zone {
+  cursor: var(--s-cur-pointer);
+  border-radius: 8px;
+  outline-offset: 2px;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+#fiche .zone:hover,
+#fiche .zone.ouverte {
+  background: var(--survol);
+  box-shadow: 0 0 0 3px var(--survol);
+}
+#fiche .zone.ouverte {
+  background: color-mix(in srgb, var(--accent) 12%, var(--papier));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, var(--papier));
+}
+#fiche .zone:focus:not(:focus-visible) {
+  outline: none;
+}
+.fa-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.2rem 0.55rem;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--c) 9%, var(--papier));
+  align-self: start;
+}
+.fa-date .bdate .bd-haut,
+.fa-date .bdate .bd-bas {
+  color: color-mix(in srgb, var(--c) 75%, var(--gris));
+}
+.fa-date .bd-num {
+  font-size: 2.3rem;
+}
+.fa-date .bdate.flou .bd-num {
+  font-size: 1.3rem;
+}
+.fa-h {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--encre);
+  background: var(--papier);
+  border-radius: 6px;
+  padding: 0 0.45rem;
+}
+.fa-h:empty {
+  display: none;
+}
+.fa-date.manque {
+  outline: 1.5px dashed #c99a55;
+  outline-offset: -1.5px;
+}
+.fa-date.manque .fa-h {
+  color: #8a5a12;
+}
+.fa-corps {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+.fa-puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.15rem;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border-radius: 99px !important;
+  padding: 0.1rem 0.55rem 0.1rem 0.45rem;
+  background: var(--fond);
+  color: var(--gris);
+}
+.chip .f-ic {
+  width: 14px;
+  height: 14px;
+}
+.fa-type {
+  background: color-mix(in srgb, var(--accent) 10%, var(--papier));
+  color: var(--accent);
+}
+.fa-type.devine {
+  background: var(--fond);
+  color: var(--gris);
+  font-weight: 400;
+  font-style: italic;
+}
+.fa-etat.e-check {
+  background: color-mix(in srgb, var(--vert) 10%, var(--papier));
+  color: var(--vert);
+}
+.fa-etat.e-ques {
+  background: color-mix(in srgb, #b07a1e 12%, var(--papier));
+  color: #8a5a12;
+}
+.fa-etat.e-croix {
+  background: color-mix(in srgb, var(--rouge) 10%, var(--papier));
+  color: var(--rouge);
+}
+.fa-diff.d-interne {
+  background: var(--equipe-fond);
+  color: var(--equipe);
+}
+.fa-ti {
+  font:
+    600 1.15rem/1.25 'Inter Display',
+    Inter,
+    sans-serif;
+  color: var(--encre);
+  overflow-wrap: anywhere;
+}
+.fa-corps.annule .fa-ti {
+  text-decoration: line-through;
+  color: var(--pale);
+}
+.fa-st {
+  font-size: 0.9rem;
+  color: var(--gris);
+}
+.fa-lieux {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+.fa-lieu {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.1rem;
+  font-size: 0.85rem;
+  padding: 0.12rem 0.6rem 0.12rem 0.5rem;
+  border-radius: 10px !important;
+  background: var(--fond);
+}
+.fa-lieu b {
+  font-weight: 600;
+}
+.fa-lieu small {
+  color: var(--gris);
+  margin-left: 0.25rem;
+}
+.fa-lieu.vide {
+  color: var(--pale);
+  background: none;
+  border: 1px dashed var(--filet);
+}
+/* un manque à sa place : un fantôme ocre en pointillé (le facultatif vide, lui, se tait) */
+.fantome {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  border: 1.5px dashed #d8b98d;
+  color: #8a5a12;
+  background: color-mix(in srgb, #b07a1e 6%, var(--papier));
+  border-radius: 8px !important;
+  padding: 0.12rem 0.6rem;
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+.fantome small {
+  font-weight: 400;
+  font-size: 0.76rem;
+  opacity: 0.85;
+}
+/* sous l'affiche : alertes et « + … » discrets */
+.f-alertes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.f-alertes:not(:has(> :not([hidden]):not(:empty))) {
+  display: none;
+}
+.f-alertes .rg-alerte {
+  margin: 0;
+}
+.f-plus {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--pale);
+}
+.f-plus:empty {
+  display: none;
+}
+.f-plus .lien {
+  font-size: 0.8rem;
+  color: var(--pale);
+  padding: 0.1rem 0;
+}
+.f-plus .lien:hover {
+  color: var(--accent);
+}
+/* les éditeurs de l'affiche (Quoi, Quand, Où, diffusion) : invisibles, sauf ouverts en bulle */
+#fiche .f-sec.ed {
+  display: contents;
+}
+#fiche .f-sec.ed > h3,
+#fiche .f-sec.ed .rg-t,
+#fiche .f-sec[data-sec='pourqui'] > h3 {
+  display: none;
+}
+#fiche .f-sec.ed .rg:not(.ouverte) {
+  display: none;
+}
+.rg-fnom {
+  display: none;
+}
+@media (min-width: 701px) {
+  #fiche .f-sec.ed .rg.ouverte {
+    position: absolute;
+    z-index: 20;
+    margin: 0;
+    padding: 0.7rem 0.8rem 0.75rem;
+    border: 0;
+    border-radius: 12px;
+    background: var(--papier);
+    box-shadow:
+      0 10px 30px rgb(20 30 45 / 0.22),
+      0 0 0 1px rgb(0 0 0 / 0.06);
+  }
+  #fiche .f-sec.ed .rg.ouverte::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    left: var(--fl, 24px);
+    width: 14px;
+    height: 14px;
+    background: var(--papier);
+    transform: rotate(45deg);
+    box-shadow: -1px -1px 0 rgb(0 0 0 / 0.06);
+  }
+  #fiche .f-sec.ed .rg.ouverte > .rg-c {
+    padding: 0;
+  }
+  #fiche .f-sec.ed .rg-fnom {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--encre);
+  }
+  #fiche .f-sec.ed .rg-fnom i {
+    display: none;
+  }
+}
+/* bulle « Quand » : le mini-mois de la création */
+.f-quand-mois .f-cal {
+  margin-top: 0.1rem;
+}
+#fiche .f-cal .mc-j {
+  border: 0;
+  padding: 0.2rem 0 0;
+  min-width: 0;
+}
+.f-heures .puce[aria-pressed='true'] {
+  background: var(--encre);
+  color: var(--papier);
+  border-color: var(--encre);
+}
+/* les blocs : une case par chose, pictogramme à gauche, libellé au-dessus de la valeur */
+.f-bloc .rg-t {
+  grid-template-columns: 1.4rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.55rem;
+  row-gap: 0;
+  align-items: start;
+}
+.f-bloc .rg-ic {
+  grid-row: 1 / 3;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+  color: var(--pale);
+}
+.f-bloc .rg.manque .rg-ic {
+  color: #b07a1e;
+}
+.f-bloc .rg-l {
+  font-size: 0.72rem;
+  color: var(--pale);
+}
+.f-bloc .rg-v {
+  grid-column: 2;
+}
+.f-bloc .rg.vide .rg-l {
+  display: block;
+}
+.f-bloc .rg.vide .rg-t,
+.f-bloc .rg.ouverte.vide > .rg-t {
+  grid-template-columns: 1.4rem 1fr;
+}
+.f-bloc .rg.tait {
+  display: none;
+}
+.f-bloc .rg {
+  border-bottom: 0;
+}
+.f-bloc .rg-alerte {
+  margin-left: 2rem;
+}
+@media (max-width: 700px) {
+  .fa-haut {
+    grid-template-columns: 5rem 1fr;
+    padding: 0.7rem 0.75rem;
+  }
+  .f-v {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.3rem;
+  }
+  .f-bloc .rg-t,
+  .f-bloc .rg.vide .rg-t {
+    display: grid;
+    padding: 0.6rem 2.2rem 0.6rem 0.9rem;
+  }
+  .f-bloc .rg-l {
+    font-size: 0.75rem;
+    color: var(--pale);
+  }
+  .f-bloc .rg-v {
+    font-size: 0.95rem;
+    color: var(--encre);
+  }
+  .f-plus {
+    padding: 0 0.9rem 0.5rem;
+  }
+  #fiche .f-sec[data-sec='pourqui'] {
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+  #fAlertes .f-plus {
+    padding: 0 0.2rem;
+  }
+  /* la feuille en bas (type, état, diffusion, infos pratiques) : la fiche reste visible, assombrie */
+  .rg-voile:not([hidden]) {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgb(31 41 51 / 0.38);
+  }
+  #fiche.rg-feuille .rg.ouverte > .rg-c {
+    position: fixed;
+    inset: auto 0 0 0;
+    max-height: 80vh;
+    z-index: 41;
+    background: var(--papier);
+    border-radius: 18px 18px 0 0;
+    padding: 0.6rem 1rem calc(1.2rem + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 24px rgb(0 0 0 / 0.18);
+    animation: feuille-monte 0.18s ease-out;
+  }
+  #fiche.rg-feuille .rg-fnom {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font:
+      600 1.05rem 'Inter Display',
+      Inter,
+      sans-serif;
+    color: var(--encre);
+  }
+  #fiche.rg-feuille .rg-fnom i {
+    align-self: center;
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--filet);
+  }
+  #fiche.rg-feuille .puce {
+    font-size: 1rem;
+    padding: 0.5rem 0.9rem;
+  }
+}
+@keyframes feuille-monte {
+  from {
+    transform: translateY(30%);
+    opacity: 0.4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #fiche.rg-feuille .rg.ouverte > .rg-c {
+    animation: none;
+  }
+}
+/* « Programme » et son nombre de manques tiennent à 380 px */
+.f-v[data-v='programme'] {
+  flex-grow: 1.4;
+}
 </style>
 </head>
 <body>
@@ -4698,6 +5165,27 @@ body.sans-taches #propositions {
   <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(2.5 -2.5) scale(0.95)"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></g><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="none" stroke="var(--papier)" stroke-width="2.4" stroke-linejoin="round"/><path d="M0.8 24C1.2 17.8 4.6 14.3 10.2 13.4L10.2 9.8L17.2 15.6L10.2 21.4L10.2 17.6C5.6 17.5 2.6 20 0.8 24Z" fill="var(--accent)" stroke="none"/></symbol>
   <symbol id="i-equipe" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 19.5c0-3.9 2.9-6.4 6.5-6.4s6.5 2.5 6.5 6.4z"/><circle cx="16.6" cy="8.9" r="2.7" opacity=".6"/><path d="M15.4 13.3c.4-.1.8-.1 1.2-.1 2.9 0 4.9 2 4.9 5.2v1.1h-4.4c-.2-2.6-.8-4.6-1.7-6.2z" opacity=".6"/></symbol>
   <symbol id="i-ici" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></symbol>
+  <symbol id="ic-concert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+  <symbol id="ic-audition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14l-2 8H7z"/><path d="M12 12v8M8 21h8"/><path d="M9 7h6"/></symbol>
+  <symbol id="ic-ecole" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-5h4v5"/><path d="M12 4V1.5h3"/></symbol>
+  <symbol id="ic-autre" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke-width="2.6"/></symbol>
+  <symbol id="ic-oeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="ic-affiche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h6M9 12h6M3 21L21 3"/></symbol>
+  <symbol id="ic-cadenas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="ic-organisation" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="ic-ques" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.9V15"/><path d="M12 19h.01"/></symbol>
+  <symbol id="ic-croix" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="ic-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="ic-eleves" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/></symbol>
+  <symbol id="ic-ticket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/></symbol>
+  <symbol id="ic-texte" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 11h16M4 16h10"/></symbol>
+  <symbol id="ic-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></symbol>
+  <symbol id="ic-equipe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.8.3 5 2.6 5 5.8"/></symbol>
+  <symbol id="ic-poster" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+  <symbol id="ic-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="ic-retro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4M12 8v4l3 2"/></symbol>
+  <symbol id="ic-etiquette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></symbol>
 </svg>
 <header id="tete">
   <h1 id="titre">Saison</h1>
@@ -4765,11 +5253,15 @@ body.sans-taches #propositions {
     <button id="fPlusTete" class="icone tel-seul" aria-haspopup="menu" aria-label="Plus d’actions">⋯</button>
     <button id="ficheFermer" class="icone pc-seul" title="Fermer (Échap)">×</button>
   </div>
-  <div id="fResume" class="f-resume"></div>
-  <nav id="fSommaire" class="f-sommaire" aria-label="Sections de la fiche">
-    <button type="button" data-sec="quoi" title="Alt+1">Quoi</button><button type="button" data-sec="quand" title="Alt+2">Quand</button><button type="button" data-sec="ou" title="Alt+3">Où</button><button type="button" data-sec="pourqui" title="Alt+4">Pour qui</button>
-  </nav>
-  <section class="f-sec" data-sec="quoi" aria-label="Quoi">
+  <!-- 0.85 (décision de François du 23/11, piste C de docs/maquettes/fiche-C-E.html) : la fiche est une affiche qu'on
+       clique ; les voyants disent où la date paraîtra et ce qui manque ; les éditeurs de Quoi, Quand, Où et de la
+       diffusion s'ouvrent en bulle (au téléphone : feuille en bas ou plein écran) -->
+  <div id="fSante" class="f-sante" role="group" aria-label="Où cette date paraîtra"></div>
+  <div id="fResume" class="f-aff"></div>
+  <div id="fAlertes" class="f-alertes">
+    <p class="rg-alerte diff-aide" id="fDiffAide" hidden><span>Plutôt « Pas sur l’affiche » ?</span> <button type="button" class="lien" id="fDiffHors">Basculer</button></p>
+  </div>
+  <section class="f-sec ed" data-sec="quoi" aria-label="Quoi">
     <h3>Quoi</h3>
     <div class="rg" data-rg="titre">
       <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Titre</span><span class="rg-v" id="vTitre"></span></div>
@@ -4792,7 +5284,7 @@ body.sans-taches #propositions {
       </div>
     </div>
   </section>
-  <section class="f-sec" data-sec="quand" aria-label="Quand">
+  <section class="f-sec ed" data-sec="quand" aria-label="Quand">
     <h3>Quand</h3>
     <div class="rg" data-rg="quand">
       <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Quand</span><span class="rg-v" id="vQuand"></span></div>
@@ -4813,6 +5305,11 @@ body.sans-taches #propositions {
           <input id="fMois" type="month" aria-label="Mois" hidden>
           <select id="fPeriode" aria-label="Période" hidden></select>
         </div>
+        <div class="f-quand-mois">
+          <div id="fCal" class="cr-cal f-cal"></div>
+          <p id="fCtx" class="cr-contexte"></p>
+        </div>
+        <div id="fHeuresFaites" class="puces f-heures" role="group" aria-label="Heures toutes faites"></div>
         <div class="ligne2">
           <label class="champ">Heure<input id="fHeures" placeholder="19 h" title="Des heures (« 18h30 », « 14h-14h45 et 15h15-16h »), ou un horaire en toutes lettres (« l’après-midi »)"></label>
           <label class="coche bas"><input id="fHeureInc" type="checkbox"> à préciser</label>
@@ -4826,7 +5323,7 @@ body.sans-taches #propositions {
       <div class="rg-c"><div id="fStatut" class="choix" role="group" aria-label="État"></div></div>
     </div>
   </section>
-  <section class="f-sec" data-sec="ou" aria-label="Où">
+  <section class="f-sec ed" data-sec="ou" aria-label="Où">
     <h3>Où</h3>
     <div class="rg" data-rg="lieu">
       <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Lieu</span><span class="rg-v" id="vLieu"></span></div>
@@ -4835,20 +5332,18 @@ body.sans-taches #propositions {
         <div id="fLieuListe" class="f-lieux" role="listbox" aria-label="Lieux"></div>
       </div>
     </div>
-  </section>
-  <section class="f-sec" data-sec="pourqui" aria-label="Pour qui">
-    <h3>Pour qui</h3>
     <div class="rg" data-rg="diffusion">
       <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Diffusion</span><span class="rg-v" id="vDiffusion"></span></div>
-      <p class="rg-alerte diff-aide" id="fDiffAide" hidden><span>Plutôt « Pas sur l’affiche » ?</span> <button type="button" class="lien" id="fDiffHors">Basculer</button></p>
       <div class="rg-c">
         <div id="fDiffusion" class="choix" role="group" aria-label="Diffusion">
           <button type="button" data-v=""><b>Public</b><small>affiches et mails</small></button><button type="button" data-v="hors"><b>Pas sur l’affiche</b><small>compte dans les bilans</small></button><button type="button" data-v="interne"><b>Équipe seulement</b><small>ni affiche ni mail</small></button>
         </div>
       </div>
     </div>
+  </section>
+  <section class="f-sec" data-sec="pourqui" aria-label="Pour qui">
     <div id="fPublic" class="f-bloc public">
-      <h4><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg><span id="fPublicTitre">Public</span></h4>
+      <h4><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg><span id="fPublicTitre">Pour les familles</span></h4>
       <div class="rg" data-rg="detail">
         <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Descriptif</span><span class="rg-v" id="vDetail"></span></div>
         <div class="rg-c"><textarea id="fDetail" rows="2" aria-label="Descriptif" placeholder="Quelques mots"></textarea></div>
@@ -4861,9 +5356,10 @@ body.sans-taches #propositions {
         <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Infos pratiques</span><span class="rg-v" id="vPratique"></span></div>
         <div class="rg-c"><div id="fTarifs" class="puces tarifs" role="group" aria-label="Infos pratiques toutes faites"></div><textarea id="fPratique" rows="2" aria-label="Infos pratiques" placeholder="Autre texte"></textarea></div>
       </div>
+      <p class="f-plus" id="fPlusPub"></p>
     </div>
     <div class="f-bloc interne">
-      <h4><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>Équipe seulement</h4>
+      <h4><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>Pour l’équipe</h4>
       <div class="rg" data-rg="remarque">
         <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Remarque</span><span class="rg-v" id="vRemarque"></span></div>
         <div class="rg-c"><textarea id="fRemarque" rows="2" aria-label="Remarque" placeholder="Matériel, organisation…"></textarea></div>
@@ -4876,6 +5372,7 @@ body.sans-taches #propositions {
         <div class="rg-t" role="button" tabindex="0"><span class="rg-l">Rétroplanning</span><span class="rg-v" id="vRetro"></span></div>
         <div class="rg-c"><div id="fRetro" class="retro"></div></div>
       </div>
+      <p class="f-plus" id="fPlusEq"></p>
     </div>
   </section>
   <section class="f-sec histoire" id="fHistBloc" hidden aria-label="Historique">
@@ -5039,16 +5536,7 @@ body.sans-taches #propositions {
 
 <!-- 0.83 : créer une date en quatre étapes (variante A de la maquette, § 2) -->
 <dialog id="creer" class="s-dialogue creer s-plein" aria-label="Nouvelle date">
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <symbol id="ic-concert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
-    <symbol id="ic-audition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14l-2 8H7z"/><path d="M12 12v8M8 21h8"/><path d="M9 7h6"/></symbol>
-    <symbol id="ic-ecole" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-5h4v5"/><path d="M12 4V1.5h3"/></symbol>
-    <symbol id="ic-autre" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke-width="2.6"/></symbol>
-    <symbol id="ic-oeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
-    <symbol id="ic-affiche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h6M9 12h6M3 21L21 3"/></symbol>
-    <symbol id="ic-cadenas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
-  </svg>
-    <div class="cr-tete">
+  <div class="cr-tete">
     <button type="button" id="crRetourTel" class="icone tel-seul" aria-label="Annuler"><svg class="cr-fl" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span class="cr-x" aria-hidden="true">×</span></button>
     <h2>Nouvelle date</h2>
     <span id="crN" class="cr-n tel-seul"></span>
@@ -11728,7 +12216,11 @@ function initListe() {
   }
   $('#fTarifs').addEventListener('click', ev => {
     const b = ev.target.closest('[data-tarif]');
-    if (b) choisirTarif(b, $('#fPratique'), 'input');
+    if (!b) return;
+    choisirTarif(b, $('#fPratique'), 'input');
+    /* 0.85 : un clic sur une puce, c'est enregistré, l'éditeur se referme (maquette fiche-C-E.html) */
+    editSnap = null;
+    fermerRg('pratique', { retour: !ficheTel() });
   });
   $('#fPratique').addEventListener('input', () => ($('#fTarifs').innerHTML = pucesTarifs($('#fPratique').value)));
   /* « Carte blanche de rodage pour les élèves de la classe de violon » : en quittant le titre, la fin passe en
@@ -14270,23 +14762,34 @@ const SECTIONS = ['quoi', 'quand', 'ou', 'pourqui'];
 
 /** Mise en page du téléphone (fiche en plein écran, rangée ouverte en plein écran). */
 const ficheTel = () => matchMedia('(max-width: 700px)').matches;
-const fiche = { ouvertes: new Set(), avant: '', retro: false, libelle: false, hist: false };
+const fiche = { ouvertes: new Set(), avant: '', retro: false, libelle: false, hist: false, mois: '', bout: false };
 const rgEl = n => $('#fiche .rg[data-rg="' + n + '"]');
 const diffDe = e => (e.interne ? 'interne' : e.horsAffiche ? 'hors' : '');
 
-/** Ce qui manque à une date publique à venir pour « Demandez le programme » (mêmes règles que manques(), 08-mail.js) :
- *  un point ocre sur la rangée et dans le sommaire. */
-function manquesFiche(e) {
+/** Ce qui manque à une date (0.85, règle validée par François le 23/11) : une seule définition pour la fiche, ses
+ *  voyants et, plus tard, « À compléter ».
+ *  - toute date à venir, ni annulée ni passée : la date (« À dater » compte comme manquante), l'heure, le lieu ;
+ *  - une date pour le public (ni « Équipe seulement », ni « Pas sur l'affiche », ni en attente) : en plus, les élèves,
+ *    les infos pratiques et le descriptif (mêmes règles que manques(), 08-mail.js).
+ *  Rend un ensemble de noms de rangées : quand, lieu, eleves, pratique, detail. */
+function manquesDate(e) {
   const m = new Set();
-  if (!e || !estPublic(e) || !estDatee(e) || e.aDater || e.statut === 'annulé' || e.d2 < auj()) return m;
+  if (!e || e.statut === 'annulé') return m;
+  if (e.d1 && (e.d2 || e.d1) < auj()) return m;
   const programme = /^\s*[-•]\s.*\b\d{1,2}\s?h\b/m.test(e.detail || '');
-  if (!e.heures && !e.horaire && !e.libelle && !programme) m.add('quand');
+  if (!estDatee(e) || (!e.heures && !e.horaire && !e.libelle && !programme)) m.add('quand');
   if (!e.lieu) m.add('lieu');
-  if (!e.detail) m.add('detail');
-  if (!e.eleves && !/élève/i.test(e.soustitre || '')) m.add('eleves');
-  if (!e.pratique) m.add('pratique');
+  if (pourPublic(e)) {
+    if (!e.eleves && !/élève/i.test(e.soustitre || '')) m.add('eleves');
+    if (!e.pratique) m.add('pratique');
+    if (!e.detail) m.add('detail');
+  }
   return m;
 }
+/** Destinée aux familles, datée ou non (estPublic, lui, demande une date). */
+const pourPublic = e => !e.interne && !e.horsAffiche && e.statut !== 'annulé' && e.statut !== 'en attente';
+/** Ce qui manque, en mots (voyants, infobulles). */
+const NOM_MANQUE = { quand: 'la date ou l’heure', lieu: 'le lieu', eleves: 'les élèves', pratique: 'les infos pratiques', detail: 'le descriptif' };
 const POINT =
   '<i class="point" aria-label="manque pour « Demandez le programme »" title="Manque pour « Demandez le programme »"></i>';
 
@@ -14353,44 +14856,113 @@ function valeurRg(n, e) {
   return '';
 }
 
-/** Le résumé en tête : la ligne telle qu'elle paraîtra ; chaque partie ouvre sa rangée. */
-function resumeHtml(e) {
+/* 0.85 : pictogrammes de l'affiche (sprite de page-corps.html) */
+const ic = (n, cl) => '<svg class="' + (cl || 'f-ic') + '" aria-hidden="true"><use href="#ic-' + n + '"/></svg>';
+const IC_TYPE = { concert: 'concert', audition: 'audition', école: 'ecole', autre: 'autre', organisation: 'organisation' };
+const COURT_TYPE = { concert: 'Concert', audition: 'Audition', école: 'À l’école', autre: 'Autre', organisation: 'Organisation' };
+const IC_ETAT = { '': 'check', 'à confirmer': 'ques', annulé: 'croix', 'en attente': 'pause' };
+const COURT_ETAT = { '': 'confirmée', 'à confirmer': 'à confirmer', annulé: 'annulée', 'en attente': 'en attente' };
+const IC_DIFF = { '': 'oeil', hors: 'affiche', interne: 'cadenas' };
+const COURT_DIFF = { '': 'public', hors: 'pas sur l’affiche', interne: 'équipe seulement' };
+/** Une zone de l'affiche : un clic (Entrée au clavier) ouvre son éditeur. */
+const zone = (rg, cl, html, titre) =>
+  '<span class="zone ' + cl + '" data-rg="' + rg + '" role="button" tabindex="0" title="' + esc(titre) + '">' + html + '</span>';
+/** Un manque à sa place : un fantôme ocre (0.85 : « une place pour chaque chose, même vide »). */
+const fantome = (rg, txt, pour) =>
+  '<span class="zone fantome" data-rg="' + rg + '" role="button" tabindex="0">+ ' + esc(txt) + (pour ? ' <small>' + esc(pour) + '</small>' : '') + '</span>';
+
+/** L'affiche en tête : la date en gros dans la couleur du lieu, le type, l'état, la diffusion, le titre, le lieu.
+ *  Chaque partie s'ouvre au clic ; ce qui manque est un fantôme à sa place. */
+function afficheHtml(e, manque) {
   const L = lieuDe(e),
-    tags = [];
-  if (e.statut)
-    tags.push(
-      '<span class="tag t-' +
-        (e.statut === 'annulé' ? 'annule' : e.statut === 'en attente' ? 'attente' : 'confirmer') +
-        '" data-rg="etat">' +
-        ETIQUETTES[e.statut] +
-        '</span>'
-    );
-  if (e.interne) tags.push('<span class="tag t-interne" data-rg="diffusion">équipe</span>');
-  else if (e.horsAffiche) tags.push('<span class="tag t-hors" data-rg="diffusion">pas sur l’affiche</span>');
-  const meta = metaQuand(e);
-  return (
-    '<div class="r-date" data-rg="quand">' +
+    ty = typeDe(e),
+    dv = diffDe(e),
+    st = e.statut || '';
+  const h = libHoraire(e),
+    date = estDatee(e) || e.d1;
+  const dateZone =
+    '<span class="zone fa-date' +
+    (date ? '' : ' vide') +
+    (manque.has('quand') ? ' manque' : '') +
+    '" data-rg="quand" role="button" tabindex="0" title="Changer la date ou l’heure" style="--c:' +
+    (L ? L.hex : 'var(--encre)') +
+    '">' +
     blocDate(e) +
-    '</div><div class="r-corps' +
-    (e.statut === 'annulé' ? ' annule' : '') +
-    '"><div class="r-t"><span data-rg="titre">' +
-    titreHtml(e.titre) +
-    '</span>' +
-    (tags.length ? ' ' + tags.join(' ') : '') +
+    '<span class="fa-h">' +
+    (h ? esc(typo(h)) : estDatee(e) ? '+ heure' : '') +
+    '</span></span>';
+  const puces =
+    zone('type', 'chip fa-type' + (ty.devine ? ' devine' : ''), ic(IC_TYPE[ty.cle] || 'autre') + esc(COURT_TYPE[ty.cle] || ''), 'Type' + (ty.devine ? ' (deviné)' : '')) +
+    zone('etat', 'chip fa-etat e-' + (IC_ETAT[st] || 'check'), ic(IC_ETAT[st] || 'check') + esc(COURT_ETAT[st] || st), 'État') +
+    zone('diffusion', 'chip fa-diff d-' + (dv || 'public'), ic(IC_DIFF[dv]) + esc(COURT_DIFF[dv]), 'Diffusion');
+  const libs = (e.libelles || []).length
+    ? zone('libs', 'fa-libs', e.libelles.map(x => '<span class="lib-et">' + rich(x) + '</span>').join(' '), 'Libellés')
+    : '';
+  const lieu = e.lieu
+    ? zone(
+        'lieu',
+        'fa-lieu',
+        '<i class="pt-lieu" style="--c:' + (L ? L.hex : 'var(--pale)') + '"></i><b>' + rich(L ? L.cle || L.nom : e.lieu) + '</b>' +
+          (L && L.nom !== L.cle ? ' <small>' + rich(L.nom) + '</small>' : ''),
+        'Changer le lieu'
+      )
+    : manque.has('lieu')
+      ? fantome('lieu', 'Lieu')
+      : zone('lieu', 'fa-lieu vide', '+ lieu', 'Lieu');
+  return (
+    '<div class="fa-haut">' +
+    dateZone +
+    '<div class="fa-corps' +
+    (st === 'annulé' ? ' annule' : '') +
+    '"><div class="fa-puces">' +
+    puces +
     '</div>' +
-    (e.soustitre ? '<div class="r-s" data-rg="soustitre">' + richLignes(e.soustitre) + '</div>' : '') +
-    '<div class="r-m">' +
-    (meta ? '<span data-rg="quand">' + meta + '</span> ' : '') +
-    (L ? '<span data-rg="lieu">' + pastille(L) + '</span>' : '<span data-rg="lieu" class="r-vide">+ lieu</span>') +
-    '</div></div>'
+    zone('titre', 'fa-ti', titreHtml(e.titre) || '<span class="fantome">+ Titre</span>', 'Changer le titre') +
+    (e.soustitre ? zone('soustitre', 'fa-st', richLignes(e.soustitre), 'Changer le sous-titre') : '') +
+    '<div class="fa-lieux">' +
+    lieu +
+    libs +
+    '</div></div></div>'
+  );
+}
+/** Les voyants : où la date paraîtra (vert), n'ira pas (gris), ou ce qui manque pour y paraître (ocre). */
+function santeHtml(e, manque) {
+  const base = ['quand', 'lieu'].filter(x => manque.has(x)),
+    pub = [...manque];
+  const v = (cle, icone, nom, etat, manques, titre) =>
+    '<button type="button" class="f-v ' +
+    etat +
+    '" data-v="' +
+    cle +
+    '"' +
+    (manques.length ? ' data-rg="' + manques[0] + '"' : '') +
+    ' title="' +
+    esc(titre) +
+    '">' +
+    ic(icone) +
+    '<span>' +
+    nom +
+    '</span>' +
+    (manques.length ? '<b class="f-v-n" aria-label="' + manques.length + ' manque' + (manques.length > 1 ? 'nt' : '') + '">' + manques.length + '</b>' : '') +
+    '</button>';
+  const annule = e.statut === 'annulé';
+  const surAffiche = estPublic(e);
+  return (
+    v('affiche', 'poster', 'Affiche', annule || !pourPublic(e) ? 'non' : base.length ? 'manque' : surAffiche ? 'ok' : 'non', pourPublic(e) && !annule ? base : [],
+      !pourPublic(e) ? 'Pas sur les affiches' : base.length ? 'Manque pour l’affiche : ' + base.map(x => NOM_MANQUE[x]).join(', ') : 'Sur les affiches') +
+    v('programme', 'mail', 'Programme', annule || !pourPublic(e) ? 'non' : pub.length ? 'manque' : 'ok', pourPublic(e) && !annule ? pub : [],
+      !pourPublic(e) ? 'Pas dans « Demandez le programme »' : pub.length ? 'Manque pour « Demandez le programme » : ' + pub.map(x => NOM_MANQUE[x]).join(', ') : 'Prête pour « Demandez le programme »') +
+    v('equipe', 'equipe', 'Équipe', annule ? 'non' : base.length ? 'manque' : 'ok', annule ? [] : base,
+      base.length ? 'Manque pour le mail d’équipe : ' + base.map(x => NOM_MANQUE[x]).join(', ') : 'Dans le mail d’équipe')
   );
 }
 
 /** Peint ce qui se lit dans la fiche : résumé, en-tête, valeurs des rangées, alertes, sommaire. */
 function peindreFiche(e) {
   const tel = ficheTel(),
-    manque = manquesFiche(e);
-  $('#fResume').innerHTML = resumeHtml(e);
+    manque = manquesDate(e);
+  $('#fResume').innerHTML = afficheHtml(e, manque);
+  $('#fSante').innerHTML = santeHtml(e, manque);
   /* en-tête : au PC, le type et la dernière modification (« Concert · modifiée le 9 oct. ») ; au téléphone, le titre */
   const H = (e.histoire || '').split('\n').filter(l => /^\d{4}-\d{2}-\d{2} /.test(l)),
     der = H.length ? H[H.length - 1].slice(0, 10) : '',
@@ -14415,14 +14987,27 @@ function peindreFiche(e) {
                 MOIS_COURTS[+der.slice(5, 7) - 1]
               : '')
         );
+  /* 0.85 : dans les blocs, ce qui manque est un fantôme ocre à sa place ; le facultatif vide se tait, regroupé en une
+     ligne discrète en bas de son bloc (« + sous-titre · + accompagnement ») */
+  const plus = { quoi: [], pub: [], eq: [] };
   for (const r of $$('#fiche .rg')) {
     const n = r.dataset.rg,
       v = valeurRg(n, e),
-      vide = !v && !!RG_VIDE[n];
+      vide = !v && !!RG_VIDE[n],
+      m = manque.has(n);
     r.classList.toggle('vide', vide);
-    r.classList.toggle('manque', manque.has(n));
-    $('.rg-v', r).innerHTML = (vide ? RG_VIDE[n] : v) + (manque.has(n) ? POINT : '');
+    r.classList.toggle('manque', m);
+    const tait = vide && !m && !fiche.ouvertes.has(n);
+    r.classList.toggle('tait', tait);
+    $('.rg-v', r).innerHTML = vide ? (m ? '<span class="fantome">' + esc(RG_VIDE[n]) + '</span>' : RG_VIDE[n]) : v;
+    if (tait && !r.hidden) {
+      const ou = r.closest('.f-bloc.interne') ? 'eq' : r.closest('.f-bloc') ? 'pub' : n === 'soustitre' || n === 'libs' ? 'quoi' : '';
+      if (ou) plus[ou].push('<button type="button" class="lien" data-rg="' + n + '">' + esc(RG_VIDE[n]) + '</button>');
+    }
   }
+  $('#fPlusQuoi').innerHTML = plus.quoi.join(' · ');
+  $('#fPlusPub').innerHTML = plus.pub.join(' · ');
+  $('#fPlusEq').innerHTML = plus.eq.join(' · ');
   rgEl('retro').hidden = sansTaches() || !(fiche.retro || e.taches); /* 0.82 : profil « Sans Tâches » */
   /* libellés proposés (le titre, le sous-titre ou les élèves en parlent) : un geste les pose, rangée fermée ou non */
   const props = libellesProposes(e, doc),
@@ -14438,14 +15023,8 @@ function peindreFiche(e) {
   /* réservée à l'équipe mais d'un type compté : sans doute une vraie manifestation qu'on voulait seulement cacher */
   $('#fDiffAide').hidden = !(e.interne && typeDe(e).cle !== 'organisation');
   $('#fPublic').hidden = e.interne; /* réservée à l'équipe : les champs du public ne servent à rien (19/10/2026) */
-  $('#fPublicTitre').textContent = e.horsAffiche ? 'Pour le mail « Complet »' : 'Public';
-  /* sommaire : un point ocre où quelque chose manque pour « Demandez le programme » */
-  const ou = { quand: ['quand'], ou: ['lieu'], pourqui: ['detail', 'eleves', 'pratique'], quoi: [] };
-  for (const b of $$('#fSommaire button'))
-    b.classList.toggle(
-      'manque',
-      ou[b.dataset.sec].some(x => manque.has(x))
-    );
+  $('#fPublicTitre').textContent = e.horsAffiche ? 'Pour le mail « Complet »' : 'Pour les familles';
+  if (fiche.ouvertes.has('quand')) peindreQuandFiche(e);
   $('#fHistBloc').hidden = !fiche.hist;
   const nh = (e.histoire || '').split('\n').filter(l => l.trim()).length;
   $('#fmHist').textContent = 'Historique de cette date' + (nh ? ' (' + nh + ')' : '');
@@ -14476,15 +15055,25 @@ function ouvrirRg(n, o = {}) {
     afficherLieuListe();
   }
   if (n === 'retro') afficherRetro(e);
-  if (tel) {
+  if (n === 'quand') {
+    fiche.mois = (estDatee(e) ? e.d1 : auj()).slice(0, 7);
+    fiche.bout = false;
+    peindreQuandFiche(e);
+  }
+  r.classList.remove('tait');
+  if (tel && RG_FEUILLE.has(n)) {
+    /* 0.85 : un choix court monte dans une feuille en bas, sous le pouce ; la fiche reste visible dessous */
+    $('#fiche').classList.add('rg-feuille');
+    $('#rgVoile').hidden = false;
+  } else if (tel) {
     /* au téléphone, en plein écran (charte, principe 8) : « ‹ Quand … OK » en haut */
     $('#rgTitre').textContent = RG_NOMS[n];
     $('#rgBarre').hidden = false;
     $('#fiche').classList.add('rg-plein');
     $('.rg-c', r).scrollTop = 0;
-  }
+  } else if (r.closest('.f-sec.ed')) placerBulle(n, r);
   const c = premierChamp(r);
-  if (c && o.champ !== false && (!tel || /^(TEXTAREA|INPUT)$/.test(c.tagName))) {
+  if (c && o.champ !== false && !(tel && RG_FEUILLE.has(n)) && (!tel || /^(TEXTAREA|INPUT)$/.test(c.tagName))) {
     c.focus({ preventScroll: tel });
     if (o.selection && c.select) c.select();
   }
@@ -14502,9 +15091,12 @@ function fermerRg(n, o = {}) {
   $('.rg-t', r).setAttribute('aria-expanded', 'false');
   editSnap = null;
   const e = evSel();
+  r.style.cssText = '';
+  $$('#fiche .zone.ouverte').forEach(x => x.classList.remove('ouverte'));
   if (!fiche.ouvertes.size) {
     $('#rgBarre').hidden = true;
-    $('#fiche').classList.remove('rg-plein');
+    $('#rgVoile').hidden = true;
+    $('#fiche').classList.remove('rg-plein', 'rg-feuille');
   }
   if (e) {
     remplirFiche();
@@ -14520,7 +15112,44 @@ function fermerRg(n, o = {}) {
         toutAfficher();
       });
   }
-  if (o.retour) $('.rg-t', r).focus({ preventScroll: true });
+  if (o.retour) {
+    /* le curseur revient sur ce qu'on avait cliqué (une zone de l'affiche, ou la rangée d'un bloc) */
+    const z = $('#fResume [data-rg="' + n + '"]');
+    (z && r.closest('.f-sec.ed') ? z : $('.rg-t', r)).focus({ preventScroll: true });
+  }
+}
+/* 0.85 : au téléphone, ces choix courts montent dans une feuille en bas (maquette fiche-C-E.html) */
+const RG_FEUILLE = new Set(['type', 'etat', 'diffusion', 'pratique']);
+/** Au PC, l'éditeur d'une zone de l'affiche s'ouvre en bulle, juste sous elle, avec une pointe vers elle. */
+function placerBulle(n, r) {
+  const f = $('#fiche'),
+    a = $('#fResume [data-rg="' + n + '"]') || $('#fiche .f-plus [data-rg="' + n + '"]') || $('#fSante [data-rg="' + n + '"]');
+  if (!a) return;
+  a.classList.add('ouverte');
+  const fr = f.getBoundingClientRect(),
+    ar = a.getBoundingClientRect(),
+    w = Math.min(n === 'quand' ? 360 : 340, f.clientWidth - 24);
+  const left = Math.max(12, Math.min(f.clientWidth - w - 12, ar.left - fr.left - 10));
+  r.style.top = Math.round(ar.bottom - fr.top + f.scrollTop + 9) + 'px';
+  r.style.left = Math.round(left) + 'px';
+  r.style.width = w + 'px';
+  r.style.setProperty('--fl', Math.round(Math.max(14, Math.min(w - 28, ar.left - fr.left + Math.min(ar.width / 2, 34) - left - 7))) + 'px');
+}
+/** La bulle « Quand » : le mini-mois de la création (vacances, jours pris, la date choisie), ce qu'il y a autour, et
+ *  des heures toutes faites (les plus fréquentes du type). */
+function peindreQuandFiche(e) {
+  const plusieurs = $('#fPrec [aria-pressed="true"]') && $('#fPrec [aria-pressed="true"]').dataset.v === 'plusieurs',
+    flou = !$('#fFlou').hidden;
+  $('#fCal').hidden = flou;
+  $('#fCal').innerHTML = flou ? '' : miniMoisHtml(e, fiche.mois || (e.d1 || auj()).slice(0, 7));
+  $('#fCtx').innerHTML = flou ? '' : contexteJours(e);
+  $('#fCal').dataset.plusieurs = plusieurs ? '1' : '';
+  const faites = heuresFaites(typeDe(e).cle);
+  $('#fHeuresFaites').hidden = flou;
+  $('#fHeuresFaites').innerHTML =
+    faites
+      .map(h => '<button type="button" class="puce" data-h="' + h + '" aria-pressed="' + (e.heures === h && !e.horaire) + '">' + esc(typo(libHeures(h))) + '</button>')
+      .join('');
 }
 function fermerRangees(o = {}) {
   for (const n of [...fiche.ouvertes]) fermerRg(n, o);
@@ -14629,8 +15258,28 @@ function ouvrirFMenu(bouton) {
   socle.couche(m, fermerFMenu);
 }
 
+/* pictogrammes des rangées des blocs (0.85 : chaque chose a toujours la même place et la même image) */
+const IC_RG = { detail: 'texte', eleves: 'eleves', pratique: 'ticket', remarque: 'note', accomp: 'equipe', retro: 'retro' };
 function initFiche() {
   const f = $('#fiche');
+  /* 0.85 : sous l'affiche, les alertes (vacances, libellés proposés, diffusion) et le facultatif du haut */
+  const al = $('#fAlertes');
+  al.append($('#fVacAlerte'), $('#vLibsProp'));
+  const pq = document.createElement('p');
+  pq.className = 'f-plus';
+  pq.id = 'fPlusQuoi';
+  al.append(pq);
+  for (const [n, i] of Object.entries(IC_RG)) {
+    const l = $('.rg-l', rgEl(n));
+    if (l) l.insertAdjacentHTML('beforebegin', ic(i, 'rg-ic'));
+  }
+  for (const r of $$('#fiche .rg')) $('.rg-c', r).insertAdjacentHTML('afterbegin', '<div class="rg-fnom"><i></i>' + esc(RG_NOMS[r.dataset.rg]) + '</div>');
+  const voile = document.createElement('div');
+  voile.id = 'rgVoile';
+  voile.className = 'rg-voile';
+  voile.hidden = true;
+  f.append(voile);
+  voile.addEventListener('click', () => fermerRangees());
   /* rangées : un clic ouvre, un clic sur la même referme ; Entrée ou Espace au clavier */
   f.addEventListener('click', ev => {
     const t = ev.target.closest('.rg-t');
@@ -14638,12 +15287,29 @@ function initFiche() {
       const n = t.parentElement.dataset.rg;
       return fiche.ouvertes.has(n) && !ficheTel() ? fermerRg(n, { retour: true }) : ouvrirRg(n);
     }
-    const p = ev.target.closest('#fResume [data-rg]');
-    if (p) return ouvrirRg(p.dataset.rg);
-    const s = ev.target.closest('#fSommaire [data-sec]');
-    if (s) return allerSection(s.dataset.sec);
+    /* 0.85 : une zone de l'affiche, un voyant ocre, un « + … » discret : son éditeur s'ouvre (un second clic referme) */
+    const p = ev.target.closest('#fResume [data-rg], #fSante [data-rg], #fiche .f-plus [data-rg]');
+    if (p) {
+      const n = p.dataset.rg;
+      return fiche.ouvertes.has(n) && !ficheTel() ? fermerRg(n, { retour: true }) : ouvrirRg(n);
+    }
+    /* la bulle « Quand » : un jour du mini-mois, une heure toute faite */
+    const cm = ev.target.closest('#fCal [data-cm]');
+    if (cm) {
+      fiche.mois = plusMois(fiche.mois, +cm.dataset.cm);
+      return peindreQuandFiche(evSel());
+    }
+    const j = ev.target.closest('#fCal [data-jour]');
+    if (j) return choisirJourFiche(j.dataset.jour);
+    const h = ev.target.closest('#fHeuresFaites [data-h]');
+    if (h) return choisirHeureFiche(h.dataset.h);
   });
   f.addEventListener('keydown', ev => {
+    const z = ev.target.closest('#fResume [data-rg]');
+    if (z && (ev.key === 'Enter' || ev.key === ' ')) {
+      ev.preventDefault();
+      return ouvrirRg(z.dataset.rg);
+    }
     const t = ev.target.closest('.rg-t');
     if (!t || (ev.key !== 'Enter' && ev.key !== ' ')) return;
     ev.preventDefault();
@@ -14669,7 +15335,7 @@ function initFiche() {
       if (!selId || !fiche.ouvertes.size || ficheTel()) return;
       const t = ev.target;
       if (!(t instanceof Element) || !t.isConnected) return;
-      if (t.closest('.rg.ouverte, .rg-t, #fResume [data-rg], #lieuProp, #fMenu, dialog, #s-toast, .s-voile')) return;
+      if (t.closest('.rg.ouverte, .rg-t, #fResume [data-rg], #fSante [data-rg], .f-plus [data-rg], #lieuProp, #fMenu, dialog, #s-toast, .s-voile')) return;
       fermerRangees({ muet: true });
     },
     true
@@ -14763,13 +15429,50 @@ function supprimerFiche() {
   if (!selId) return;
   supprimer(selId);
 }
-/** Alt+1 à Alt+4, sommaire : la section vient en haut de la fiche. */
-function allerSection(s) {
-  const sec = $('#fiche .f-sec[data-sec="' + s + '"]');
-  if (!sec) return;
-  sec.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  const t = $('.rg:not([hidden]) .rg-t', sec);
-  if (t) t.focus({ preventScroll: true });
+/** Alt+1 à Alt+4 (0.85, sans sommaire) : le titre, la date, le lieu, puis ce qui manque pour les familles (sinon le
+ *  descriptif). */
+function allerSection(sec) {
+  const e = evSel();
+  if (!e) return;
+  const m = [...manquesDate(e)].filter(x => ['eleves', 'pratique', 'detail'].includes(x));
+  const n = { quoi: 'titre', quand: 'quand', ou: 'lieu', pourqui: e.interne ? 'remarque' : m[0] || 'detail' }[sec];
+  if (n) ouvrirRg(n);
+}
+/** Un jour touché dans le mini-mois de la fiche : la date se déplace (durée gardée) ; « Plusieurs jours » : le second
+ *  toucher fixe la fin. */
+function choisirJourFiche(iso) {
+  const e = evSel();
+  if (!e) return;
+  snapshot();
+  editSnap = null;
+  if ($('#fCal').dataset.plusieurs && fiche.bout && estDatee(e) && iso > e.d1) {
+    e.d2 = iso;
+    fiche.bout = false;
+  } else {
+    e.d1 = e.d2 = iso;
+    e.aDater = false;
+    if (!$('#fCal').dataset.plusieurs) e.semaine = false;
+    fiche.bout = !!$('#fCal').dataset.plusieurs;
+  }
+  fiche.mois = iso.slice(0, 7);
+  precChoisie = $('#fCal').dataset.plusieurs ? 'plusieurs' : '';
+  changed();
+  toutAfficher();
+  const vac = vacancesDe(e);
+  if (vac) toast('Attention : pendant les ' + libVacances(vac));
+}
+/** Une heure toute faite dans la bulle « Quand ». */
+function choisirHeureFiche(h) {
+  const e = evSel();
+  if (!e) return;
+  snapshot();
+  editSnap = null;
+  if (h === 'inc') {
+    e.heureInconnue = !e.heureInconnue;
+    if (e.heureInconnue) Object.assign(e, { heures: '', horaire: '' });
+  } else Object.assign(e, { heures: h, horaire: '', heureInconnue: false });
+  changed();
+  toutAfficher();
 }
 /* 06l-deux.js : travail à deux (0.82, socle 1.21 ; décisions de François du 21/11,
    socle/docs/proposition-partage-2026-11-21.md § 0 bis, § 2.1 P1 et § 2.6 étape 3) : la collègue ouvre le même fichier,
@@ -15356,8 +16059,11 @@ function crPeindreQuand() {
 const plusMois = (m, n) => isoDe(new Date(+m.slice(0, 4), +m.slice(5) - 1 + n, 1, 12)).slice(0, 7);
 /** Heures toutes faites (téléphone) : les plus fréquentes du type, complétées par 18 h, 19 h, 17 h, 20 h ; dans l'ordre. */
 function crHeuresFaites() {
-  const ty = typeDe(crEv()).cle,
-    n = new Map();
+  return heuresFaites(typeDe(crEv()).cle);
+}
+/** 0.85 : commun à la création et à la fiche. */
+function heuresFaites(ty) {
+  const n = new Map();
   for (const e of doc.evts)
     if (e.heures && !e.horaire && typeDe(e).cle === ty) {
       const h = e.heures.split(/[-,]/)[0];
@@ -15370,13 +16076,10 @@ function crHeuresFaites() {
   for (const d of ['18:00', '19:00', '17:00', '20:00']) if (L.length < 4 && !L.includes(d)) L.push(d);
   return L.sort();
 }
-/** Le mini-mois : vacances hachurées, jours déjà pris pointés de la couleur de leur lieu, la date choisie. */
-function crPeindreMois() {
-  const r = cr.r,
-    box = $('#crCal');
-  box.hidden = cr.mode === 'flou';
-  if (box.hidden) return ($('#crContexte').innerHTML = '');
-  const [y, m] = cr.mois.split('-').map(Number);
+/** Le mini-mois : vacances hachurées, jours déjà pris pointés de la couleur de leur lieu, la date choisie.
+ *  0.85 : commun à la création et à la fiche (bulle « Quand ») ; r : la date (d1, d2, aDater), mois : AAAA-MM. */
+function miniMoisHtml(r, mois) {
+  const [y, m] = mois.split('-').map(Number);
   const premier = new Date(y, m - 1, 1, 12),
     d = new Date(premier);
   d.setDate(1 - ((premier.getDay() + 6) % 7));
@@ -15393,7 +16096,7 @@ function crPeindreMois() {
   for (let k = 0; k < 42; k++) {
     const iso = isoDe(d);
     if (k >= 35 && d.getMonth() !== m - 1) break;
-    const evts = evtsDuJour(iso).filter(e => e.statut !== 'annulé');
+    const evts = evtsDuJour(iso).filter(e => e.statut !== 'annulé' && e.id !== r.id);
     const pts = evts
       .slice(0, 3)
       .map(e => '<i style="background:' + (e.interne ? 'var(--equipe)' : (lieuDe(e) || {}).hex || 'var(--encre)') + '"></i>')
@@ -15423,27 +16126,37 @@ function crPeindreMois() {
       '</span></button>';
     d.setDate(d.getDate() + 1);
   }
-  box.innerHTML = h + '</div>';
-  /* ce que le mini-mois montre, en mots : ce jour-là, la veille, le lendemain ; les vacances */
+  return h + '</div>';
+}
+/** Ce que le mini-mois montre, en mots : ce jour-là, la veille, le lendemain ; les vacances. */
+function contexteJours(r) {
   const ctx = [];
   if (r.d1 && !r.aDater) {
     const nom = e =>
       rich((e.titre || '').replace(/\s*\|\s*/g, ' ')) + (lieuDe(e) ? ' (' + rich(lieuDe(e).cle || lieuDe(e).nom) + ')' : '');
     const du = (iso1, iso2) => {
       const L = [];
-      for (let j = iso1; j <= iso2; j = plusJours(j, 1)) for (const e of evtsDuJour(j)) if (e.statut !== 'annulé' && !L.includes(e)) L.push(e);
+      for (let j = iso1; j <= iso2; j = plusJours(j, 1))
+        for (const e of evtsDuJour(j)) if (e.statut !== 'annulé' && e.id !== r.id && !L.includes(e)) L.push(e);
       return L;
     };
     const ici = du(r.d1, r.d2),
       veille = du(plusJours(r.d1, -1), plusJours(r.d1, -1)),
       lend = du(plusJours(r.d2, 1), plusJours(r.d2, 1));
-    ctx.push((r.d1 === r.d2 ? 'Ce jour-là' : 'Ces jours-là') + ' : ' + (ici.length ? ici.map(nom).join(', ') : 'rien') + '.');
-    if (veille.length) ctx.push('La veille : ' + veille.map(nom).join(', ') + '.');
-    if (lend.length) ctx.push('Le lendemain : ' + lend.map(nom).join(', ') + '.');
+    ctx.push((r.d1 === r.d2 ? 'Ce jour-là' : 'Ces jours-là') + ' : ' + (ici.length ? ici.map(nom).join(', ') : 'rien') + '.');
+    if (veille.length) ctx.push('La veille : ' + veille.map(nom).join(', ') + '.');
+    if (lend.length) ctx.push('Le lendemain : ' + lend.map(nom).join(', ') + '.');
     const vac = vacancesDe(r);
     if (vac) ctx.push('<span class="alerte-vac">Pendant les ' + esc(libVacances(vac)) + '</span>');
   }
-  $('#crContexte').innerHTML = ctx.map(x => '<span>' + x + '</span>').join('');
+  return ctx.map(x => '<span>' + x + '</span>').join('');
+}
+function crPeindreMois() {
+  const box = $('#crCal');
+  box.hidden = cr.mode === 'flou';
+  if (box.hidden) return ($('#crContexte').innerHTML = '');
+  box.innerHTML = miniMoisHtml(cr.r, cr.mois);
+  $('#crContexte').innerHTML = contexteJours(cr.r);
 }
 function crFixerDate(d1, d2, o = {}) {
   Object.assign(cr.r, { d1, d2, aDater: !!o.aDater, semaine: !!o.semaine });
@@ -17146,6 +17859,20 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-24 00:30',
+    v: '0.85.19',
+    t: 'La fiche devient une affiche qu’on clique',
+    items: [
+      'En haut de la fiche, trois voyants : Affiche, Programme, Équipe. Vert : la date y paraîtra. Gris : elle n’y va pas. Ocre, avec un nombre : il manque quelque chose ; un clic dessus ouvre ce qui manque.',
+      'Dessous, l’affiche de la date : le jour en gros, dans la couleur du lieu, puis le type, l’état et la diffusion en pastilles, le titre, le sous-titre et le lieu. Clique sur ce que tu veux changer : une bulle s’ouvre juste dessous (au téléphone, une feuille en bas de l’écran pour les choix courts). Échap ou un second clic la referme.',
+      'Ce qui manque est un fantôme ocre en pointillé, à sa place (« + Lieu », « + infos pratiques »…). Ce qui est vide mais facultatif ne prend plus de place : une seule ligne discrète, « + sous-titre · + accompagnement ».',
+      'Ce qui manque, partout pareil : pour toute date à venir, la date, l’heure et le lieu ; pour une date publique, en plus, les élèves, les infos pratiques et le descriptif.',
+      'Quand : le mois de la « Nouvelle date », avec les vacances hachurées et les jours déjà pris ; un clic sur un jour déplace la date, et des heures toutes faites.',
+      'Infos pratiques : un clic sur une puce, c’est enregistré, l’éditeur se referme.',
+      'Plus d’onglets « Quoi Quand Où Pour qui » : Alt+1 à Alt+4 ouvrent le titre, la date, le lieu, puis ce qui manque pour les familles.'
+    ]
+  },
   {
     d: '2026-11-23 23:30',
     v: '0.84.18',
