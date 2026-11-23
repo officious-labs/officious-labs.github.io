@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261123185552">
+<meta name="officious-page" content="20261123221541">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4226,45 +4226,82 @@ body.sans-taches #propositions {
 .cr-pan[hidden] {
   display: none;
 }
+/* 0.84 : la question en gros caractères droits, comme la maquette (l'italique de Lora reste au titre de la fenêtre) */
 .cr-q {
-  margin: 0.2rem 0 0;
+  margin: 0.3rem 0 0.1rem;
   font:
-    italic 500 1.2rem Lora,
-    Georgia,
-    serif;
+    600 1.22rem 'Inter Display',
+    Inter,
+    sans-serif;
   color: var(--encre);
 }
+/* 0.84 : les types en tuiles à pictogramme, quatre de front (deux au téléphone) */
 .cr-types {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.45rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
 }
 .cr-types button {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
-  text-align: left;
-  padding: 0.7rem 0.8rem;
-  border-radius: 10px;
-  font-size: 0.95rem;
+  justify-content: center;
+  gap: 0.4rem;
+  text-align: center;
+  padding: 0.85rem 0.5rem 0.75rem;
+  min-height: 5.6rem;
+  border: 1.5px solid var(--filet);
+  border-radius: 12px;
+  font-size: 0.86rem;
+  line-height: 1.25;
+  color: var(--gris);
+  transition:
+    transform 0.12s,
+    border-color 0.12s,
+    background 0.12s;
+}
+.cr-types button:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--filet));
   color: var(--encre);
 }
+.cr-types button:active {
+  transform: scale(0.97);
+}
+.cr-types .cr-ic {
+  width: 28px;
+  height: 28px;
+  color: var(--pale);
+}
 .cr-types button kbd {
-  min-width: 1.1rem;
+  position: absolute;
+  top: 0.35rem;
+  left: 0.4rem;
+  min-width: 1rem;
   text-align: center;
+  font-size: 0.68rem;
+  opacity: 0.7;
 }
 .cr-types button[aria-checked='true'] {
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
   background: color-mix(in srgb, var(--accent) 9%, var(--papier));
+  color: var(--accent);
   font-weight: 600;
+}
+.cr-types button[aria-checked='true'] .cr-ic {
+  color: var(--accent);
 }
 .cr-types .cr-org {
   grid-column: 1 / -1;
+  flex-direction: row;
+  min-height: 0;
   padding: 0.35rem 0.8rem;
-  font-size: 0.85rem;
-  color: var(--gris);
+  font-size: 0.82rem;
   border-style: dashed;
+  border-width: 1px;
+}
+.cr-types .cr-org kbd {
+  position: static;
 }
 .cr-devine-type {
   margin: -0.35rem 0 0;
@@ -4298,7 +4335,8 @@ body.sans-taches #propositions {
 }
 #crTitre {
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 1.12rem;
+  padding: 0.65rem 0.8rem;
 }
 #creer .devine {
   border-style: dashed;
@@ -4457,6 +4495,28 @@ body.sans-taches #propositions {
   border-radius: 10px;
   color: var(--encre);
 }
+.cr-diff button b {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cr-diff .cr-ic {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--gris);
+}
+.cr-diff button[aria-pressed='true'] .cr-ic {
+  color: var(--accent);
+}
+.cr-diff button[data-v='interne'][aria-pressed='true'] {
+  border-color: var(--equipe);
+  box-shadow: inset 0 0 0 1px var(--equipe);
+  background: color-mix(in srgb, var(--equipe) 8%, var(--papier));
+}
+.cr-diff button[data-v='interne'][aria-pressed='true'] .cr-ic {
+  color: var(--equipe);
+}
 .cr-diff button small {
   color: var(--gris);
   font-size: 0.78rem;
@@ -4523,10 +4583,21 @@ body.sans-taches #propositions {
     padding: 0.4rem 1rem 0.8rem;
   }
   .cr-types {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   .cr-types button {
-    padding: 0.75rem 0.85rem;
+    min-height: 6.2rem;
+    font-size: 0.95rem;
+  }
+  .cr-etapes {
+    margin: 0 0.7rem 0.2rem;
+  }
+  .cr-etapes button {
+    padding: 0.45rem 0 0.4rem;
+    font-size: 0.78rem;
+  }
+  .cr-etapes .cr-rep {
+    display: none;
   }
   .cr-quand {
     grid-template-columns: 1fr;
@@ -4610,6 +4681,11 @@ body.sans-taches #propositions {
   background: var(--encre);
   color: var(--papier);
   border-color: var(--encre);
+}
+/* 0.84 : créer une date depuis le jour choisi au calendrier */
+.cal-creer {
+  margin: 0.5rem 0 0;
+  font-size: 0.92rem;
 }
 </style>
 </head>
@@ -4963,18 +5039,27 @@ body.sans-taches #propositions {
 
 <!-- 0.83 : créer une date en quatre étapes (variante A de la maquette, § 2) -->
 <dialog id="creer" class="s-dialogue creer s-plein" aria-label="Nouvelle date">
-  <div class="cr-tete">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="ic-concert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+    <symbol id="ic-audition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14l-2 8H7z"/><path d="M12 12v8M8 21h8"/><path d="M9 7h6"/></symbol>
+    <symbol id="ic-ecole" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-5h4v5"/><path d="M12 4V1.5h3"/></symbol>
+    <symbol id="ic-autre" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke-width="2.6"/></symbol>
+    <symbol id="ic-oeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="ic-affiche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h6M9 12h6M3 21L21 3"/></symbol>
+    <symbol id="ic-cadenas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  </svg>
+    <div class="cr-tete">
     <button type="button" id="crRetourTel" class="icone tel-seul" aria-label="Annuler"><svg class="cr-fl" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span class="cr-x" aria-hidden="true">×</span></button>
     <h2>Nouvelle date</h2>
     <span id="crN" class="cr-n tel-seul"></span>
     <button type="button" id="crFermer" class="icone pc-seul" title="Annuler (Échap) : rien n’est créé">×</button>
   </div>
-  <ol id="crEtapes" class="cr-etapes pc-seul" aria-label="Étapes"></ol>
+  <ol id="crEtapes" class="cr-etapes" aria-label="Étapes"></ol>
   <div class="cr-corps">
     <section class="cr-pan" data-e="0" aria-label="Quoi">
       <p class="cr-q">Qu’est-ce que c’est ?</p>
       <div id="crTypes" class="cr-types" role="radiogroup" aria-label="Type">
-        <button type="button" role="radio" data-v="concert"><kbd class="pc-seul">1</kbd>Concert ou représentation</button><button type="button" role="radio" data-v="audition"><kbd class="pc-seul">2</kbd>Audition</button><button type="button" role="radio" data-v="école"><kbd class="pc-seul">3</kbd>Conservatoire à l’école</button><button type="button" role="radio" data-v="autre"><kbd class="pc-seul">4</kbd>Autre intervention</button><button type="button" role="radio" data-v="organisation" class="cr-org"><kbd class="pc-seul">5</kbd>Organisation, hors bilan</button>
+        <button type="button" role="radio" data-v="concert"><svg class="cr-ic" aria-hidden="true"><use href="#ic-concert"/></svg><kbd class="pc-seul">1</kbd>Concert ou représentation</button><button type="button" role="radio" data-v="audition"><svg class="cr-ic" aria-hidden="true"><use href="#ic-audition"/></svg><kbd class="pc-seul">2</kbd>Audition</button><button type="button" role="radio" data-v="école"><svg class="cr-ic" aria-hidden="true"><use href="#ic-ecole"/></svg><kbd class="pc-seul">3</kbd>Conservatoire à l’école</button><button type="button" role="radio" data-v="autre"><svg class="cr-ic" aria-hidden="true"><use href="#ic-autre"/></svg><kbd class="pc-seul">4</kbd>Autre intervention</button><button type="button" role="radio" data-v="organisation" class="cr-org"><kbd class="pc-seul">5</kbd>Organisation, hors bilan</button>
       </div>
       <p class="cr-devine-type" id="crTypeDevine"></p>
       <label class="cr-champ cr-titre-champ"><span>Titre <small class="pc-seul">tel qu’il paraîtra sur l’affiche</small></span><input id="crTitre" placeholder="Titre" autocomplete="off" spellcheck="true" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="crTitres" enterkeyhint="next" title="Une phrase collée ici (une ligne d’un mail) est répartie dans les étapes">
@@ -5028,7 +5113,7 @@ body.sans-taches #propositions {
     <section class="cr-pan" data-e="3" aria-label="Pour qui" hidden>
       <p class="cr-q">Pour qui ?</p>
       <div id="crDiff" class="cr-diff" role="group" aria-label="Diffusion">
-        <button type="button" data-v=""><b>Public</b><small>affiches et « Demandez le programme »</small></button><button type="button" data-v="hors"><b>Pas sur l’affiche</b><small>compte dans les bilans</small></button><button type="button" data-v="interne"><b>Équipe seulement</b><small>ni affiche ni mail aux familles</small></button>
+        <button type="button" data-v=""><b><svg class="cr-ic" aria-hidden="true"><use href="#ic-oeil"/></svg>Public</b><small>affiches et « Demandez le programme »</small></button><button type="button" data-v="hors"><b><svg class="cr-ic" aria-hidden="true"><use href="#ic-affiche"/></svg>Pas sur l’affiche</b><small>compte dans les bilans</small></button><button type="button" data-v="interne"><b><svg class="cr-ic" aria-hidden="true"><use href="#ic-cadenas"/></svg>Équipe seulement</b><small>ni affiche ni mail aux familles</small></button>
       </div>
       <p class="rg-alerte diff-aide" id="crDiffAide" hidden><span>Plutôt « Pas sur l’affiche » ?</span> <button type="button" class="lien" id="crDiffHors">Basculer</button></p>
       <div id="crPublic">
@@ -11409,7 +11494,8 @@ function ouvrirFiche(id) {
 }
 /** « + Nouvelle date » (PC, Alt+N) et le bouton « + » (téléphone) : la fenêtre de création en quatre étapes. */
 function nouvelleDate() {
-  ouvrirCreer();
+  /* 0.84 : au calendrier, un jour choisi donne la date */
+  ouvrirCreer(vue === 'calendrier' && calJour ? { jour: calJour } : {});
 }
 function fermerFiche() {
   const id = selId;
@@ -12005,6 +12091,9 @@ function afficherCalendrier() {
       esc(majuscule(JOURS[jour(calJour).getDay()] + ' ' + jourMois(jour(calJour)))) +
       '</h2>' +
       (L.length ? '<ol>' + L.map(ligneHtml).join('') + '</ol>' : '<p class="rien">Rien ce jour-là.</p>') +
+      '<p class="cal-creer"><button type="button" class="lien" data-creer="' +
+      calJour +
+      '">+ Nouvelle date ce jour-là</button></p>' +
       '</section>';
   }
   cal.innerHTML = h;
@@ -12054,6 +12143,8 @@ function initCalendrier() {
       }
       return;
     }
+    const cree = ev.target.closest('[data-creer]');
+    if (cree) return ouvrirCreer({ jour: cree.dataset.creer });
     const b = ev.target.closest('.cal-ev, .ev');
     /* au téléphone, les pastilles sont trop petites pour viser : on choisit la journée */
     if (b && !(TACTILE && b.classList.contains('cal-ev'))) return ouvrirFiche(b.dataset.id);
@@ -14938,8 +15029,11 @@ function ouvrirCreer(o = {}) {
   });
   cr.devine.clear();
   delete $('#crSousBloc').dataset.ouvert;
+  $('#crTitre').setAttribute('placeholder', 'Titre'); /* « Il manque le titre » ne survit pas à la fenêtre */
   if (o.texte) crRepartir(o.texte, false);
   if (o.titre && !cr.r.titre) cr.r.titre = o.titre;
+  /* 0.84 : depuis un jour du calendrier, la date est déjà là */
+  if (o.jour && !cr.r.d1) Object.assign(cr.r, { d1: o.jour, d2: o.jour, semaine: false, aDater: false });
   cr.mois = (cr.r.d1 || auj()).slice(0, 7);
   /* une couche à la fois : un message encore affiché en bas de l'écran ne couvre pas la fenêtre (principe 11) */
   const t = document.getElementById('s-toast');
@@ -14957,12 +15051,12 @@ function fermerCreer(abandon) {
   if (abandon) garderCreer();
   d.close();
 }
-/** La fenêtre va se fermer sans créer : s'il y avait un titre, « Reprendre » la rouvre telle quelle (Échap, ×,
+/** La fenêtre va se fermer sans créer : s'il y avait un titre, une date ou un lieu (0.84), « Reprendre » la rouvre telle quelle (Échap, ×,
  *  « Annuler », et le bouton retour du téléphone, que le socle traite). */
 function garderCreer() {
   crFermerTitres();
   const { garde: _g, L: _l, titres: _t, apres, ...reste } = cr;
-  const garde = cr.r && cr.r.titre.trim() ? JSON.parse(JSON.stringify({ ...reste, devine: [...cr.devine], titres: [] })) : null;
+  const garde = cr.r && (cr.r.titre.trim() || cr.r.d1 || cr.r.lieu) ? JSON.parse(JSON.stringify({ ...reste, devine: [...cr.devine], titres: [] })) : null;
   if (garde) {
     cr.garde = garde;
     toast('Nouvelle date abandonnée, rien n’a été créé', 'Reprendre', () => {
@@ -15482,11 +15576,8 @@ function crAller(n) {
   n = Math.max(0, Math.min(3, n));
   /* passer une étape confirme ce qu'on y avait deviné */
   if (n > cr.e) for (let i = cr.e; i < n; i++) CR_CHAMPS[i].forEach(c => cr.devine.delete(c));
-  if (n > 0 && !cr.r.titre.trim()) {
-    cr.e = 0;
-    crPeindre();
-    return crSecoue($('#crTitre'), 'Il manque le titre');
-  }
+  /* 0.84 : le titre n'est plus exigé pour avancer (« si je veux commencer par inscrire la date… ») ; il l'est à
+     « Créer la date » seulement */
   crFermerTitres();
   cr.e = n;
   cr.vu = Math.max(cr.vu, n);
@@ -15516,7 +15607,10 @@ function crPrecedent() {
 /** « Créer la date » : la date entre dans le planning (une seule étape d'annulation : Ctrl+Z la retire). */
 function crCreer() {
   const r = cr.r;
-  if (!r.titre.trim()) return crAller(0);
+  if (!r.titre.trim()) {
+    crAller(0);
+    return crSecoue($('#crTitre'), 'Il manque le titre');
+  }
   CR_CHAMPS.flat().forEach(c => cr.devine.delete(c));
   const champs = {};
   for (const [c, v] of Object.entries(r)) champs[c] = typeof v === 'string' ? v.replace(/\s+$/, '') : v;
@@ -15858,7 +15952,7 @@ function initCreer() {
   });
   /* téléphone : la fenêtre suit le clavier */
   if (window.visualViewport) visualViewport.addEventListener('resize', crTailleClavier);
-  $('#ajoutNouv').onclick = () => ouvrirCreer();
+  $('#ajoutNouv').onclick = () => nouvelleDate();
 }
 /** Repeint la barre d'étapes seule (pendant la saisie de l'heure, sans toucher au champ). */
 function crPeindreEtapesSeules() {
@@ -17052,6 +17146,18 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-23 23:30',
+    v: '0.84.18',
+    t: 'Nouvelle date : plus graphique, et la date d’abord si tu veux',
+    items: [
+      'Quoi : les types sont de grandes tuiles à pictogramme (note de musique, pupitre, école, …), quatre de front au PC, deux par rangée au téléphone ; « Pour qui » a aussi ses pictogrammes (œil, affiche barrée, cadenas).',
+      'Le titre n’est plus demandé pour avancer : Entrée, « Suivant » ou un clic sur « 2 · Quand » dans la barre d’étapes t’emmènent à la date tout de suite. Il n’est exigé qu’à « Créer la date » : la fenêtre revient alors sur « Quoi », « Il manque le titre ».',
+      'Au téléphone, la barre d’étapes est visible en haut : touche « Quand » pour commencer par le jour.',
+      'Au calendrier : choisis un jour, puis « + Nouvelle date ce jour-là » (ou « + Nouvelle date ») : la fenêtre s’ouvre avec la date déjà posée.',
+      'Fermer après n’avoir mis qu’une date ou un lieu propose aussi « Reprendre ».'
+    ]
+  },
   {
     d: '2026-11-23 20:30',
     v: '0.83.17',
