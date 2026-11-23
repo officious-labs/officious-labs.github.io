@@ -76,7 +76,10 @@ function retourPcloud() {
   if (!location.hash) return;
   var p = new URLSearchParams(location.hash.substring(1));
   history.replaceState(null, "", location.pathname);
-  if (p.get("state") !== sessionStorage.getItem(STOCKAGE + "-etat")) return;
+  var attendu = sessionStorage.getItem(STOCKAGE + "-etat");
+  sessionStorage.removeItem(STOCKAGE + "-etat");
+  // Une réponse que cette page n'a pas demandée (un lien reçu) est ignorée.
+  if (!attendu || p.get("state") !== attendu) return;
   var serveur = p.get("hostname");
   if (["api.pcloud.com", "eapi.pcloud.com"].indexOf(serveur) < 0) serveur = p.get("locationid") === "1" ? "api.pcloud.com" : "eapi.pcloud.com";
   if (p.get("access_token")) localStorage.setItem(STOCKAGE, JSON.stringify({ jeton: p.get("access_token"), serveur: serveur }));
@@ -97,7 +100,10 @@ function appel(c, methode, params) {
 }
 function lireFichier(c, id) {
   return appel(c, "getfilelink", { fileid: id }).then(function (l) {
-    return fetch("https://" + l.hosts[0] + l.path).then(function (r) { return r.text(); });
+    return fetch("https://" + l.hosts[0] + l.path).then(function (r) {
+      if (!r.ok) throw new Error("fichier illisible (" + r.status + ")");
+      return r.text();
+    });
   });
 }
 
@@ -111,11 +117,14 @@ function fichiers(m, chemin, dest) {
   return dest;
 }
 function lireDate(s, ref) {
-  var r = /^(\d{1,2})(?:er)?\s+(\p{L}+)\.?(?:\s+(\d{4}))?$/u.exec(s.trim());
+  var r = /^(\d{1,2})(?:er)?[\s\u00A0\u202F]+(\p{L}+)\.?(?:[\s\u00A0\u202F]+(\d{4}))?$/u.exec(s.trim());
   if (!r) return null;
   var m = MOIS.findIndex(function (x) { return sansAccents(r[2]).indexOf(x) === 0; });
   if (m < 0) return null;
-  return new Date(r[3] ? +r[3] : ref.getFullYear(), m, +r[1]);
+  // Sans année (écrite à la main) : la plus proche avant le jour, comme l'appli (au plus deux mois après).
+  var d = new Date(r[3] ? +r[3] : ref.getFullYear(), m, +r[1]);
+  if (!r[3] && d > new Date(ref.getFullYear(), ref.getMonth() + 2, ref.getDate())) d.setFullYear(d.getFullYear() - 1);
+  return d;
 }
 /** Une note : ses sections d'élèves (celles qui portent un genre), chacune avec ses étiquettes et ses appréciations. */
 function lireNote(texte, ref) {
@@ -125,16 +134,17 @@ function lireNote(texte, ref) {
     if (/^##\s/.test(t)) {
       var r = /^##\s+(.+?)\s*\(([^()]*)\)\s*$/.exec(t);
       var parts = r ? r[2].split(",").map(function (x) { return x.trim(); }) : [];
-      var genre = parts.length && ["fille", "f", "garçon", "garcon", "g"].indexOf(parts[0].toLowerCase()) >= 0;
+      var genre = parts.length && ["fille", "f", "garçon", "garcon", "g", "m"].indexOf(parts[0].toLowerCase()) >= 0;
       courant = genre ? { nom: r[1], etiquettes: parts.slice(1).filter(Boolean), appreciations: [] } : null;
       if (courant) eleves.push(courant);
     } else if (/^#\s/.test(t)) courant = null;
     else if (courant) {
       var a = /^-\s+\[appr[ée]ciation(?:\s+retouch[ée]e)?]\s*(.*)$/i.exec(t);
       if (!a) return;
-      var i = a[1].indexOf(" : ");
-      var d = i > 0 ? lireDate(a[1].substring(0, i), ref) : null;
-      if (d) courant.appreciations.push({ date: d, texte: a[1].substring(i + 3).trim() });
+      // Le premier « : », espaces ordinaires ou insécables, ou collé (écrit à la main sur le PC), comme l'appli.
+      var m = /^([^:]+?)[\s\u00A0\u202F]*:[\s\u00A0\u202F]*(.*)$/.exec(a[1]);
+      var d = m ? lireDate(m[1], ref) : null;
+      if (d) courant.appreciations.push({ date: d, texte: m[2].trim() });
     }
   });
   return eleves;
@@ -157,6 +167,8 @@ function pourImuse(t) {
 // —— L'écran ——
 var classes = [], choixLieu = null, choixEtiquette = null;
 var copiees = JSON.parse(localStorage.getItem(STOCKAGE + "-copiees") || "{}");
+/** Ce qui est gardé d'un texte copié : un condensé, jamais le texte d'un élève. */
+function condense(t) { var h = 0; for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return String(h); }
 
 function puce(texte, actif, f) {
   var b = document.createElement("button"); b.textContent = texte; if (actif) b.className = "actif"; b.onclick = f; return b;
@@ -168,9 +180,9 @@ function visibles() {
 }
 function copier(texte, cle, bouton) {
   navigator.clipboard.writeText(texte).then(function () {
-    if (cle) { copiees[cle] = texte; localStorage.setItem(STOCKAGE + "-copiees", JSON.stringify(copiees)); }
+    if (cle) { copiees[cle] = condense(texte); localStorage.setItem(STOCKAGE + "-copiees", JSON.stringify(copiees)); }
     if (bouton) bouton.textContent = "✓ Copié";
-  });
+  }).catch(function () { if (bouton) bouton.textContent = "Pas copié : réessayer"; });
 }
 function afficher() {
   var lieux = [], etiquettes = [];
@@ -207,7 +219,7 @@ function afficher() {
       if (texte) {
         var cle = v.classe.chemin + " | " + e.nom;
         var b = document.createElement("button"); b.className = "plein";
-        b.textContent = copiees[cle] === texte ? "✓ Copié" : "Copier";
+        b.textContent = copiees[cle] === condense(texte) ? "✓ Copié" : "Copier";
         b.onclick = function () { copier(texte, cle, b); };
         carte.appendChild(b);
         bloc.push(e.nom + "\n" + texte);
@@ -222,8 +234,10 @@ function afficher() {
   $("copierTout").onclick = function () { copier(tout.join("\n\n\n"), null, $("copierTout")); };
 }
 
+var lecture = 0;
 function charger() {
   var c = lireJeton();
+  var moi = ++lecture; // deux « Relire » de suite : seule la dernière lecture compte
   if (!c) { etat(""); $("connexion").hidden = false; $("vue").hidden = true; return; }
   $("connexion").hidden = true;
   etat("Lecture des notes…");
@@ -240,6 +254,7 @@ function charger() {
     }
     // Quatre lectures à la fois : assez vite, sans trop solliciter pCloud.
     return Promise.all([suivant(), suivant(), suivant(), suivant()]).then(function () {
+      if (moi !== lecture) return;
       classes = lus.filter(function (x) { return x.eleves.length; }).map(function (x) {
         return { lieu: x.f.chemin[0], titre: x.f.chemin[x.f.chemin.length - 1].replace(/\.md$/i, ""), chemin: x.f.chemin.join("/"),
                  eleves: x.eleves.map(function (e) { return { nom: e.nom, etiquettes: e.etiquettes, texte: enCours(e, jour) }; }) };
@@ -247,9 +262,10 @@ function charger() {
       etat(""); $("vue").hidden = false; afficher();
     });
   }).catch(function (e) {
+    if (moi !== lecture) return;
     if (e.code === 1000 || e.code === 2094 || e.code === 2095) { localStorage.removeItem(STOCKAGE); charger(); return; }
     etat("Les notes n’ont pas pu être lues (" + e.message + "). Réessayer avec « Relire les notes ».");
-    $("vue").hidden = false;
+    classes = []; $("vue").hidden = false; afficher();
   });
 }
 
