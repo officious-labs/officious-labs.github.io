@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer">
+<!-- L'origine seule (jamais le chemin ni ce qui suit « # ») : sans elle, pCloud refuse ses liens de fichiers
+     (« Invalid link referer », essai de François du 23/11/2026). -->
+<meta name="referrer" content="strict-origin">
 <meta name="robots" content="noindex">
 <title>Impulsion · Bulletins</title>
 <!--
@@ -98,11 +100,25 @@ function appel(c, methode, params) {
     return j;
   });
 }
+/**
+ * Le texte d'un fichier : d'abord par « gettextfile », qui le rend directement depuis le serveur de l'API ; sinon par
+ * un lien de téléchargement (« getfilelink »), que pCloud lie à l'origine de la page.
+ */
 function lireFichier(c, id) {
-  return appel(c, "getfilelink", { fileid: id }).then(function (l) {
-    return fetch("https://" + l.hosts[0] + l.path).then(function (r) {
-      if (!r.ok) throw new Error("fichier illisible (" + r.status + ")");
-      return r.text();
+  var q = new URLSearchParams({ fileid: id, fromencoding: "utf-8", toencoding: "utf-8", access_token: c.jeton });
+  return fetch("https://" + c.serveur + "/gettextfile?" + q).then(function (r) {
+    if (!r.ok) throw new Error("gettextfile " + r.status);
+    return r.text();
+  }).then(function (t) {
+    // Une erreur arrive en JSON ({"result": 7010, …}) ; une note n'en est jamais un.
+    if (/^\s*\{\s*"result"/.test(t)) { var j = JSON.parse(t); if (j.result !== 0) throw new Error(j.error || "erreur " + j.result); }
+    return t;
+  }).catch(function () {
+    return appel(c, "getfilelink", { fileid: id }).then(function (l) {
+      return fetch("https://" + l.hosts[0] + l.path).then(function (r) {
+        if (!r.ok) throw new Error("fichier illisible (" + r.status + ")");
+        return r.text();
+      });
     });
   });
 }
