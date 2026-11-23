@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261121100534">
+<meta name="officious-page" content="20261123190123">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7481,6 +7481,35 @@ sup {
   vertical-align: 0.52em;
   vertical-align: calc(1cap / 0.68 - 1ex);
 }
+
+/* 3.22 : retrait des listes au téléphone, collé au-dessus du clavier (position posée par mEdRetraitEtat) */
+.nindent {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  box-sizing: border-box;
+}
+.nindent[hidden] {
+  display: none;
+}
+.nindent button.ico {
+  width: 3rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.nindent button.ico:disabled {
+  opacity: 0.35;
+}
+#nEd > div {
+  scroll-margin-bottom: 3.6rem;
+}
 </style>
 </head>
 <body>
@@ -7653,6 +7682,7 @@ sup {
       </div>
       
     </form>
+    <div id="nIndent" class="nindent" hidden><button type="button" id="nDedent" class="ico" title="Retrait à gauche" aria-label="Retrait à gauche">⇤</button><button type="button" id="nIndentBtn" class="ico" title="Retrait à droite" aria-label="Retrait à droite">⇥</button></div>
   </dialog>
 </div>
 <aside id="hist">
@@ -21484,6 +21514,17 @@ $('#mTabs').addEventListener('click', e => {
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
   {
+    d: '2026-11-23 20:40',
+    type: 'web',
+    v: '3.22.23',
+    t: 'Indenter une liste au téléphone',
+    items: [
+      'Dans une note, quand le curseur est dans une puce ou un élément numéroté, deux boutons « ⇤ » et « ⇥ » apparaissent juste au-dessus du clavier : « ⇥ » (retrait à droite) fait de l’élément une sous-puce, « ⇤ » (retrait à gauche) le remonte d’un cran.',
+      'Le clavier reste ouvert et le curseur ne bouge pas. « ⇤ » est grisé au premier niveau, « ⇥ » quand l’élément ne peut pas aller plus loin (premier de la liste, ou trois niveaux). Hors d’une liste, les boutons disparaissent.',
+      'Un retrait s’annule comme le reste de la note. Au PC, rien ne change : la touche Tab (Maj+Tab pour remonter) fait toujours la même chose.'
+    ]
+  },
+  {
     d: '2026-11-21 10:49',
     type: 'web',
     v: '3.21.22',
@@ -25644,8 +25685,51 @@ function mEdTitreEtat() {
   b.classList.toggle('on', !!h);
   b.querySelector('sub').textContent = h || '';
 }
+/** 3.22 : boutons « ⇤ » « ⇥ » au-dessus du clavier quand le curseur est dans une puce ou un élément numéroté (les claviers
+    du téléphone n'ont pas de touche Tab). Posés au bas de la zone visible (visualViewport : le clavier la raccourcit). */
+function mEdRetraitEtat() {
+  const bar = $('#nIndent'),
+    ed = $('#nEd'),
+    L = mNoteRiche() && !ed.hidden && $('#mNote').open && document.activeElement === ed ? edLine(ed) : null,
+    on = !!(L && edListe(L)) && document.body.classList.contains('mobile');
+  bar.hidden = !on;
+  if (!on) return;
+  const p = L.previousElementSibling,
+    max = p && edListe(p) ? Math.min(3, edLv(p) + 1) : 0;
+  $('#nDedent').disabled = edLv(L) <= 0;
+  $('#nIndentBtn').disabled = edLv(L) >= max;
+  const v = window.visualViewport,
+    bas = v ? v.offsetTop + v.height : innerHeight,
+    g = v ? v.offsetLeft : 0,
+    w = v ? v.width : innerWidth;
+  bar.style.top = Math.max(0, bas - bar.offsetHeight) + 'px';
+  bar.style.left = g + 'px';
+  bar.style.width = w + 'px';
+}
+/** ⇤ (dir -1) et ⇥ (dir +1) : comme Maj+Tab et Tab au PC, un seul instantané d'annulation. */
+function mEdRetrait(dir) {
+  const ed = $('#nEd');
+  if (!edSel(ed)) return;
+  mEdHist.push(true);
+  edIndent(ed, dir);
+  mEdVersTexte();
+  mEdRetraitEtat();
+}
 function mInitNoteRiche() {
   const ed = $('#nEd');
+  for (const [id, dir] of [
+    ['#nDedent', -1],
+    ['#nIndentBtn', 1]
+  ]) {
+    const b = $(id);
+    b.onpointerdown = e => e.preventDefault(); /* le clavier reste ouvert et le curseur, dans la note */
+    b.onmousedown = e => e.preventDefault();
+    b.onclick = () => mEdRetrait(dir);
+  }
+  ed.addEventListener('focus', mEdRetraitEtat);
+  ed.addEventListener('blur', () => setTimeout(mEdRetraitEtat, 0));
+  $('#mNote').addEventListener('close', () => ($('#nIndent').hidden = true));
+  if (window.visualViewport) for (const k of ['resize', 'scroll']) visualViewport.addEventListener(k, mEdRetraitEtat);
   ed.addEventListener('compositionstart', () => (ed._comp = true));
   ed.addEventListener('compositionend', () => {
     ed._comp = false;
@@ -25746,6 +25830,7 @@ function mInitNoteRiche() {
     requestAnimationFrame(() => {
       edAct(ed);
       mEdTitreEtat();
+      mEdRetraitEtat();
       lienBulle(ed);
       edVoirCurseur(ed);
     });
