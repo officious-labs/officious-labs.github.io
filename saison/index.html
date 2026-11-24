@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261124001449">
+<meta name="officious-page" content="20261124081240">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2763,8 +2763,9 @@ dialog.completer[open] {
   padding: 0 1.1rem 0.4rem;
 }
 .ac-mini {
+  cursor: var(--s-cur-pointer);
   display: grid;
-  grid-template-columns: 4.2rem 1fr;
+  grid-template-columns: 4.2rem 1fr auto;
   gap: 0.7rem;
   align-items: center;
   padding: 0.55rem 0.8rem;
@@ -2773,6 +2774,15 @@ dialog.completer[open] {
 }
 .ac-mini .bdate .bd-num {
   font-size: 1.7rem;
+}
+.ac-mini:hover {
+  background: color-mix(in srgb, var(--c) 12%, var(--fond));
+}
+.ac-fl {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--pale);
+  padding-right: 0.1rem;
 }
 .ac-titre {
   font-weight: 600;
@@ -4057,6 +4067,24 @@ dialog.programme .prog-garde {
 }
 .f-menu .danger {
   color: var(--rouge);
+}
+/* 0.88 : le menu d'une date de la liste */
+.lm-titre {
+  margin: 0.25rem 0.6rem 0.35rem;
+  font-size: 0.8rem;
+  color: var(--gris);
+  max-width: 17rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lm-n {
+  font-size: 0.78rem;
+  color: #8a5a12;
+  margin-left: 0.3rem;
+}
+.ev.appui {
+  background: var(--survol);
 }
 .rg-barre {
   display: none;
@@ -5628,6 +5656,15 @@ body.sans-taches #propositions {
   <hr>
   <button id="fmSupprimer" role="menuitem" class="danger">Supprimer <kbd class="pc-seul">Suppr</kbd></button>
 </div>
+<!-- 0.88 : le menu d'une date de la liste (appui long au téléphone, clic droit au PC ; 06o-appui.js) -->
+<div id="lMenu" class="menu f-menu l-menu" role="menu" hidden>
+  <p id="lmTitre" class="lm-titre"></p>
+  <button data-lm="completer" id="lmCompleter" role="menuitem">Compléter… <span id="lmCompleterN" class="lm-n"></span></button>
+  <button data-lm="dupliquer" role="menuitem">Dupliquer</button>
+  <button data-lm="annulee" id="lmAnnulee" role="menuitem">Marquer annulée</button>
+  <hr>
+  <button data-lm="supprimer" role="menuitem" class="danger">Supprimer</button>
+</div>
 <button id="bNouv" class="fab" type="button" title="Nouvelle date" aria-label="Nouvelle date"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 
 <div id="lieuProp" class="lieu-prop" role="listbox" aria-label="Lieux déjà utilisés" hidden></div>
@@ -5854,7 +5891,8 @@ body.sans-taches #propositions {
   <p class="aide">Le champ de recherche (en haut de l’écran au téléphone) filtre la liste, le calendrier et le mini-mois à chaque lettre. L’affiche et les mails ne sont jamais filtrés.</p>
   <h3>Nouvelle date</h3>
   <p class="aide">« + Nouvelle date » (Alt+N ; au téléphone, le « + » en bas à droite) : une page courte — le type, le titre, la date et le lieu, puis « Créer » (Ctrl+Entrée). Entrée passe au champ suivant ; rien n’est créé avant « Créer ». Pour qui, les élèves, les infos pratiques et le descriptif se complètent ensuite dans la fiche. Le champ Date comprend « jeudi 11 mars », « 11/3 », « du 21 au 27 février », « semaine du 24 mai », « en mai » ; le champ Heure, « 19h », « 14h-14h45 et 15h15-16h » ou « l’après-midi ». Un titre déjà utilisé propose de reprendre son lieu, ses élèves et ses infos pratiques.</p>
-  <p class="aide">« À compléter » : chaque jour, un petit lot de 5 dates au plus, prises dans la période en cours et la suivante, les plus proches d’abord ; le bandeau en haut de la liste en donne le nombre. « Compléter » les montre une à une, avec seulement ce qui leur manque ; Entrée passe au champ suivant, puis à la date suivante. « Passer » met une date de côté jusqu’au lendemain. À la fin du lot : « C’est tout pour aujourd’hui ». Dans « Demandez le programme », « N dates à compléter → » ouvre la même fenêtre sur les dates du mail.</p>
+  <p class="aide">« À compléter » : chaque jour, un petit lot de 5 dates au plus, prises dans la période en cours et la suivante, les plus proches d’abord ; le bandeau en haut de la liste en donne le nombre. « Compléter » les montre une à une, avec seulement ce qui leur manque ; Entrée passe au champ suivant, puis à la date suivante. « Passer » met une date de côté jusqu’au lendemain. À la fin du lot : « C’est tout pour aujourd’hui ». Dans « Demandez le programme », « N dates à compléter → » ouvre la même fenêtre sur les dates du mail. Toucher la carte de la date ouvre sa fiche ; en la fermant, on revient à « À compléter ».</p>
+  <p class="aide">Dans la liste, un appui long sur une date (au PC, un clic droit) ouvre son menu : « Compléter… » (s’il lui manque quelque chose), « Dupliquer », « Marquer annulée » ou « Rétablir », « Supprimer ».</p>
   <p class="aide">Une phrase collée dans le titre (une ligne d’un mail) est répartie dans la page, chaque valeur devinée en pointillé : jour, date, heure, titre, puis le lieu (« au CCED », « salle Bach » ou « @Bach »). Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ». « … pour les élèves de la classe de violon » devient le sous-titre ; « , élèves de CHAM 5e » remplit « Élèves concernés » ; « entrée libre », « gratuit », un tarif ou un numéro de téléphone vont dans les infos pratiques. Sans jour précis (« en mai Concert », « mars-avril Projet », ou pas de date du tout), l’événement va dans « À dater », en haut de la liste : il ne part ni sur les affiches ni dans « Demandez le programme », et apparaît en fin de mail d’équipe sous « Dates à fixer ».</p>
   <div id="aideClavier">
   <h3>Raccourcis clavier</h3>
@@ -10317,7 +10355,7 @@ function creerBandeauCopies(tete) {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.21.1',
+  version: '1.21.2',
   demarrer,
   /* fichier */
   modifie,
@@ -12208,6 +12246,7 @@ function fermerFiche() {
   noterFiche();
   selId = null;
   $('#fiche').hidden = true;
+  if (ac.retour) setTimeout(retourAc); /* 0.88 : ouverte depuis « À compléter » : on y revient */
   document.body.classList.remove('avec-fiche');
   requestAnimationFrame(majIci);
   $$('.ev.sel').forEach(x => x.classList.remove('sel'));
@@ -16877,6 +16916,12 @@ function ouvrirCompleter() {
     p
   );
 }
+/** Une seule date (menu de l'appui long dans la liste, 0.88). */
+function ouvrirAcDate(id) {
+  const e = evAc(id);
+  if (!e || !manquesDate(e).size) return;
+  ouvrirAc('une', [{ id, tx: id, m: ORDRE_M.filter(n => manquesDate(e).has(n)) }], null);
+}
 function ouvrirAc(mode, L, p) {
   Object.assign(ac, { mode, L, i: 0, fin: {}, p });
   $('#completer').classList.toggle('mode-mail', mode === 'mail');
@@ -16916,14 +16961,17 @@ function peindreAc() {
   $('#acCompte').textContent = n > 1 ? ac.i + 1 + ' sur ' + n : '';
   const per = periodeDe(e, periodes(doc));
   $('#acSous').innerHTML =
-    ac.mode === 'mail'
+    ac.mode === 'une'
+      ? (per ? esc(typo(per.nom)) : '')
+      : ac.mode === 'mail'
       ? 'pour « Demandez le programme » · ' + esc(typo(ac.p.nom.charAt(0).toLowerCase() + ac.p.nom.slice(1))) +
         ' <button type="button" id="acTaches" class="lien">Copier pour Tâches</button>'
       : 'les plus proches d’abord' + (per ? ' · ' + esc(typo(per.nom)) : '');
   const deja = dejaLa(e, x);
   const qs = x.m.map((nm, k) => questionAc(nm, e, t, k, x.m.length)).join('');
   box.innerHTML =
-    '<div class="ac-mini" style="--c:' +
+    /* 0.88 (François) : toucher la carte de la date ouvre sa fiche, le geste qui vient tout seul */
+    '<div class="ac-mini" id="acCarte" role="button" tabindex="0" title="Ouvrir la fiche" style="--c:' +
     (Lx ? Lx.hex : 'var(--encre)') +
     '">' +
     blocDate(e) +
@@ -16932,14 +16980,14 @@ function peindreAc() {
     '</div><div class="ac-m">' +
     (h ? esc(typo(h)) : '') +
     (e.lieu ? ' <i class="pt-lieu" style="--c:' + (Lx ? Lx.hex : 'var(--pale)') + '"></i>' + rich(Lx ? Lx.cle || Lx.nom : e.lieu) : '') +
-    '</div></div></div>' +
+    '</div></div><span class="ac-fl" aria-hidden="true">›</span></div>' +
     (deja.length ? '<p class="ac-deja">' + deja.map(d => '✓ ' + d).join(' · ') + '</p>' : '') +
     qs;
   $('#acPied').innerHTML =
     '<button type="button" class="lien" id="acFiche">Ouvrir la fiche</button><span class="esp"></span>' +
-    '<button type="button" id="acPasser" title="Mettre cette date de côté jusqu’à demain">Passer</button>' +
+    (ac.mode === 'une' ? '' : '<button type="button" id="acPasser" title="Mettre cette date de côté jusqu’à demain">Passer</button>') +
     '<button type="button" id="acSuivante" class="primaire">' +
-    (ac.i + 1 < n ? 'Suivante' : 'Terminer') +
+    (ac.i + 1 < n ? 'Suivante' : ac.mode === 'une' ? 'OK' : 'Terminer') +
     (TACTILE ? '' : '<kbd>Entrée</kbd>') +
     '</button>';
   if (x.m.includes('lieu')) peindreLieuxAc();
@@ -17115,12 +17163,33 @@ function suivanteAc(passer) {
     t = (e && evAc(x.tx)) || e;
   const complete = e && x.m.every(nm => questionFaite(nm, e, t));
   if (complete && !passer) ac.fin[x.id] = 'fait';
+  else if (ac.mode === 'une') ac.fin[x.id] = 'garde'; /* 0.88 : une date choisie dans le menu n'est pas mise de côté */
   else {
     ac.fin[x.id] = 'passee';
     mettreDeCote(x.id);
   }
   ac.i++;
   afficherBandeauCompleter();
+  if (ac.mode === 'une') {
+    fermerAc();
+    return toast(ac.fin[x.id] === 'fait' ? 'Date complète' : 'Gardée ; il lui manque encore quelque chose (la fiche le montre)');
+  }
+  peindreAc();
+}
+/* 0.88 (François) : une fiche ouverte depuis « À compléter » ramène à « À compléter » quand on la ferme (bouton retour,
+   flèche, ×, Échap, « Valider »), sur la même date ; ce qu'on y a rempli s'y voit coché. */
+function ficheDepuisAc() {
+  const id = ac.L[ac.i] && ac.L[ac.i].id;
+  if (!id) return;
+  fermerAc();
+  ac.retour = true;
+  ouvrirFiche(id);
+}
+function retourAc() {
+  if (!ac.retour) return;
+  ac.retour = false;
+  if (ac.i >= ac.L.length) return;
+  $('#completer').showModal();
   peindreAc();
 }
 function peindreFinAc() {
@@ -17172,6 +17241,7 @@ function initCompleter() {
     afficherBandeauCompleter();
   });
   dlg.addEventListener('click', async ev => {
+    if (ev.target.closest('#acCarte')) return ficheDepuisAc();
     const b = ev.target.closest('button');
     if (!b) return;
     if (b.id === 'acSuivante') return suivanteAc(false);
@@ -17182,11 +17252,7 @@ function initCompleter() {
       afficherMail();
       return $('#mail').showModal();
     }
-    if (b.id === 'acFiche') {
-      const id = ac.L[ac.i] && ac.L[ac.i].id;
-      fermerAc();
-      return id && ouvrirFiche(id);
-    }
+    if (b.id === 'acFiche') return ficheDepuisAc();
     if (b.id === 'acTaches') {
       const t = texteTaches(ac.p, $('#mailAvenir').checked);
       return toast((await copierRiche(esc(t).replace(/\n/g, '<br>'), t)) ? 'Copié : colle-le dans une nouvelle note de Tâches' : 'Copie impossible');
@@ -17221,6 +17287,10 @@ function initCompleter() {
   });
   dlg.addEventListener('keydown', ev => {
     if (ev.key !== 'Enter' || ev.isComposing || !ac.L.length) return;
+    if (ev.target.id === 'acCarte') {
+      ev.preventDefault();
+      return ficheDepuisAc();
+    }
     const f = ev.target.closest && ev.target.closest('.ac-c');
     if (ev.ctrlKey || ev.metaKey) {
       ev.preventDefault();
@@ -17236,6 +17306,135 @@ function initCompleter() {
       k = champs.indexOf(f);
     if (k >= 0 && k + 1 < champs.length) champs[k + 1].focus();
     else suivanteAc(false);
+  });
+}
+/* 06o-appui.js : le menu d'une date dans la liste (0.88). François : « un appui prolongé sur une date ouvre un menu
+   contextuel pour pouvoir par exemple supprimer la date ». Au téléphone, l'appui long (charte, principe 9 : le menu
+   naît de l'objet) ; au PC, le clic droit. Un toucher court ouvre toujours la fiche.
+   Contenu : la date en tête (pour savoir de laquelle on parle), « Compléter… » s'il lui manque quelque chose,
+   « Dupliquer », « Marquer annulée » (ou « Rétablir »), « Supprimer » (« Annuler » dans le message, Ctrl+Z). */
+
+const lm = { id: null };
+function ouvrirMenuDate(id, x, y) {
+  const e = doc.evts.find(v => v.id === id);
+  if (!e) return;
+  lm.id = id;
+  const m = $('#lMenu'),
+    n = manquesDate(e).size;
+  $('#lmTitre').innerHTML =
+    esc(typo(majuscule(estDatee(e) ? libDate(e) : e.d1 ? libFlou(e) : 'à dater'))) + ' · ' + rich((e.titre || '').replace(/\s*\|\s*/g, ' '));
+  $('#lmCompleter').hidden = !n;
+  $('#lmCompleterN').textContent = n ? n + ' manque' + (n > 1 ? 's' : '') : '';
+  $('#lmAnnulee').textContent = e.statut === 'annulé' ? 'Rétablir (n’est plus annulée)' : 'Marquer annulée';
+  const t = document.getElementById('s-toast');
+  if (t) t.classList.toggle('on', false); /* une couche à la fois (bogue du 22/11) */
+  m.hidden = false;
+  const li = $('.ev[data-id="' + id + '"]');
+  if (li) li.classList.add('appui');
+  /* le menu naît du doigt (ou de la souris) : dessous s'il tient, sinon au-dessus */
+  const w = m.offsetWidth,
+    h = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(innerWidth - w - 8, x - w / 2)) + 'px';
+  m.style.top = (y + 14 + h < innerHeight - 8 ? y + 14 : Math.max(8, y - h - 14)) + 'px';
+  socle.couche(m, fermerMenuDate);
+  if (!TACTILE) $('#lMenu button:not([hidden])').focus();
+}
+function fermerMenuDate() {
+  const m = $('#lMenu');
+  if (m.hidden) return;
+  m.hidden = true;
+  for (const x of $$('.ev.appui')) x.classList.toggle('appui', false);
+  socle.finCouche();
+}
+function actionMenuDate(act) {
+  const id = lm.id,
+    e = doc.evts.find(v => v.id === id);
+  fermerMenuDate();
+  if (!e) return;
+  if (act === 'completer') return ouvrirAcDate(id);
+  if (act === 'dupliquer') {
+    ouvrirFiche(id);
+    return $('#fDupliquer').click();
+  }
+  if (act === 'annulee') {
+    snapshot();
+    const avant = JSON.parse(JSON.stringify(e));
+    e.statut = e.statut === 'annulé' ? '' : 'annulé';
+    noter(e, 'modifiée ' + appareil() + ' : ' + changements(avant, e));
+    changed();
+    toutAfficher();
+    return toast((e.statut ? 'Annulée : ' : 'Rétablie : ') + typo(e.titre).replace(/\*/g, ''), 'Annuler', annuler);
+  }
+  if (act === 'supprimer') return supprimer(id);
+}
+function initMenuDate() {
+  const L = $('#liste');
+  let tm = null,
+    sx = 0,
+    sy = 0,
+    ouvertParAppui = false;
+  const annulerAppui = () => {
+    clearTimeout(tm);
+    tm = null;
+  };
+  L.addEventListener(
+    'touchstart',
+    ev => {
+      ouvertParAppui = false;
+      const li = ev.target.closest('.ev');
+      if (!li || ev.touches.length !== 1 || ev.target.closest('a, button, input')) return annulerAppui();
+      sx = ev.touches[0].clientX;
+      sy = ev.touches[0].clientY;
+      annulerAppui();
+      tm = setTimeout(() => {
+        tm = null;
+        ouvertParAppui = true;
+        ouvrirMenuDate(li.dataset.id, sx, sy);
+      }, 450);
+    },
+    { passive: true }
+  );
+  L.addEventListener(
+    'touchmove',
+    ev => {
+      const t = ev.touches[0];
+      if (tm && Math.hypot(t.clientX - sx, t.clientY - sy) > 9) annulerAppui(); /* on fait défiler : pas de menu */
+    },
+    { passive: true }
+  );
+  /* relâché après l'appui long : le menu reste, et le toucher n'ouvre pas la fiche (pas de clic) */
+  L.addEventListener(
+    'touchend',
+    ev => {
+      annulerAppui();
+      if (ouvertParAppui && ev.cancelable) ev.preventDefault();
+      ouvertParAppui = false;
+    },
+    { passive: false }
+  );
+  L.addEventListener('touchcancel', annulerAppui);
+  /* au PC, le clic droit ; au téléphone, le menu d'Android (appui long) est remplacé par le nôtre */
+  L.addEventListener('contextmenu', ev => {
+    const li = ev.target.closest('.ev');
+    if (!li) return;
+    ev.preventDefault();
+    if (TACTILE) return;
+    ouvrirMenuDate(li.dataset.id, ev.clientX, ev.clientY);
+  });
+  $('#lMenu').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-lm]');
+    if (b) actionMenuDate(b.dataset.lm);
+  });
+  $('#lMenu').addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') {
+      ev.stopPropagation();
+      fermerMenuDate();
+    } else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      const B = $$('#lMenu button:not([hidden])'),
+        k = B.indexOf(document.activeElement);
+      B[(k + (ev.key === 'ArrowDown' ? 1 : B.length - 1)) % B.length].focus();
+    }
   });
 }
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
@@ -18289,6 +18488,16 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-11-24 09:30',
+    v: '0.88.22',
+    t: '« À compléter » et la liste, d’après tes remarques',
+    items: [
+      '« À compléter » : touche la carte de la date, en haut, pour ouvrir sa fiche.',
+      'Une fiche ouverte depuis « À compléter » t’y ramène quand tu la fermes (bouton retour, flèche, ×, Échap), sur la même date : ce que tu as rempli dans la fiche y est coché.',
+      'Dans la liste, un appui long sur une date (au PC, un clic droit) ouvre son menu : « Compléter… » s’il lui manque quelque chose (cette date seule), « Dupliquer », « Marquer annulée » (ou « Rétablir »), « Supprimer ». Un toucher court ouvre toujours la fiche ; « Annuler », dans le message, remet une date supprimée.'
+    ]
+  },
+  {
     d: '2026-11-24 01:30',
     v: '0.87.21',
     t: '« À compléter » : un petit lot par jour',
@@ -19266,6 +19475,7 @@ function retour() {
 
 initBoutons();
 initListe();
+initMenuDate();
 initFiche();
 initCreer();
 initCalendrier();
