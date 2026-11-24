@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261124083346">
+<meta name="officious-page" content="20261124085227">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -17438,12 +17438,15 @@ function initMenuDate() {
     }
   });
 }
-/* 06p-swipe.js : au téléphone, glisser la fiche vers la gauche ou la droite passe à la date suivante ou précédente,
-   dans l'ordre de la liste (0.89, décision de François du 24/11 : « il fait passer d'une date à l'autre » ;
-   l'organisation garde sa vue et son bloc dans la fiche, conception-preparation.md § 5).
-   La fiche suit le doigt (game feel, charte) ; lâchée assez loin, elle sort et la suivante entre du côté opposé ;
-   sinon elle revient. Aux deux bouts, elle résiste et revient (« C'est la première date »). Pas de glissement quand
-   une rangée, une bulle ou une feuille est ouverte, ni depuis un champ : le doigt y sert à autre chose. */
+/* 06p-swipe.js : au téléphone, glisser la fiche passe à la date suivante ou précédente, dans l'ordre de la liste
+   (0.89, décision de François du 24/11 : « il fait passer d'une date à l'autre » ; l'organisation garde sa vue et son
+   bloc dans la fiche, conception-preparation.md § 5).
+   0.90 (François) : « passer d'une date à l'autre par translation à plat, comme si les deux fiches étaient collées »
+   (comme Impulsion ; le pager d'Android). Dès que le geste est horizontal, la fiche voisine est peinte à côté
+   (une copie figée de #fiche, remplie pour la voisine puis rendue à la date en cours) ; les deux glissent ensemble,
+   bord contre bord, sans ombre ni fondu. Lâchées assez loin, elles finissent le trajet et la voisine devient la
+   vraie fiche ; sinon elles reviennent. Aux deux bouts, la fiche résiste et revient (« C'est la première date »).
+   Pas de glissement depuis un champ, une rangée ouverte, une bulle ou un menu : le doigt y sert à autre chose. */
 
 /** Les dates dans l'ordre de la liste affichée (la recherche comprise) ; sinon l'ordre de la liste entière. */
 function ordreDates() {
@@ -17468,25 +17471,67 @@ function allerDateVoisine(sens) {
   if (li) li.scrollIntoView({ block: 'center' }); /* en refermant la fiche, on la retrouve dans la liste */
   return true;
 }
+/** Une copie figée de la fiche, remplie pour la date id (la vraie fiche revient aussitôt à la date en cours). Elle
+ *  garde l'id « fiche » pour avoir les mêmes styles, mais vient après la vraie : $('#fiche') reste la vraie. */
+function ficheVoisine(id) {
+  const f = $('#fiche'),
+    sv = { sel: selId, prec: precChoisie, retro: fiche.retro, libelle: fiche.libelle, hist: fiche.hist };
+  selId = id;
+  precChoisie = '';
+  fiche.retro = fiche.libelle = fiche.hist = false;
+  remplirFiche();
+  const c = f.cloneNode(true);
+  selId = sv.sel;
+  precChoisie = sv.prec;
+  Object.assign(fiche, { retro: sv.retro, libelle: sv.libelle, hist: sv.hist });
+  remplirFiche();
+  c.classList.add('fiche-voisine');
+  c.setAttribute('aria-hidden', 'true');
+  c.inert = true;
+  c.style.transition = 'none';
+  f.after(c);
+  c.scrollTop = 0;
+  return c;
+}
 function initSwipe() {
   const f = $('#fiche');
-  let g = null; /* geste en cours : {x, y, t, dx, horiz} */
+  let g = null; /* geste en cours : {x, y, t, dx, horiz, sens, voisine} */
   const libre = ev =>
     ficheTel() &&
     selId &&
     !fiche.ouvertes.size &&
     ev.touches.length === 1 &&
     !ev.target.closest('input, textarea, select, [contenteditable="true"], .rg.ouverte, .rg-voile, .f-menu');
+  const W = () => f.getBoundingClientRect().width || innerWidth;
+  /* la fiche à x, sa voisine collée à côté (à droite pour la suivante, à gauche pour la précédente) */
   const poser = (x, anim) => {
-    /* la fiche reste opaque (transparente, la liste se lisait à travers) ; une ombre la détache pendant le geste */
-    f.style.transition = anim ? 'transform 0.18s ease-out' : 'none';
+    const t = anim ? 'transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1)' : 'none';
+    f.style.transition = t;
     f.style.transform = x ? 'translateX(' + x + 'px)' : '';
-    f.style.boxShadow = x ? '0 0 24px rgb(0 0 0 / 0.18)' : '';
+    f.style.boxShadow = x ? 'none' : ''; /* à plat : l'ombre du bord de la fiche est retirée pendant le geste */
+    if (g && g.voisine) {
+      g.voisine.style.boxShadow = 'none';
+      g.voisine.style.transition = t;
+      g.voisine.style.transform = 'translateX(' + (x + g.sens * W()) + 'px)';
+    }
+  };
+  const ranger = () => {
+    for (const c of $$('.fiche-voisine')) c.parentNode.removeChild(c);
+  };
+  /* la voisine du côté où va le doigt (refaite si le doigt change de sens) */
+  const voisineVers = sens => {
+    if (g.sens === sens && (g.voisine || g.bout)) return;
+    ranger();
+    g.sens = sens;
+    const id = dateVoisine(sens);
+    g.bout = !id;
+    g.voisine = id ? ficheVoisine(id) : null;
   };
   f.addEventListener(
     'touchstart',
     ev => {
-      g = libre(ev) ? { x: ev.touches[0].clientX, y: ev.touches[0].clientY, t: Date.now(), dx: 0, horiz: null } : null;
+      ranger();
+      g = libre(ev) ? { x: ev.touches[0].clientX, y: ev.touches[0].clientY, t: Date.now(), dx: 0, horiz: null, sens: 0, voisine: null, bout: false } : null;
     },
     { passive: true }
   );
@@ -17500,29 +17545,42 @@ function initSwipe() {
       if (g.horiz === null && Math.hypot(dx, dy) > 12) g.horiz = Math.abs(dx) > Math.abs(dy) * 1.5;
       if (!g.horiz) return;
       if (ev.cancelable) ev.preventDefault();
-      /* au bout de la liste, la fiche résiste */
-      g.dx = dateVoisine(dx < 0 ? 1 : -1) ? dx : dx / 4;
-      poser(g.dx * 0.9, false);
+      if (dx) voisineVers(dx < 0 ? 1 : -1);
+      g.dx = g.bout ? dx / 4 : dx; /* au bout de la liste, la fiche résiste */
+      poser(g.dx, false);
     },
     { passive: false }
   );
   const fin = () => {
-    if (!g || !g.horiz) return (g = null);
-    const dx = g.dx,
+    if (!g || !g.horiz) {
+      g = null;
+      return;
+    }
+    const cur = g, /* un nouveau toucher pendant l'animation a son propre geste : on ne range que celui-ci */
+      dx = g.dx,
+      sens = g.sens,
       vite = Math.abs(dx) > 40 && Date.now() - g.t < 250;
-    g = null;
-    const sens = dx < 0 ? 1 : -1;
-    if ((Math.abs(dx) > innerWidth * 0.28 || vite) && dateVoisine(sens)) {
-      /* elle sort du côté du doigt, la voisine entre de l'autre */
-      poser(-sens * innerWidth, true);
+    if (g.voisine && (Math.abs(dx) > W() * 0.28 || vite)) {
+      /* les deux finissent le trajet : la voisine prend la place de la fiche, puis devient la vraie fiche */
+      poser(-sens * W(), true);
       setTimeout(() => {
+        /* la copie part avant de repeindre la vraie fiche (elle porte les mêmes id : du code qui vise « #fiche … »
+           la toucherait aussi) ; tout se fait dans la même image, sans clignement */
+        if (cur.voisine && cur.voisine.parentNode) cur.voisine.parentNode.removeChild(cur.voisine);
+        f.style.transition = 'none';
+        f.style.transform = '';
+        f.style.boxShadow = '';
         allerDateVoisine(sens);
-        poser(sens * innerWidth * 0.35, false);
-        requestAnimationFrame(() => requestAnimationFrame(() => poser(0, true)));
-      }, 170);
+        if (g === cur) g = null;
+      }, 230);
     } else {
       poser(0, true);
-      if (Math.abs(dx) > 30 && !dateVoisine(sens)) toast(sens > 0 ? 'C’est la dernière date' : 'C’est la première date');
+      const bout = g.bout;
+      setTimeout(() => {
+        if (cur.voisine && cur.voisine.parentNode) cur.voisine.parentNode.removeChild(cur.voisine);
+        if (g === cur) g = null;
+      }, 230);
+      if (bout && Math.abs(dx) > 8) toast(sens > 0 ? 'C’est la dernière date' : 'C’est la première date');
     }
   };
   f.addEventListener('touchend', fin);
@@ -18578,6 +18636,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-24 10:40',
+    v: '0.90.24',
+    t: 'Glisser d’une fiche à l’autre, à plat',
+    items: [
+      'Quand tu glisses une fiche au téléphone, la date voisine arrive collée à côté, et les deux glissent ensemble, à plat : plus d’ombre, plus de fiche qui se ferme puis s’ouvre.',
+      'Lâchée assez loin (ou d’un geste vif), la voisine prend la place ; sinon les deux reviennent. Tu peux changer d’avis pendant le geste : la voisine change de côté.'
+    ]
+  },
   {
     d: '2026-11-24 10:00',
     v: '0.89.23',
