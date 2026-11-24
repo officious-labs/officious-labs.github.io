@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261124092203">
+<meta name="officious-page" content="20261124114003">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4684,6 +4684,47 @@ body.sans-taches #propositions {
   max-height: 17rem;
   margin: 0;
 }
+/* 0.93 : le lieu choisi tient en une ligne ; « changer » rouvre la liste */
+.cr-lieu-choisi {
+  display: none;
+  align-items: baseline;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--filet));
+  background: color-mix(in srgb, var(--accent) 6%, var(--papier));
+}
+.cr-lieu-choisi .fl-nom {
+  flex: 1;
+  min-width: 0;
+}
+.cr-lieu-choisi .fl-nom b {
+  font-weight: 600;
+  margin-right: 0.3rem;
+}
+.cr-changer {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+.ac-lieux .ac-lieu-choisi {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--vert) 40%, var(--filet));
+  background: color-mix(in srgb, var(--vert) 6%, var(--papier));
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+}
+#creer.lieu-replie .cr-lieu-choisi {
+  display: flex;
+}
+#creer.lieu-replie #crLieu,
+#creer.lieu-replie #crLieux,
+#creer.lieu-replie .cr-passer {
+  display: none;
+}
 .cr-lieux button.devine {
   outline: 1px dashed var(--ocre);
 }
@@ -5852,6 +5893,7 @@ body.sans-taches #propositions {
       </div>
       <section class="cr-pan cr-ou-pan" aria-label="Où">
         <p class="cr-q">Où ?</p>
+        <button type="button" id="crLieuChoisi" class="cr-lieu-choisi" title="Changer de lieu"></button>
         <input id="crLieu" placeholder="Lieu" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="crLieux" aria-label="Lieu" enterkeyhint="done">
         <div id="crLieux" class="f-lieux cr-lieux" role="listbox" aria-label="Lieux"></div>
         <p class="cr-passer"><button type="button" class="lien" id="crSansLieu" hidden>Sans lieu</button><span id="crSansLieuSep" hidden> · </span><button type="button" class="lien" id="crLieuxF">Lieux…</button></p>
@@ -11243,11 +11285,12 @@ function typeDevine(e) {
     l = plat(e.lieu + ' ' + (ref ? ref.nom : '') + ' ' + (fam ? fam.nom : ''));
   if (/\b(reunions?|conseils? (de classe|d.etablissement|pedagogiques?|de cycle|de departement|de discipline)|jurys?|demenagement)\b/.test(t))
     return 'organisation';
-  if (/\baudition/.test(t)) return 'audition';
+  /* 0.93 (François) : « les cartes blanches sont des auditions, pas des concerts » */
+  if (/\b(audition|carte blanche)/.test(t)) return 'audition';
   /* une école (lieu ou titre), sauf l'« École du spectateur » ; les concerts des CHAM restent des concerts */
   const ecole = /\b(ecoles?|maternelle|elementaire|groupe scolaire|scolaires?|periscolaire)\b/;
   if ((ecole.test(l) || ecole.test(t.replace(/ecole du spectateur/g, ''))) && !/\bcham\b/.test(t)) return 'école';
-  if (/\b(concerts?|spectacles?|representations?|recitals?|carte blanche|comedie musicale|theatr\w*|opera|samedis musicaux|cabaret|bal)\b/.test(t))
+  if (/\b(concerts?|spectacles?|representations?|recitals?|comedie musicale|theatr\w*|opera|samedis musicaux|cabaret|bal)\b/.test(t))
     return 'concert';
   if (/\b(rentree|(debut|fin|reprise) des cours|examens?|evaluations?|inscriptions?|reinscriptions?|ecrits de (fm|formation musicale))\b/.test(t) && !/portes ouvertes/.test(t))
     return 'organisation';
@@ -15883,6 +15926,7 @@ const cr = {
   colle: '' /* phrase collée dans le titre, citée dans l'historique */,
   lieuI: 0,
   lieuFleche: false,
+  lieuOuvert: false /* 0.93 : le lieu choisi, la liste se replie ; « changer » la rouvre */,
   titres: [],
   titreI: -1,
   heureAutre: false,
@@ -15910,6 +15954,24 @@ const crVide = () => ({
   detail: '',
   remarque: ''
 });
+
+/* 0.93 : « Pour qui » n'est plus demandé à la création (0.86) ; le type le donne. François : « si je sélectionne
+   "Organisation, hors bilan" il faudrait que le public cible soit par défaut "Équipe" ». Généralisé : le type choisi
+   ou deviné (une « Réunion des professeurs » est devinée « Organisation ») ; le conservatoire à l'école naît « Pas sur
+   l'affiche » (ce que François faisait à la main, feuille de route : « Passer les manifestations d'écoles … à « Pas
+   sur l'affiche » »). La ligne du pied le dit ; la fiche le change d'un toucher. */
+const DIFF_TYPE = {
+  organisation: { interne: true, dit: 'Équipe seulement, comme toute date d’organisation' },
+  école: { horsAffiche: true, dit: 'Pas sur l’affiche, comme le conservatoire à l’école' }
+};
+function crPeindrePourQui() {
+  const d = DIFF_TYPE[typeDe(crEv()).cle];
+  const t = d
+    ? d.dit + '. Élèves, infos pratiques, descriptif : dans la fiche.'
+    : 'Pour qui, élèves, infos pratiques, descriptif : dans la fiche, quand tu les as.';
+  for (const el of $$('#creer .cr-plus-tard')) el.textContent = t;
+  $('#creer').classList.toggle('diff-type', !!d);
+}
 
 /* ---------- lire un champ avec l'analyseur de la saisie rapide ---------- */
 /** « jeudi 11 mars », « 11/3 », « semaine du 24 mai », « en mai », « du 21 au 27 février » (et une heure, s'il y en
@@ -15950,6 +16012,7 @@ function ouvrirCreer(o = {}) {
     colle: '',
     lieuI: 0,
     lieuFleche: false,
+    lieuOuvert: false,
     titres: [],
     titreI: -1,
     heureAutre: false
@@ -16069,6 +16132,7 @@ function crPeindreQuoi() {
   $('#crSousBloc').hidden = !sous;
   $('#crSousLien').hidden = sous;
   crPeindreReprise();
+  crPeindrePourQui();
 }
 /** La date du même titre la plus récente qui a de quoi reprendre (lieu, élèves, infos pratiques, descriptif). */
 function crSource() {
@@ -16389,6 +16453,19 @@ function crJour(iso) {
 
 /* ---------- Où ---------- */
 function crPeindreOu() {
+  /* 0.93 (François) : « une fois que j'ai sélectionné le lieu, il faudrait que les choix disparaissent — sans être
+     inaccessibles » : le lieu choisi tient en une ligne, « changer » rouvre la liste (un lieu deviné d'une phrase
+     collée garde la liste, pour être confirmé) */
+  const replie = !!cr.r.lieu && !cr.lieuOuvert && !cr.devine.has('lieu') && !$('#crLieu').value.trim();
+  $('#creer').classList.toggle('lieu-replie', replie);
+  if (replie) {
+    const L = lieuDe({ lieu: cr.r.lieu });
+    $('#crLieuChoisi').innerHTML =
+      '<i class="pt-lieu" style="--c:' + (L && L.hex ? L.hex : 'var(--pale)') + '"></i><span class="fl-nom">' +
+      (L && L.cle && L.nom !== L.cle ? '<b>' + rich(L.cle) + '</b> ' + rich(L.nom) : rich(L ? L.nom || cr.r.lieu : cr.r.lieu)) +
+      '</span><span class="cr-changer">changer</span>';
+    return;
+  }
   const r = cr.r,
     q = $('#crLieu').value.trim(),
     box = $('#crLieux'),
@@ -16452,6 +16529,7 @@ function crChoisirLieu(k) {
   if (!x) return;
   cr.r.lieu = x.sorte === 'lieu' ? x.l.cle || x.l.nom : nomSur(x.q);
   cr.devine.delete('lieu');
+  cr.lieuOuvert = false;
   $('#crLieu').value = '';
   cr.lieuI = 0;
   cr.lieuFleche = false;
@@ -16485,6 +16563,8 @@ function crCreer() {
   for (const [c, v] of Object.entries(r)) champs[c] = typeof v === 'string' ? v.replace(/\s+$/, '') : v;
   champs.titre = r.titre.replace(/\s+/g, ' ').trim();
   if (!champs.d1) Object.assign(champs, { d2: '', aDater: false, semaine: false });
+  const dt = DIFF_TYPE[typeDe(crEv()).cle];
+  if (dt) Object.assign(champs, dt.interne ? { interne: true } : { horsAffiche: true });
   /* l'historique dit d'où vient la date : proposée par Tâches, saisie collée (comme l'ancienne saisie rapide), sinon
      « par « Nouvelle date » » */
   const orig = cr.origine ? [cr.origine] : [];
@@ -16767,10 +16847,16 @@ function initCreer() {
     if (!b) return;
     if (b.dataset.garder) {
       cr.devine.delete('lieu');
+      cr.lieuOuvert = false;
       return crPeindreOu();
     }
     crChoisirLieu(+b.dataset.k);
   });
+  $('#crLieuChoisi').onclick = () => {
+    cr.lieuOuvert = true;
+    crPeindreOu();
+    if (!crTel()) $('#crLieu').focus();
+  };
   $('#crSansLieu').onclick = () => {
     cr.r.lieu = '';
     cr.devine.delete('lieu');
@@ -16957,6 +17043,7 @@ function peindreAc() {
     return peindreAc();
   }
   ac.avant = JSON.stringify(e);
+  ac.lieuOuvert = false;
   const t = evAc(x.tx) || e,
     Lx = lieuDe(e),
     h = libHoraire(e);
@@ -17048,6 +17135,19 @@ function peindreLieuxAc() {
     box = $('#acCorps .ac-lieux'),
     e = evAc(ac.L[ac.i].id);
   if (!champ || !box || !e) return;
+  /* 0.93 : le lieu choisi, la liste se replie en une ligne (« changer » la rouvre), comme à la création */
+  const replie = !!e.lieu && !ac.lieuOuvert && !champ.value.trim();
+  champ.hidden = replie;
+  if (replie) {
+    const Lx = lieuDe(e);
+    box.innerHTML =
+      '<button type="button" class="ac-lieu-choisi" data-changer="1" title="Changer de lieu"><i class="pt-lieu" style="--c:' +
+      (Lx && Lx.hex ? Lx.hex : 'var(--pale)') + '"></i><span class="fl-nom">' +
+      (Lx && Lx.cle && Lx.nom !== Lx.cle ? '<b>' + rich(Lx.cle) + '</b> ' + rich(Lx.nom) : rich(Lx ? Lx.nom || e.lieu : e.lieu)) +
+      '</span><span class="cr-changer">changer</span></button>';
+    ac.lieux = [];
+    return;
+  }
   const q = champ.value.trim(),
     ty = typeDe(e).cle,
     nType = new Map();
@@ -17133,6 +17233,7 @@ function appliquerAc(f) {
     const L = lieuxConnus(e.id).find(l => plat(l.cle) === plat(v) || plat(l.nom) === plat(v));
     ecrire(e, { lieu: L ? L.cle || L.nom : nomSur(v) });
     f.value = '';
+    ac.lieuOuvert = false;
     peindreLieuxAc();
   } else ecrire(t, { [q]: v });
   marquerFaits();
@@ -17269,6 +17370,11 @@ function initCompleter() {
       appliquerAc(f);
       for (const p of $$('[data-heure]', b.parentElement)) p.classList.toggle('choisi', p === b);
       return;
+    }
+    if (b.dataset.changer) {
+      ac.lieuOuvert = true;
+      peindreLieuxAc();
+      return !TACTILE && $('#acCorps [data-q="lieu"]').focus();
     }
     if (b.closest('.ac-lieux')) {
       const e = evAc(ac.L[ac.i].id),
@@ -18690,6 +18796,18 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-24 12:30',
+    v: '0.93.27',
+    t: 'Nouvelle date : le type règle le public, le lieu se replie',
+    items: [
+      '« Organisation, hors bilan » : la date naît « Équipe seulement ». De même quand le titre le fait deviner (« Réunion des professeurs »).',
+      '« Conservatoire à l’école » : la date naît « Pas sur l’affiche ».',
+      'La ligne du bas de la page le dit ; la fiche le change d’un toucher, comme avant.',
+      'Une carte blanche est devinée « Audition », plus « Concert ». Une carte blanche déjà dans le planning, sans type choisi, compte désormais dans les auditions des bilans.',
+      'Le lieu choisi tient en une ligne : la liste disparaît, « changer » la fait revenir. De même dans « À compléter ».'
+    ]
+  },
   {
     d: '2026-11-24 11:45',
     v: '0.92.26',
