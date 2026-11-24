@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261124081240">
+<meta name="officious-page" content="20261124083346">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -5893,6 +5893,7 @@ body.sans-taches #propositions {
   <p class="aide">« + Nouvelle date » (Alt+N ; au téléphone, le « + » en bas à droite) : une page courte — le type, le titre, la date et le lieu, puis « Créer » (Ctrl+Entrée). Entrée passe au champ suivant ; rien n’est créé avant « Créer ». Pour qui, les élèves, les infos pratiques et le descriptif se complètent ensuite dans la fiche. Le champ Date comprend « jeudi 11 mars », « 11/3 », « du 21 au 27 février », « semaine du 24 mai », « en mai » ; le champ Heure, « 19h », « 14h-14h45 et 15h15-16h » ou « l’après-midi ». Un titre déjà utilisé propose de reprendre son lieu, ses élèves et ses infos pratiques.</p>
   <p class="aide">« À compléter » : chaque jour, un petit lot de 5 dates au plus, prises dans la période en cours et la suivante, les plus proches d’abord ; le bandeau en haut de la liste en donne le nombre. « Compléter » les montre une à une, avec seulement ce qui leur manque ; Entrée passe au champ suivant, puis à la date suivante. « Passer » met une date de côté jusqu’au lendemain. À la fin du lot : « C’est tout pour aujourd’hui ». Dans « Demandez le programme », « N dates à compléter → » ouvre la même fenêtre sur les dates du mail. Toucher la carte de la date ouvre sa fiche ; en la fermant, on revient à « À compléter ».</p>
   <p class="aide">Dans la liste, un appui long sur une date (au PC, un clic droit) ouvre son menu : « Compléter… » (s’il lui manque quelque chose), « Dupliquer », « Marquer annulée » ou « Rétablir », « Supprimer ».</p>
+  <p class="aide">Au téléphone, fiche ouverte : glisse vers la gauche pour la date suivante (dans l’ordre de la liste, recherche comprise), vers la droite pour la précédente.</p>
   <p class="aide">Une phrase collée dans le titre (une ligne d’un mail) est répartie dans la page, chaque valeur devinée en pointillé : jour, date, heure, titre, puis le lieu (« au CCED », « salle Bach » ou « @Bach »). Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ». « … pour les élèves de la classe de violon » devient le sous-titre ; « , élèves de CHAM 5e » remplit « Élèves concernés » ; « entrée libre », « gratuit », un tarif ou un numéro de téléphone vont dans les infos pratiques. Sans jour précis (« en mai Concert », « mars-avril Projet », ou pas de date du tout), l’événement va dans « À dater », en haut de la liste : il ne part ni sur les affiches ni dans « Demandez le programme », et apparaît en fin de mail d’équipe sous « Dates à fixer ».</p>
   <div id="aideClavier">
   <h3>Raccourcis clavier</h3>
@@ -17437,6 +17438,96 @@ function initMenuDate() {
     }
   });
 }
+/* 06p-swipe.js : au téléphone, glisser la fiche vers la gauche ou la droite passe à la date suivante ou précédente,
+   dans l'ordre de la liste (0.89, décision de François du 24/11 : « il fait passer d'une date à l'autre » ;
+   l'organisation garde sa vue et son bloc dans la fiche, conception-preparation.md § 5).
+   La fiche suit le doigt (game feel, charte) ; lâchée assez loin, elle sort et la suivante entre du côté opposé ;
+   sinon elle revient. Aux deux bouts, elle résiste et revient (« C'est la première date »). Pas de glissement quand
+   une rangée, une bulle ou une feuille est ouverte, ni depuis un champ : le doigt y sert à autre chose. */
+
+/** Les dates dans l'ordre de la liste affichée (la recherche comprise) ; sinon l'ordre de la liste entière. */
+function ordreDates() {
+  const vus = $$('#liste .ev').map(li => li.dataset.id);
+  if (vus.length) return vus;
+  const L = doc.evts.slice().sort(ordre),
+    aDater = L.filter(e => !estDatee(e)).sort((a, b) => (!a.d1 !== !b.d1 ? (a.d1 ? -1 : 1) : ordre(a, b)));
+  return [...aDater, ...L.filter(estDatee)].map(e => e.id);
+}
+/** La date voisine (sens : 1 suivante, -1 précédente), ou null au bout. */
+function dateVoisine(sens) {
+  const L = ordreDates(),
+    k = L.indexOf(selId);
+  return k < 0 ? null : L[k + sens] || null;
+}
+function allerDateVoisine(sens) {
+  const id = dateVoisine(sens);
+  if (!id) return false;
+  if (fiche.ouvertes.size) fermerRangees({ muet: true });
+  ouvrirFiche(id);
+  const li = $('.ev[data-id="' + id + '"]');
+  if (li) li.scrollIntoView({ block: 'center' }); /* en refermant la fiche, on la retrouve dans la liste */
+  return true;
+}
+function initSwipe() {
+  const f = $('#fiche');
+  let g = null; /* geste en cours : {x, y, t, dx, horiz} */
+  const libre = ev =>
+    ficheTel() &&
+    selId &&
+    !fiche.ouvertes.size &&
+    ev.touches.length === 1 &&
+    !ev.target.closest('input, textarea, select, [contenteditable="true"], .rg.ouverte, .rg-voile, .f-menu');
+  const poser = (x, anim) => {
+    /* la fiche reste opaque (transparente, la liste se lisait à travers) ; une ombre la détache pendant le geste */
+    f.style.transition = anim ? 'transform 0.18s ease-out' : 'none';
+    f.style.transform = x ? 'translateX(' + x + 'px)' : '';
+    f.style.boxShadow = x ? '0 0 24px rgb(0 0 0 / 0.18)' : '';
+  };
+  f.addEventListener(
+    'touchstart',
+    ev => {
+      g = libre(ev) ? { x: ev.touches[0].clientX, y: ev.touches[0].clientY, t: Date.now(), dx: 0, horiz: null } : null;
+    },
+    { passive: true }
+  );
+  f.addEventListener(
+    'touchmove',
+    ev => {
+      if (!g) return;
+      const dx = ev.touches[0].clientX - g.x,
+        dy = ev.touches[0].clientY - g.y;
+      /* le sens se décide aux 12 premiers pixels : vertical, on laisse défiler la fiche */
+      if (g.horiz === null && Math.hypot(dx, dy) > 12) g.horiz = Math.abs(dx) > Math.abs(dy) * 1.5;
+      if (!g.horiz) return;
+      if (ev.cancelable) ev.preventDefault();
+      /* au bout de la liste, la fiche résiste */
+      g.dx = dateVoisine(dx < 0 ? 1 : -1) ? dx : dx / 4;
+      poser(g.dx * 0.9, false);
+    },
+    { passive: false }
+  );
+  const fin = () => {
+    if (!g || !g.horiz) return (g = null);
+    const dx = g.dx,
+      vite = Math.abs(dx) > 40 && Date.now() - g.t < 250;
+    g = null;
+    const sens = dx < 0 ? 1 : -1;
+    if ((Math.abs(dx) > innerWidth * 0.28 || vite) && dateVoisine(sens)) {
+      /* elle sort du côté du doigt, la voisine entre de l'autre */
+      poser(-sens * innerWidth, true);
+      setTimeout(() => {
+        allerDateVoisine(sens);
+        poser(sens * innerWidth * 0.35, false);
+        requestAnimationFrame(() => requestAnimationFrame(() => poser(0, true)));
+      }, 170);
+    } else {
+      poser(0, true);
+      if (Math.abs(dx) > 30 && !dateVoisine(sens)) toast(sens > 0 ? 'C’est la dernière date' : 'C’est la première date');
+    }
+  };
+  f.addEventListener('touchend', fin);
+  f.addEventListener('touchcancel', fin);
+}
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
 
@@ -18488,6 +18579,16 @@ function initMail() {
    à jour, par le socle). */
 const NOUVEAUTES = [
   {
+    d: '2026-11-24 10:00',
+    v: '0.89.23',
+    t: 'Au téléphone, glisse la fiche pour changer de date',
+    items: [
+      'Fiche ouverte, glisse vers la gauche : la date suivante, dans l’ordre de la liste ; vers la droite : la précédente. La fiche suit ton doigt ; lâchée trop tôt, elle revient.',
+      'Avec une recherche en cours, on ne passe que d’une date trouvée à l’autre. Aux deux bouts, la fiche revient : « C’est la première date », « C’est la dernière date ».',
+      'Faire défiler la fiche de haut en bas ne change rien ; une rangée ouverte non plus.'
+    ]
+  },
+  {
     d: '2026-11-24 09:30',
     v: '0.88.22',
     t: '« À compléter » et la liste, d’après tes remarques',
@@ -19477,6 +19578,7 @@ initBoutons();
 initListe();
 initMenuDate();
 initFiche();
+initSwipe();
 initCreer();
 initCalendrier();
 initMiniCal();
