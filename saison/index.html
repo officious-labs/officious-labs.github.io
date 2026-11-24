@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261124091514">
+<meta name="officious-page" content="20261124092203">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -17499,15 +17499,44 @@ function ficheVoisine(id) {
   remplirFiche();
   c.classList.add('fiche-voisine');
   c.setAttribute('aria-hidden', 'true');
-  c.inert = true;
+  /* 0.92 : pas « inert » : un doigt posé sur elle pendant le chemin (un second lancer) la traversait jusqu'à la liste.
+     Elle reçoit le toucher (le geste le prend, initSwipe) mais aucun clic n'y fait rien. */
+  c.addEventListener(
+    'click',
+    e => {
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true
+  );
   c.style.transition = 'none';
   f.after(c);
   c.scrollTop = 0;
   return c;
 }
+/* 0.92 : les règles du défilement d'Impulsion (Defilement.kt, DefilementCalcul.kt), pour que le geste soit le même
+   dans les deux applis : le seuil est la moitié de l'écran, ou un lancer (au moins 1,2 largeur d'écran par seconde au
+   moment où le doigt se lève, dans le même sens) ; au bout, la fiche suit 30 % du doigt, au plus 12 % de la largeur ;
+   le chemin qui reste dure à proportion (420 ms pour un écran entier, au moins 120 ms), courbe (0,2 ; 0,6 ; 0,3 ; 1) ;
+   un nouveau toucher pendant ce chemin le finit aussitôt et part de là (Impulsion, 09/11 : « pas pris »). */
+const SW = { lancer: 1.2, resistance: 0.12, glisser: 420, mini: 120, courbe: 'cubic-bezier(0.2, 0.6, 0.3, 1)' };
+/** Où va la fiche quand le doigt se lève : 1 la suivante, -1 la précédente, 0 elle revient (décalage en largeurs,
+ *  négatif vers la suivante ; vitesse en largeurs par seconde). Pure, comme Defilement.pas d'Impulsion. */
+function pasSwipe(decalage, vitesse, voisine) {
+  if (!voisine || !decalage) return 0;
+  const p = decalage < 0 ? 1 : -1;
+  if (Math.abs(vitesse) >= SW.lancer) return (vitesse < 0) === decalage < 0 ? p : 0;
+  return Math.abs(decalage) > 0.5 ? p : 0;
+}
+/** Durée du chemin qui reste (en largeurs) ; 0 si les animations sont réduites. */
+function dureeSwipe(reste) {
+  if (reste <= 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) return 0;
+  return Math.max(SW.mini, Math.min(SW.glisser, Math.round(SW.glisser * reste)));
+}
 function initSwipe() {
   const f = $('#fiche');
-  let g = null; /* geste en cours : {x, y, t, dx, horiz, sens, voisine} */
+  let g = null, /* geste en cours : {id, x, y, dx, horiz, sens, voisine, bout, pts} */
+    anim = null; /* chemin qui se finit seul : {timer, finir} */
   const libre = ev =>
     ficheTel() &&
     selId &&
@@ -17515,15 +17544,15 @@ function initSwipe() {
     !ev.target.closest('input, textarea, select, [contenteditable="true"], .rg.ouverte, .rg-voile, .f-menu');
   const W = () => f.getBoundingClientRect().width || innerWidth;
   /* la fiche à x, sa voisine collée à côté (à droite pour la suivante, à gauche pour la précédente) */
-  const poser = (x, anim) => {
-    const t = anim ? 'transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1)' : 'none';
+  const poser = (x, ms, voisine, sens) => {
+    const t = ms ? 'transform ' + ms + 'ms ' + SW.courbe : 'none';
     f.style.transition = t;
     f.style.transform = x ? 'translateX(' + x + 'px)' : '';
     f.style.boxShadow = x ? 'none' : ''; /* à plat : l'ombre du bord de la fiche est retirée pendant le geste */
-    if (g && g.voisine) {
-      g.voisine.style.boxShadow = 'none';
-      g.voisine.style.transition = t;
-      g.voisine.style.transform = 'translateX(' + (x + g.sens * W()) + 'px)';
+    if (voisine) {
+      voisine.style.boxShadow = 'none';
+      voisine.style.transition = t;
+      voisine.style.transform = 'translateX(' + (x + sens * W()) + 'px)';
     }
   };
   const ranger = () => {
@@ -17542,10 +17571,21 @@ function initSwipe() {
      était posé sur un élément redessiné (un fantôme « + Lieu »…), ses événements « touch » partaient vers un élément
      sorti de la page et le geste restait bloqué. La fiche capture le pointeur (setPointerCapture) avant de redessiner ;
      le défilement vertical reste au navigateur (touch-action: pan-y, styles.css), qui envoie alors pointercancel. */
-  f.addEventListener('pointerdown', ev => {
-    if (ev.pointerType !== 'touch' || !ev.isPrimary) return;
+  /* sur la fiche ou sur sa copie voisine (le doigt peut la rattraper pendant le chemin) */
+  document.addEventListener('pointerdown', ev => {
+    if (ev.pointerType !== 'touch' || !ev.isPrimary || !(ev.target.closest && ev.target.closest('#fiche'))) return;
+    if (anim) {
+      /* le doigt rattrape une fiche en chemin : elle est posée, le geste part d'elle. Poser la fiche la redessine :
+         elle prend d'abord le doigt, sinon il resterait à l'élément redessiné (sorti de la page). */
+      try {
+        f.setPointerCapture(ev.pointerId);
+      } catch (x) {}
+      anim.finir();
+    }
     ranger();
-    g = libre(ev) ? { id: ev.pointerId, x: ev.clientX, y: ev.clientY, t: Date.now(), dx: 0, horiz: null, sens: 0, voisine: null, bout: false } : null;
+    g = libre(ev)
+      ? { id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, horiz: null, sens: 0, voisine: null, bout: false, pts: [[ev.timeStamp, ev.clientX]] }
+      : null;
   });
   f.addEventListener('pointermove', ev => {
     if (!g || ev.pointerId !== g.id) return;
@@ -17560,45 +17600,45 @@ function initSwipe() {
         } catch (x) {}
     }
     if (!g.horiz) return;
+    g.pts.push([ev.timeStamp, ev.clientX]);
+    while (g.pts.length > 2 && ev.timeStamp - g.pts[0][0] > 100) g.pts.shift(); /* la vitesse des 100 dernières ms */
     if (dx) voisineVers(dx < 0 ? 1 : -1);
-    g.dx = g.bout ? dx / 4 : dx; /* au bout de la liste, la fiche résiste */
-    poser(g.dx, false);
+    const w = W();
+    /* au bout de la liste, la fiche résiste : 30 % du doigt, au plus 12 % de la largeur */
+    g.dx = g.bout ? Math.max(-SW.resistance * w, Math.min(SW.resistance * w, dx * 0.3)) : Math.max(-w, Math.min(w, dx));
+    poser(g.dx, 0, g.voisine, g.sens);
   });
-  const fin = () => {
-    if (!g || !g.horiz) {
-      g = null;
-      return;
-    }
-    const cur = g, /* un nouveau toucher pendant l'animation a son propre geste : on ne range que celui-ci */
-      dx = g.dx,
-      sens = g.sens,
-      vite = Math.abs(dx) > 40 && Date.now() - g.t < 250;
-    if (g.voisine && (Math.abs(dx) > W() * 0.28 || vite)) {
-      /* les deux finissent le trajet : la voisine prend la place de la fiche, puis devient la vraie fiche */
-      poser(-sens * W(), true);
-      setTimeout(() => {
-        /* la copie part avant de repeindre la vraie fiche (elle porte les mêmes id : du code qui vise « #fiche … »
-           la toucherait aussi) ; tout se fait dans la même image, sans clignement */
-        if (cur.voisine && cur.voisine.parentNode) cur.voisine.parentNode.removeChild(cur.voisine);
-        f.style.transition = 'none';
-        f.style.transform = '';
-        f.style.boxShadow = '';
-        allerDateVoisine(sens);
-        if (g === cur) g = null;
-      }, 230);
-    } else {
-      poser(0, true);
-      const bout = g.bout;
-      setTimeout(() => {
-        if (cur.voisine && cur.voisine.parentNode) cur.voisine.parentNode.removeChild(cur.voisine);
-        if (g === cur) g = null;
-      }, 230);
-      if (bout && Math.abs(dx) > 8)
-        toast((sens > 0 ? 'C’est la dernière date' : 'C’est la première date') + (aDaterSel() ? ' à dater' : ''));
-    }
+  const fin = ev => {
+    const cur = g;
+    g = null;
+    if (!cur || !cur.horiz) return;
+    const w = W(),
+      [t0, x0] = cur.pts[0],
+      dt = (ev ? ev.timeStamp : performance.now()) - t0,
+      vitesse = dt > 0 ? ((cur.x + cur.dx - x0) / w / dt) * 1000 : 0, /* largeurs par seconde */
+      pas = pasSwipe(cur.dx / w, cur.bout ? 0 : vitesse, !!cur.voisine),
+      cible = -pas * w,
+      ms = dureeSwipe(Math.abs(cible - cur.dx) / w);
+    poser(cible, ms, cur.voisine, cur.sens);
+    const finir = () => {
+      clearTimeout(a.timer);
+      if (anim === a) anim = null;
+      /* la copie part avant de repeindre la vraie fiche (elle porte les mêmes id : du code qui vise « #fiche … »
+         la toucherait aussi) ; tout se fait dans la même image, sans clignement */
+      if (cur.voisine && cur.voisine.parentNode) cur.voisine.parentNode.removeChild(cur.voisine);
+      f.style.transition = 'none';
+      f.style.transform = '';
+      f.style.boxShadow = '';
+      if (pas) allerDateVoisine(pas);
+    };
+    const a = { finir };
+    a.timer = setTimeout(finir, ms + 10);
+    anim = a;
+    if (!pas && cur.bout && Math.abs(cur.dx) > 8)
+      toast((cur.sens > 0 ? 'C’est la dernière date' : 'C’est la première date') + (aDaterSel() ? ' à dater' : ''));
   };
-  f.addEventListener('pointerup', ev => g && ev.pointerId === g.id && fin());
-  f.addEventListener('pointercancel', ev => g && ev.pointerId === g.id && fin());
+  f.addEventListener('pointerup', ev => g && ev.pointerId === g.id && fin(ev));
+  f.addEventListener('pointercancel', ev => g && ev.pointerId === g.id && fin(ev));
 }
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
@@ -18650,6 +18690,17 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-24 11:45',
+    v: '0.92.26',
+    t: 'Glisser comme dans Impulsion',
+    items: [
+      'Le glissement d’une fiche à l’autre suit maintenant les mêmes règles qu’Impulsion : la voisine prend la place passé la moitié de l’écran, ou d’un geste vif, même court ; un geste vif en sens contraire la renvoie.',
+      'La fiche finit son chemin à la vitesse qu’il lui reste : presque arrivée, elle ne traîne pas.',
+      'Deux glissements rapides de suite font bien passer deux dates : le second rattrape la fiche en chemin.',
+      'Au bout de la liste, la fiche se laisse un peu tirer, puis revient.'
+    ]
+  },
   {
     d: '2026-11-24 11:10',
     v: '0.91.25',
