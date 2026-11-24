@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261123234703">
+<meta name="officious-page" content="20261124001449">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1285,6 +1285,13 @@ body.avec-fiche #principal {
 }
 #ajout[hidden] {
   display: none;
+}
+/* 0.87 : le bandeau du lot du jour, dans la barre collante, à droite de « + Nouvelle date » (la liste défile jusqu'à
+   la prochaine date à l'ouverture : en tête de liste, il serait hors de l'écran) */
+#ajout:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
 }
 /* 0.83 : le champ « Ajouter » est retiré ; « + Nouvelle date » seul, à gauche, au-dessus de la liste */
 #ajoutNouv {
@@ -2648,39 +2655,267 @@ span.alerte-vac::before {
   background: #a0661c; /* ocre : il reste à faire, pas une erreur */
   border-color: #a0661c;
 }
-dialog.completer {
-  width: min(40rem, 100vw - 1rem);
-}
-#cListe {
+/* ---- « À compléter » (0.87) : une date à la fois ---- */
+.b-completer {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  max-height: 65vh;
-  overflow: auto;
-  margin: 0.4rem 0;
-}
-.c-date {
-  border: 1px solid var(--filet);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.3rem 0.35rem 0.3rem 0.8rem;
+  background: var(--papier);
+  border: 1px solid #ecd9bc;
+  border-left: 4px solid #a0661c;
   border-radius: 10px;
-  padding: 0.6rem 0.8rem;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+.b-completer[hidden] {
+  display: none;
+}
+.b-completer .ico {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: #a0661c;
+  flex: none;
+}
+#bcTexte {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.92rem;
+}
+#bcOuvrir {
+  padding: 0.3rem 0.9rem;
+}
+@media (min-width: 701px) {
+  #bcTexte {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+#bcTexte b {
+  color: #8a5a12;
+}
+.bc-plus {
+  color: var(--gris);
+}
+@media (prefers-color-scheme: dark) {
+  .b-completer {
+    border-color: #4d3f1d;
+    border-left-color: #d8b56a;
+  }
+  #bcTexte b,
+  .b-completer .ico {
+    color: #d8b56a;
+  }
+}
+dialog.completer {
+  width: min(36rem, 100vw - 1rem);
+  padding: 0;
+}
+dialog.completer[open] {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  transition: opacity 0.3s;
+  max-height: calc(100vh - 2.5rem);
 }
-.c-date.fait {
-  opacity: 0.45;
+.ac-tete {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem 0.4rem;
 }
-.c-quand {
+.ac-tete h2 {
+  flex: 1;
+  margin: 0;
+}
+.ac-compte {
+  color: var(--pale);
+  font-size: 0.85rem;
+}
+.ac-prog {
+  display: flex;
+  gap: 4px;
+  padding: 0 1.1rem 0.2rem;
+}
+.ac-prog i {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--filet);
+}
+.ac-prog i.ici {
+  background: var(--bleu);
+}
+.ac-prog i.fait {
+  background: var(--vert);
+}
+.ac-prog i.passee {
+  background: #a0661c;
+}
+.ac-sous {
+  margin: 0.15rem 1.1rem 0.5rem;
+  font-size: 0.82rem;
+  color: var(--gris);
+}
+.ac-corps {
+  flex: 1;
+  overflow: auto;
+  padding: 0 1.1rem 0.4rem;
+}
+.ac-mini {
+  display: grid;
+  grid-template-columns: 4.2rem 1fr;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.55rem 0.8rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c) 7%, var(--fond));
+}
+.ac-mini .bdate .bd-num {
+  font-size: 1.7rem;
+}
+.ac-titre {
   font-weight: 600;
 }
-.c-champ.fait input,
-.c-champ.fait textarea {
-  border-color: #3d7a45;
-  background: color-mix(in srgb, #3d7a45 6%, var(--papier));
+.ac-m {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--gris);
+  margin-top: 0.1rem;
 }
-.c-champ .erreur {
+.ac-deja {
+  margin: 0.45rem 0 0;
+  color: var(--vert);
+  font-size: 0.85rem;
+}
+.ac-q {
+  padding: 0.75rem 0 0.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.ac-ql {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.ac-ql small {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--pale);
+}
+.ac-ic {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--bleu);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+.ac-q.fait .ac-ic {
+  color: var(--vert);
+}
+.ac-q.fait .ac-ql > span::after {
+  content: ' ✓';
+  color: var(--vert);
+}
+.ac-q.fait .ac-c {
+  border-color: var(--vert);
+}
+.ac-c {
+  font-size: 0.95rem;
+  color: var(--encre);
+  border: 1px solid var(--filet);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  background: var(--papier);
+  width: 100%;
+  box-sizing: border-box;
+}
+textarea.ac-c {
+  resize: vertical;
+  field-sizing: content;
+  min-height: 2.8rem;
+}
+.ac-c.erreur {
   border-color: var(--rouge);
+}
+.ac-heures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.ac-lieux {
+  max-height: 13rem;
+}
+.ac-pied {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.1rem 0.9rem;
+  border-top: 1px solid var(--filet);
+}
+.ac-pied .esp {
+  flex: 1;
+}
+.ac-pied kbd {
+  margin-left: 0.45rem;
+  font: 0.72rem Inter, sans-serif;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: 4px;
+  padding: 0 0.3rem;
+  opacity: 0.85;
+}
+.ac-fin {
+  text-align: center;
+  padding: 1.6rem 0 1rem;
+}
+.ac-ok {
+  width: 2.6rem;
+  height: 2.6rem;
+  color: var(--vert);
+}
+.ac-gros {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--vert);
+  margin: 0.4rem 0;
+}
+.ac-cote {
+  color: var(--gris);
+  font-size: 0.9rem;
+}
+.ac-demain {
+  color: var(--pale);
+  font-size: 0.85rem;
+}
+@media (max-width: 700px) {
+  dialog.completer[open] {
+    max-height: none;
+    height: 100%;
+  }
+  .bc-plus {
+    display: none;
+  }
+  .ac-pied button {
+    min-height: 44px;
+  }
+  .ac-pied #acSuivante {
+    padding: 0 2rem;
+  }
+  .ac-heures .puce,
+  .ac-q .tarifs .puce {
+    font-size: 0.95rem;
+    padding: 0.4rem 0.8rem;
+  }
 }
 #mailCopier:disabled {
   opacity: 0.6;
@@ -3831,8 +4066,16 @@ dialog.programme .prog-garde {
   display: none;
 }
 @media (max-width: 700px) {
-  #ajout {
+  /* le « + » est en bas à droite ; la barre ne reste que pour le bandeau « À compléter » (0.87) */
+  #ajoutNouv {
     display: none;
+  }
+  #ajout:not(:has(#bCompleter:not([hidden]))) {
+    display: none;
+  }
+  #ajout {
+    top: var(--tete-h, 9.3rem); /* hauteur réelle de l'en-tête, mesurée (06n-completer.js) */
+    padding: 0.3rem 0 0.4rem;
   }
   #bCherche,
   body.cherche #chercheX {
@@ -4125,7 +4368,7 @@ dialog.deux .prog-auto {
   }
 }
 /* profil « Sans Tâches » (réglage de l'appareil) : aucune passerelle avec Tâches */
-body.sans-taches #cTaches,
+body.sans-taches #acTaches,
 body.sans-taches #mailVersTaches,
 body.sans-taches #menu [data-act='etapes'],
 body.sans-taches #fmRetro,
@@ -5213,6 +5456,8 @@ body.sans-taches #propositions {
        fenêtre de création, une page courte depuis la 0.86 (#creer). Au téléphone, le bouton rond « + » en bas à droite. -->
   <div id="ajout">
     <button type="button" id="ajoutNouv" title="Créer une date : le type, le titre, la date et le lieu, sur une page">+ Nouvelle date<kbd>Alt+N</kbd></button>
+    <!-- 0.87 : le lot du jour (5 dates au plus, période en cours et suivante) -->
+    <div id="bCompleter" class="b-completer" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#ic-texte"/></svg><span id="bcTexte"></span><button type="button" id="bcOuvrir" class="primaire">Compléter</button></div>
   </div>
   <details id="controles" hidden><summary></summary><ul></ul></details>
   <nav id="miniCal" hidden aria-label="Mois"></nav>
@@ -5429,12 +5674,14 @@ body.sans-taches #propositions {
   </div>
 </dialog>
 
+<!-- 0.87 : « À compléter », une date à la fois, seulement ce qui lui manque (piste E de docs/maquettes/fiche-C-E.html ;
+     06n-completer.js). Ouverte par le bandeau du lot du jour ou par « N dates à compléter → » du mail. -->
 <dialog id="completer" class="s-dialogue completer s-plein" aria-label="À compléter">
-  <div class="mail-tete"><h2 id="cTitre">À compléter</h2><button id="cFermer" class="icone" title="Fermer (Échap)">×</button></div>
-  <p class="aide">Chaque champ s’enregistre dès que tu le quittes. <button type="button" id="cTaches" class="lien">Copier pour Tâches</button></p>
-  <div id="cListe"></div>
-  <datalist id="cLieux"></datalist>
-  <div class="mail-pied"><span id="cReste" class="aide"></span><button id="cMail" class="primaire">Revenir au mail</button></div>
+  <div class="ac-tete"><h2>À compléter</h2><span id="acCompte" class="ac-compte"></span><button id="cFermer" class="icone" title="Fermer (Échap)">×</button></div>
+  <div id="acProg" class="ac-prog" aria-hidden="true"></div>
+  <p id="acSous" class="ac-sous"></p>
+  <div id="acCorps" class="ac-corps"></div>
+  <div id="acPied" class="ac-pied"></div>
 </dialog>
 
 <dialog id="etapes" class="s-dialogue etapes s-plein" aria-label="Modèles de rétroplanning">
@@ -5607,6 +5854,7 @@ body.sans-taches #propositions {
   <p class="aide">Le champ de recherche (en haut de l’écran au téléphone) filtre la liste, le calendrier et le mini-mois à chaque lettre. L’affiche et les mails ne sont jamais filtrés.</p>
   <h3>Nouvelle date</h3>
   <p class="aide">« + Nouvelle date » (Alt+N ; au téléphone, le « + » en bas à droite) : une page courte — le type, le titre, la date et le lieu, puis « Créer » (Ctrl+Entrée). Entrée passe au champ suivant ; rien n’est créé avant « Créer ». Pour qui, les élèves, les infos pratiques et le descriptif se complètent ensuite dans la fiche. Le champ Date comprend « jeudi 11 mars », « 11/3 », « du 21 au 27 février », « semaine du 24 mai », « en mai » ; le champ Heure, « 19h », « 14h-14h45 et 15h15-16h » ou « l’après-midi ». Un titre déjà utilisé propose de reprendre son lieu, ses élèves et ses infos pratiques.</p>
+  <p class="aide">« À compléter » : chaque jour, un petit lot de 5 dates au plus, prises dans la période en cours et la suivante, les plus proches d’abord ; le bandeau en haut de la liste en donne le nombre. « Compléter » les montre une à une, avec seulement ce qui leur manque ; Entrée passe au champ suivant, puis à la date suivante. « Passer » met une date de côté jusqu’au lendemain. À la fin du lot : « C’est tout pour aujourd’hui ». Dans « Demandez le programme », « N dates à compléter → » ouvre la même fenêtre sur les dates du mail.</p>
   <p class="aide">Une phrase collée dans le titre (une ligne d’un mail) est répartie dans la page, chaque valeur devinée en pointillé : jour, date, heure, titre, puis le lieu (« au CCED », « salle Bach » ou « @Bach »). Exemples : « sam 5 déc Masterclass @Bach », « 20/05-21/05 18h Pépinière musicale @CCED », « semaine du 24 mai Écrits de FM ». « … pour les élèves de la classe de violon » devient le sous-titre ; « , élèves de CHAM 5e » remplit « Élèves concernés » ; « entrée libre », « gratuit », un tarif ou un numéro de téléphone vont dans les infos pratiques. Sans jour précis (« en mai Concert », « mars-avril Projet », ou pas de date du tout), l’événement va dans « À dater », en haut de la liste : il ne part ni sur les affiches ni dans « Demandez le programme », et apparaît en fin de mail d’équipe sous « Dates à fixer ».</p>
   <div id="aideClavier">
   <h3>Raccourcis clavier</h3>
@@ -11529,6 +11777,7 @@ function afficherListe() {
   const liste = $('#liste');
   $('#vide').hidden = socle.ouvert;
   $('#ajout').hidden = !socle.ouvert;
+  afficherBandeauCompleter(); /* 0.87 : le lot du jour, 06n-completer.js */
   if (!socle.ouvert) {
     liste.innerHTML = '';
     return;
@@ -14725,7 +14974,7 @@ const rgEl = n => $('#fiche .rg[data-rg="' + n + '"]');
 const diffDe = e => (e.interne ? 'interne' : e.horsAffiche ? 'hors' : '');
 
 /** Ce qui manque à une date (0.85, règle validée par François le 23/11) : une seule définition pour la fiche, ses
- *  voyants et, plus tard, « À compléter ».
+ *  voyants et « À compléter » (0.87, 06n-completer.js).
  *  - toute date à venir, ni annulée ni passée : la date (« À dater » compte comme manquante), l'heure, le lieu ;
  *  - une date pour le public (ni « Équipe seulement », ni « Pas sur l'affiche », ni en attente) : en plus, les élèves,
  *    les infos pratiques et le descriptif (mêmes règles que manques(), 08-mail.js).
@@ -16498,6 +16747,497 @@ function initCreer() {
   if (window.visualViewport) visualViewport.addEventListener('resize', crTailleClavier);
   $('#ajoutNouv').onclick = () => nouvelleDate();
 }
+/* 06n-completer.js : « À compléter » (0.87, piste E de docs/maquettes/fiche-C-E.html), une date à la fois, seulement
+   ce qui lui manque (manquesDate, 06k-fiche.js : la même définition que la fiche et ses voyants).
+
+   Décision de François du 23/11/2026 (journal, nuit) : « À compléter » général, mais par petits lots
+   - seulement les dates de la période en cours et de la suivante (jamais toute la saison) ;
+   - les plus proches d'abord ; 5 dates au plus par lot ;
+   - le bandeau donne le nombre du lot, pas un total ;
+   - « Passer » met une date de côté jusqu'au lendemain ;
+   - à la fin d'un lot, « C'est tout pour aujourd'hui ».
+   Le lot du jour et les dates mises de côté sont gardés sur l'appareil (localStorage), jamais dans le fichier : le lot
+   est fixé à sa première apparition de la journée, et ne se remplit pas à mesure qu'on le vide.
+
+   Deux entrées : le bandeau en haut de la liste (le lot du jour) et, dans « Demandez le programme », le bouton
+   « N dates à compléter → » (les dates de la période du mail, toutes : c'est le mail qui les demande). */
+
+const LOT_MAX = 5;
+const CLE_LOT = 'saison-lot'; /* {jour, ids} : le lot du jour */
+const CLE_COTE = 'saison-de-cote'; /* {id: jour} : mises de côté, jusqu'au lendemain de ce jour */
+const lireLS = (k, d) => {
+  try {
+    return JSON.parse(localStorage.getItem(k) || 'null') || d;
+  } catch (x) {
+    return d;
+  }
+};
+const ecrireLS = (k, v) => {
+  try {
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch (x) {}
+};
+/** Mise de côté aujourd'hui (elle revient demain). */
+const deCote = id => lireLS(CLE_COTE, {})[id] === auj();
+function mettreDeCote(id) {
+  const a = auj(),
+    c = lireLS(CLE_COTE, {});
+  for (const k of Object.keys(c)) if (c[k] < a) delete c[k]; /* le passé ne sert plus */
+  c[id] = a;
+  ecrireLS(CLE_COTE, c);
+}
+/** Les deux périodes qu'on regarde : celle en cours (ou la prochaine, entre deux) et la suivante. */
+function periodesProches() {
+  const pers = periodes(doc),
+    a = auj(),
+    i = pers.findIndex(p => p.d2 >= a);
+  return i < 0 ? [] : pers.slice(i, i + 2);
+}
+/** Les dates qui pourraient entrer dans un lot : à compléter, dans ces deux périodes (une date « à dater » y entre par
+ *  sa fenêtre ; sans date du tout, elle n'a pas de période : elle reste dans la liste, sous « À dater »), pas mises de
+ *  côté ; les plus proches d'abord. */
+function candidatsLot() {
+  const deux = periodesProches().map(p => p.nom),
+    pers = periodes(doc);
+  return doc.evts
+    .filter(e => e.d1 && manquesDate(e).size && !deCote(e.id))
+    .filter(e => {
+      const p = periodeDe(e, pers);
+      return p && deux.includes(p.nom);
+    })
+    .sort(ordre);
+}
+/** Le lot du jour : fixé à sa première apparition de la journée (5 dates au plus). → ids */
+function lotDuJour() {
+  const a = auj(),
+    s = lireLS(CLE_LOT, null),
+    existe = id => doc.evts.some(e => e.id === id);
+  /* un lot d'aujourd'hui dont aucune date n'existe : un autre fichier ; on en refait un */
+  if (s && s.jour === a && s.ids.some(existe)) return s.ids.filter(existe);
+  const ids = candidatsLot()
+    .slice(0, LOT_MAX)
+    .map(e => e.id);
+  if (ids.length) ecrireLS(CLE_LOT, { jour: a, ids });
+  return ids;
+}
+/** Ce qui reste du lot : encore à compléter, et pas mis de côté. */
+function resteDuLot() {
+  return lotDuJour().filter(id => {
+    const e = doc.evts.find(x => x.id === id);
+    return e && manquesDate(e).size && !deCote(id);
+  });
+}
+
+/* ---------- le bandeau, en haut de la liste ---------- */
+function afficherBandeauCompleter() {
+  const b = $('#bCompleter');
+  if (!b) return;
+  const n = socle.ouvert ? resteDuLot().length : 0;
+  b.hidden = !n;
+  if (n)
+    $('#bcTexte').innerHTML =
+      '<b>' + n + ' date' + (n > 1 ? 's' : '') + '</b> à compléter aujourd’hui' + '<span class="bc-plus"> · les plus proches d’abord</span>';
+}
+
+/* ---------- la fenêtre ---------- */
+/** État de la fenêtre. L : [{id, tx, m}] (tx : la date qui porte les textes, celle du bloc dans le mail ; m : ce qui
+ *  manquait à l'ouverture, fixé pour que rien ne disparaisse sous le doigt) ; fin : {id: 'fait'|'passee'}. */
+const ac = { mode: 'lot', L: [], i: 0, fin: {}, avant: '', p: null };
+const ORDRE_M = ['quand', 'lieu', 'eleves', 'pratique', 'detail'];
+const NOM_Q = { quand: 'Date et heure', heure: 'Heure', lieu: 'Lieu', eleves: 'Élèves concernés', pratique: 'Infos pratiques', detail: 'Descriptif' };
+const AIDE_Q = { detail: 'quelques mots pour les familles', eleves: 'qui joue', pratique: 'tarif, réservation' };
+const SVG_Q = {
+  quand: '<svg class="ac-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  lieu: '<svg class="ac-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>'
+};
+const icQ = n => SVG_Q[n] || ic(IC_RG[n], 'ac-ic');
+/** Mail : ses noms de manques (manques(), 08-mail.js) en noms de rangées. */
+const DE_MAIL = { heure: 'quand', lieu: 'lieu', descriptif: 'detail', 'élèves concernés': 'eleves', 'infos pratiques': 'pratique' };
+const evAc = id => doc.evts.find(e => e.id === id);
+
+/** Le lot du jour (bandeau). */
+function ouvrirLot() {
+  if (!socle.ouvert) return;
+  const ids = resteDuLot();
+  if (!ids.length) return toast('Rien à compléter aujourd’hui');
+  ouvrirAc(
+    'lot',
+    ids.map(id => ({ id, tx: id, m: ORDRE_M.filter(n => manquesDate(evAc(id)).has(n)) })),
+    null
+  );
+}
+/** Les dates à compléter du mail « Demandez le programme » (sa période). */
+function ouvrirCompleter() {
+  const p = periodeMail(),
+    L = manques(p, $('#mailAvenir').checked);
+  $('#mail').close();
+  ouvrirAc(
+    'mail',
+    L.map(({ e, m, g }) => ({ id: e.id, tx: g.id, m: ORDRE_M.filter(n => m.some(x => DE_MAIL[x] === n)) })),
+    p
+  );
+}
+function ouvrirAc(mode, L, p) {
+  Object.assign(ac, { mode, L, i: 0, fin: {}, p });
+  $('#completer').classList.toggle('mode-mail', mode === 'mail');
+  if (!$('#completer').open) $('#completer').showModal();
+  peindreAc();
+}
+/** Ce qui est déjà là, parmi ce qu'on regarde pour cette date (la ligne verte « ✓ lieu · ✓ heure »). */
+function dejaLa(e, x) {
+  const L = [];
+  if (!x.m.includes('quand')) L.push(estDatee(e) && (e.heures || e.horaire) ? 'date et heure' : 'date');
+  if (!x.m.includes('lieu') && e.lieu) L.push('lieu');
+  if (pourPublic(e)) {
+    const t = evAc(x.tx) || e;
+    if (!x.m.includes('eleves') && (t.eleves || /élève/i.test(t.soustitre || ''))) L.push('élèves');
+    if (!x.m.includes('pratique') && t.pratique) L.push('infos pratiques');
+    if (!x.m.includes('detail') && t.detail) L.push('descriptif');
+  }
+  return L;
+}
+function peindreAc() {
+  const box = $('#acCorps'),
+    n = ac.L.length;
+  $('#acProg').innerHTML = ac.L.map((x, k) =>
+    '<i class="' + (ac.fin[x.id] === 'fait' ? 'fait' : ac.fin[x.id] === 'passee' ? 'passee' : k === ac.i ? 'ici' : '') + '"></i>'
+  ).join('');
+  if (ac.i >= n) return peindreFinAc();
+  const x = ac.L[ac.i],
+    e = evAc(x.id);
+  if (!e) {
+    ac.i++;
+    return peindreAc();
+  }
+  ac.avant = JSON.stringify(e);
+  const t = evAc(x.tx) || e,
+    Lx = lieuDe(e),
+    h = libHoraire(e);
+  $('#acCompte').textContent = n > 1 ? ac.i + 1 + ' sur ' + n : '';
+  const per = periodeDe(e, periodes(doc));
+  $('#acSous').innerHTML =
+    ac.mode === 'mail'
+      ? 'pour « Demandez le programme » · ' + esc(typo(ac.p.nom.charAt(0).toLowerCase() + ac.p.nom.slice(1))) +
+        ' <button type="button" id="acTaches" class="lien">Copier pour Tâches</button>'
+      : 'les plus proches d’abord' + (per ? ' · ' + esc(typo(per.nom)) : '');
+  const deja = dejaLa(e, x);
+  const qs = x.m.map((nm, k) => questionAc(nm, e, t, k, x.m.length)).join('');
+  box.innerHTML =
+    '<div class="ac-mini" style="--c:' +
+    (Lx ? Lx.hex : 'var(--encre)') +
+    '">' +
+    blocDate(e) +
+    '<div><div class="ac-titre">' +
+    rich((e.titre || '').replace(/\s*\|\s*/g, ' ')) +
+    '</div><div class="ac-m">' +
+    (h ? esc(typo(h)) : '') +
+    (e.lieu ? ' <i class="pt-lieu" style="--c:' + (Lx ? Lx.hex : 'var(--pale)') + '"></i>' + rich(Lx ? Lx.cle || Lx.nom : e.lieu) : '') +
+    '</div></div></div>' +
+    (deja.length ? '<p class="ac-deja">' + deja.map(d => '✓ ' + d).join(' · ') + '</p>' : '') +
+    qs;
+  $('#acPied').innerHTML =
+    '<button type="button" class="lien" id="acFiche">Ouvrir la fiche</button><span class="esp"></span>' +
+    '<button type="button" id="acPasser" title="Mettre cette date de côté jusqu’à demain">Passer</button>' +
+    '<button type="button" id="acSuivante" class="primaire">' +
+    (ac.i + 1 < n ? 'Suivante' : 'Terminer') +
+    (TACTILE ? '' : '<kbd>Entrée</kbd>') +
+    '</button>';
+  if (x.m.includes('lieu')) peindreLieuxAc();
+  marquerFaits();
+  const premier = $('#acCorps input, #acCorps textarea');
+  if (premier && !TACTILE) premier.focus({ preventScroll: true });
+  box.scrollTop = 0;
+}
+function questionAc(nm, e, t, k, n) {
+  const date = nm === 'quand' && !estDatee(e);
+  const tete =
+    '<div class="ac-ql">' +
+    icQ(nm) +
+    '<span>' +
+    (nm === 'quand' ? (date ? NOM_Q.quand : NOM_Q.heure) : NOM_Q[nm]) +
+    '</span><small>' +
+    (n > 1 ? k + 1 + ' sur ' + n : '') +
+    (AIDE_Q[nm] ? (n > 1 ? ' · ' : '') + AIDE_Q[nm] : '') +
+    '</small></div>';
+  let corps = '';
+  if (nm === 'quand') {
+    const hf = heuresFaites(typeDe(e).cle);
+    corps =
+      (date
+        ? '<input class="ac-c" data-q="date" aria-label="Date" placeholder="jeudi 11 mars, 11/3, en mai…" value="' +
+          esc(e.d1 && e.aDater ? libFlou(e) : '') +
+          '" enterkeyhint="next">'
+        : '') +
+      '<input class="ac-c" data-q="heure" aria-label="Heure" placeholder="18h30 · 14h-14h45 et 15h15-16h · l’après-midi" enterkeyhint="next">' +
+      '<span class="puces ac-heures">' +
+      hf.map(h => '<button type="button" class="puce" data-heure="' + h + '">' + esc(typo(libHoraire({ heures: h }))) + '</button>').join('') +
+      '</span>';
+  } else if (nm === 'lieu')
+    corps =
+      '<input class="ac-c" data-q="lieu" aria-label="Lieu" placeholder="CCED, Bach, Conciergerie… ou en toutes lettres" autocomplete="off" enterkeyhint="next">' +
+      '<div class="f-lieux ac-lieux" role="listbox" aria-label="Lieux"></div>';
+  else if (nm === 'eleves')
+    corps = '<input class="ac-c" data-q="eleves" data-tx="1" aria-label="Élèves concernés" placeholder="classe de piano, ateliers théâtre…" value="' + esc(t.eleves || '') + '" enterkeyhint="next">';
+  else if (nm === 'pratique')
+    corps =
+      '<span class="puces tarifs">' +
+      pucesTarifs(t.pratique || '') +
+      '</span><textarea class="ac-c" data-q="pratique" data-tx="1" rows="2" aria-label="Infos pratiques" placeholder="Ou écris-les toi-même (Entrée pour aller à la ligne)">' +
+      esc(t.pratique || '') +
+      '</textarea>';
+  else if (nm === 'detail')
+    corps =
+      '<textarea class="ac-c" data-q="detail" data-tx="1" rows="2" aria-label="Descriptif" placeholder="Pour les familles, une ou deux phrases">' +
+      esc(t.detail || '') +
+      '</textarea>';
+  return '<section class="ac-q" data-m="' + nm + '">' + tete + corps + '</section>';
+}
+/** Les lieux : les habituels du type d'abord, filtrés par ce qu'on tape (six au plus). */
+function peindreLieuxAc() {
+  const champ = $('#acCorps [data-q="lieu"]'),
+    box = $('#acCorps .ac-lieux'),
+    e = evAc(ac.L[ac.i].id);
+  if (!champ || !box || !e) return;
+  const q = champ.value.trim(),
+    ty = typeDe(e).cle,
+    nType = new Map();
+  for (const x of doc.evts) if (x.lieu && typeDe(x).cle === ty) nType.set(x.lieu, (nType.get(x.lieu) || 0) + 1);
+  const mots = plat(q).split(/\s+/).filter(Boolean);
+  const L = lieuxConnus(e.id)
+    .filter(l => mots.every(m => plat(l.cle + ' ' + l.nom).includes(m)))
+    .sort((a, b) => (nType.get(b.cle || b.nom) || 0) - (nType.get(a.cle || a.nom) || 0) || b.n - a.n)
+    .slice(0, 6);
+  ac.lieux = L;
+  const actuel = l => !!e.lieu && (l.cle ? e.lieu === l.cle : plat(e.lieu) === plat(l.nom));
+  box.innerHTML =
+    L.map(
+      (l, k) =>
+        '<button type="button" role="option" data-k="' +
+        k +
+        '"' +
+        (actuel(l) ? ' class="actuel" aria-selected="true"' : '') +
+        '><i class="pt-lieu" style="--c:' +
+        l.hex +
+        '"></i><span class="fl-nom">' +
+        (l.cle && l.cle !== l.nom ? '<b>' + rich(l.cle) + '</b> ' + rich(l.nom) : rich(l.nom)) +
+        '</span>' +
+        (actuel(l) ? '<span class="fl-n">✓</span>' : '') +
+        '</button>'
+    ).join('') +
+    (q && !L.some(l => plat(l.cle || l.nom) === plat(q) || plat(l.nom) === plat(q))
+      ? '<button type="button" class="fl-plus" data-nouveau="1">+ Nouveau lieu « ' + esc(q) + ' »</button>'
+      : '');
+}
+/** Une question est remplie quand la date a ce qui lui manquait (on relit la date, pas le champ). */
+function questionFaite(nm, e, t) {
+  if (nm === 'quand') return !manquesDate(e).has('quand') || (estDatee(e) && !!(e.heures || e.horaire));
+  if (nm === 'lieu') return !!e.lieu;
+  if (nm === 'eleves') return !!(t.eleves || /élève/i.test(t.soustitre || ''));
+  return !!t[nm];
+}
+function marquerFaits() {
+  const x = ac.L[ac.i],
+    e = x && evAc(x.id);
+  if (!e) return;
+  const t = evAc(x.tx) || e;
+  for (const s of $$('#acCorps .ac-q')) s.classList.toggle('fait', questionFaite(s.dataset.m, e, t));
+}
+/** Enregistre un champ (en le quittant, à Entrée, à « Suivante »). → false si la valeur n'est pas comprise. */
+function appliquerAc(f) {
+  const x = ac.L[ac.i],
+    e = x && evAc(x.id);
+  if (!e) return true;
+  const t = f.dataset.tx ? evAc(x.tx) || e : e,
+    q = f.dataset.q,
+    v = f.value.trim();
+  const ecrire = (o, champs) => {
+    if (Object.keys(champs).every(c => (o[c] || '') === (champs[c] || ''))) return;
+    snapshot();
+    Object.assign(o, champs);
+    changed();
+    afficherListe();
+  };
+  f.classList.remove('erreur');
+  if (q === 'date') {
+    if (!v) return true;
+    const d = lireDateChamp(v);
+    if (!d) {
+      f.classList.add('erreur');
+      toast('Date non comprise : écris par exemple « jeudi 11 mars », « 11/3 » ou « en mai »');
+      return false;
+    }
+    const ch = { d1: d.d1, d2: d.d2, aDater: !!d.aDater, semaine: !!d.semaine };
+    if (d.heures && !e.heures) ch.heures = d.heures;
+    ecrire(e, ch);
+  } else if (q === 'heure') {
+    if (!v) return true;
+    const h = lireHeureChamp(v);
+    if (!h.heures && !h.horaire) {
+      f.classList.add('erreur');
+      toast('Heure non comprise : écris par exemple « 18h30 » ou « 14h-14h45 et 15h15-16h »');
+      return false;
+    }
+    ecrire(e, { heures: h.heures, horaire: h.horaire, heureInconnue: false });
+  } else if (q === 'lieu') {
+    if (!v) return true;
+    const L = lieuxConnus(e.id).find(l => plat(l.cle) === plat(v) || plat(l.nom) === plat(v));
+    ecrire(e, { lieu: L ? L.cle || L.nom : nomSur(v) });
+    f.value = '';
+    peindreLieuxAc();
+  } else ecrire(t, { [q]: v });
+  marquerFaits();
+  return true;
+}
+/** Quitter la date affichée : ce qui a changé va dans son historique, comme en quittant la fiche. */
+function noterAc() {
+  const x = ac.L[ac.i],
+    e = x && evAc(x.id);
+  if (!e || !ac.avant) return;
+  let avant = {};
+  try {
+    avant = JSON.parse(ac.avant);
+  } catch (z) {}
+  ac.avant = '';
+  if (avant.id !== e.id) return;
+  const ch = changements(avant, e);
+  if (ch) {
+    noter(e, 'complétée ' + appareil() + ' (À compléter) : ' + ch);
+    changed();
+  }
+}
+/** « Suivante » : tout est enregistré ; une date encore incomplète est mise de côté jusqu'à demain, comme « Passer ». */
+function suivanteAc(passer) {
+  const x = ac.L[ac.i];
+  if (!x) return;
+  if (!passer) for (const f of $$('#acCorps .ac-c')) if (!appliquerAc(f)) return f.focus();
+  noterAc();
+  const e = evAc(x.id),
+    t = (e && evAc(x.tx)) || e;
+  const complete = e && x.m.every(nm => questionFaite(nm, e, t));
+  if (complete && !passer) ac.fin[x.id] = 'fait';
+  else {
+    ac.fin[x.id] = 'passee';
+    mettreDeCote(x.id);
+  }
+  ac.i++;
+  afficherBandeauCompleter();
+  peindreAc();
+}
+function peindreFinAc() {
+  const faits = ac.L.filter(x => ac.fin[x.id] === 'fait').length,
+    passees = ac.L.filter(x => ac.fin[x.id] === 'passee');
+  $('#acCompte').textContent = '';
+  $('#acSous').textContent = '';
+  const reste = ac.mode === 'lot' ? candidatsLot().filter(e => !ac.L.some(x => x.id === e.id)).length : 0;
+  const nomP = x => {
+    const e = evAc(x.id);
+    return e ? rich((e.titre || '').replace(/\s*\|\s*/g, ' ')) : '';
+  };
+  $('#acCorps').innerHTML =
+    '<div class="ac-fin">' +
+    ic('check', 'ac-ok') +
+    '<p class="ac-gros">' +
+    (ac.mode === 'lot' ? 'C’est tout pour aujourd’hui' : faits === ac.L.length ? 'Le mail peut partir' : 'C’est tout pour ce mail') +
+    '</p>' +
+    (faits ? '<p>' + faits + ' date' + (faits > 1 ? 's' : '') + ' prête' + (faits > 1 ? 's' : '') + '.</p>' : '') +
+    (passees.length
+      ? '<p class="ac-cote">Mise' + (passees.length > 1 ? 's' : '') + ' de côté jusqu’à demain : ' + passees.map(nomP).join(', ') + '. Elle' + (passees.length > 1 ? 's restent' : ' reste') + ' en ocre dans la fiche.</p>'
+      : '') +
+    (reste ? '<p class="ac-demain">Demain, un nouveau lot.</p>' : '') +
+    '</div>';
+  $('#acPied').innerHTML =
+    '<span class="esp"></span>' +
+    (ac.mode === 'mail'
+      ? '<button type="button" id="acMail" class="primaire">Revenir au mail</button>'
+      : '<button type="button" id="acFermer2" class="primaire">Fermer</button>');
+  const b = $('#acPied .primaire');
+  if (b && !TACTILE) b.focus();
+}
+function fermerAc() {
+  $('#completer').close();
+}
+function initCompleter() {
+  const dlg = $('#completer');
+  /* au téléphone, la barre collante (le bandeau) se range sous l'en-tête, dont la hauteur varie (recherche, lignes) */
+  const tete = $('#tete');
+  if (tete && window.ResizeObserver)
+    new ResizeObserver(() => document.documentElement.style.setProperty('--tete-h', tete.offsetHeight + 'px')).observe(tete);
+  $('#bcOuvrir').onclick = ouvrirLot;
+  $('#cFermer').onclick = fermerAc;
+  dlg.addEventListener('close', () => {
+    if (ac.i < ac.L.length) {
+      for (const f of $$('#acCorps .ac-c')) appliquerAc(f);
+      noterAc();
+    }
+    afficherBandeauCompleter();
+  });
+  dlg.addEventListener('click', async ev => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.id === 'acSuivante') return suivanteAc(false);
+    if (b.id === 'acPasser') return suivanteAc(true);
+    if (b.id === 'acFermer2') return fermerAc();
+    if (b.id === 'acMail') {
+      fermerAc();
+      afficherMail();
+      return $('#mail').showModal();
+    }
+    if (b.id === 'acFiche') {
+      const id = ac.L[ac.i] && ac.L[ac.i].id;
+      fermerAc();
+      return id && ouvrirFiche(id);
+    }
+    if (b.id === 'acTaches') {
+      const t = texteTaches(ac.p, $('#mailAvenir').checked);
+      return toast((await copierRiche(esc(t).replace(/\n/g, '<br>'), t)) ? 'Copié : colle-le dans une nouvelle note de Tâches' : 'Copie impossible');
+    }
+    if (b.dataset.tarif) {
+      ev.preventDefault();
+      return choisirTarif(b, b.closest('.ac-q').querySelector('textarea'), 'change');
+    }
+    if (b.dataset.heure) {
+      const f = b.closest('.ac-q').querySelector('[data-q="heure"]');
+      f.value = typo(libHoraire({ heures: b.dataset.heure }));
+      appliquerAc(f);
+      for (const p of $$('[data-heure]', b.parentElement)) p.classList.toggle('choisi', p === b);
+      return;
+    }
+    if (b.closest('.ac-lieux')) {
+      const e = evAc(ac.L[ac.i].id),
+        champ = $('#acCorps [data-q="lieu"]');
+      if (!e) return;
+      const l = b.dataset.nouveau ? null : ac.lieux[+b.dataset.k];
+      champ.value = l ? l.cle || l.nom : champ.value;
+      appliquerAc(champ);
+      return;
+    }
+  });
+  $('#acCorps').addEventListener('change', ev => {
+    const f = ev.target.closest('.ac-c');
+    if (f && f.dataset.q !== 'lieu') appliquerAc(f);
+  });
+  $('#acCorps').addEventListener('input', ev => {
+    if (ev.target.dataset.q === 'lieu') peindreLieuxAc();
+  });
+  dlg.addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter' || ev.isComposing || !ac.L.length) return;
+    const f = ev.target.closest && ev.target.closest('.ac-c');
+    if (ev.ctrlKey || ev.metaKey) {
+      ev.preventDefault();
+      return ac.i < ac.L.length ? suivanteAc(false) : $('#acPied .primaire') && $('#acPied .primaire').click();
+    }
+    if (!f || f.tagName === 'TEXTAREA') return; /* Entrée va à la ligne dans un texte */
+    ev.preventDefault();
+    if (TACTILE) return f.blur(); /* au téléphone, Entrée range le clavier */
+    /* lieu : Entrée choisit le premier de la liste filtrée ; sinon, ce qui est tapé devient un nouveau lieu */
+    if (f.dataset.q === 'lieu' && f.value.trim() && ac.lieux && ac.lieux.length) f.value = ac.lieux[0].cle || ac.lieux[0].nom;
+    if (!appliquerAc(f)) return;
+    const champs = $$('#acCorps .ac-c'),
+      k = champs.indexOf(f);
+    if (k >= 0 && k + 1 < champs.length) champs[k + 1].focus();
+    else suivanteAc(false);
+  });
+}
 /* 07-affiche.js : l'affiche A4, une page par période, à imprimer depuis le navigateur. Toujours la version publique :
    pour l'équipe, c'est le mail « Équipe » (08-mail.js), en texte simple (choix de François, 17/10/2026). */
 
@@ -17278,143 +18018,7 @@ function afficherManques(p, avenir) {
     '</ul>';
 }
 
-/* ---- vue « À compléter » : chaque date incomplète, avec ses champs manquants à remplir sur place ----
-   (François, 18/10/2026 : le bouton « 10 dates à compléter » donnait envie de cliquer). Une saisie est enregistrée
-   dès qu'on quitte le champ ; le champ rempli passe en vert, la date complète s'estompe. Rien n'est retiré de la liste
-   pendant la saisie, pour que le doigt ne tombe pas sur une autre date. */
-const CHAMP_DE = {
-  heure: 'heures',
-  lieu: 'lieu',
-  descriptif: 'detail',
-  'élèves concernés': 'eleves',
-  'infos pratiques': 'pratique'
-};
-function champCompleter(id, nom) {
-  const ph = {
-    heure: '18h30 · 14h-14h45 et 15h15-16h',
-    lieu: 'CCED, Bach, Conciergerie… ou en toutes lettres',
-    descriptif: 'Pour les familles, une ou deux phrases',
-    'élèves concernés': 'classe de piano, ateliers théâtre…',
-    'infos pratiques': 'Ou écris-les toi-même (Entrée pour aller à la ligne)'
-  }[nom];
-  const long = nom === 'descriptif' || nom === 'infos pratiques';
-  return (
-    '<label class="champ c-champ">' +
-    majuscule(nom) +
-    (nom === 'infos pratiques' ? '<span class="puces tarifs">' + pucesTarifs('') + '</span>' : '') +
-    (long
-      ? '<textarea rows="2" data-id="' +
-        esc(id) +
-        '" data-champ="' +
-        nom +
-        '" placeholder="' +
-        esc(ph) +
-        '"></textarea>'
-      : '<input data-id="' +
-        esc(id) +
-        '" data-champ="' +
-        nom +
-        '" placeholder="' +
-        esc(ph) +
-        '"' +
-        (nom === 'lieu' ? ' list="cLieux"' : '') +
-        '>') +
-    '</label>'
-  );
-}
-function ouvrirCompleter() {
-  const p = periodeMail(),
-    L = manques(p, $('#mailAvenir').checked);
-  $('#cTitre').textContent = 'À compléter · ' + typo(p.nom);
-  $('#cLieux').innerHTML = Object.values(lieux(doc))
-    .map(l => '<option value="' + esc(l.cle) + '">' + esc(l.nom) + '</option>')
-    .join('');
-  $('#cListe').innerHTML = L.map(({ e, m, g }) => {
-    const Lx = lieuDe(e);
-    return (
-      '<section class="c-date" data-id="' +
-      esc(e.id) +
-      '"><div class="c-tete"><span class="c-quand" style="color:' +
-      (Lx ? Lx.hex : 'var(--encre)') +
-      '">' +
-      esc(majuscule(libDate(e))) +
-      '</span> <b>' +
-      rich(e.titre) +
-      '</b> <button type="button" class="lien" data-fiche="' +
-      esc(e.id) +
-      '">fiche</button></div>' +
-      m.map(n => champCompleter(n === 'heure' || n === 'lieu' ? e.id : g.id, n)).join('') +
-      '</section>'
-    );
-  }).join('');
-  $('#mail').close();
-  $('#completer').showModal();
-  const premier = $('#cListe input, #cListe textarea');
-  if (premier && !TACTILE) premier.focus();
-}
-function initCompleter() {
-  $('#cFermer').onclick = () => $('#completer').close();
-  $('#cMail').onclick = () => {
-    $('#completer').close();
-    afficherMail();
-    $('#mail').showModal();
-  };
-  $('#cTaches').onclick = async () => {
-    const t = texteTaches(periodeMail(), $('#mailAvenir').checked);
-    toast(
-      (await copierRiche(esc(t).replace(/\n/g, '<br>'), t))
-        ? 'Copié : colle-le dans une nouvelle note de Tâches'
-        : 'Copie impossible'
-    );
-  };
-  $('#cListe').addEventListener('click', ev => {
-    const t = ev.target.closest('[data-tarif]');
-    if (t) {
-      ev.preventDefault(); /* dans un label : pas de clic relayé au champ */
-      return choisirTarif(t, t.closest('.c-champ').querySelector('textarea'), 'change');
-    }
-    const b = ev.target.closest('[data-fiche]');
-    if (!b) return;
-    $('#completer').close();
-    ouvrirFiche(b.dataset.fiche);
-  });
-  $('#cListe').addEventListener('change', ev => {
-    const f = ev.target.closest('[data-champ]');
-    if (!f) return;
-    const e = doc.evts.find(x => x.id === f.dataset.id);
-    if (!e) return;
-    let v = f.value.trim();
-    const nom = f.dataset.champ;
-    if (nom === 'heure') {
-      v = lireHeures(v);
-      if (f.value.trim() && !heuresValides(v)) {
-        f.classList.add('erreur');
-        return toast('Heure non comprise : écris par exemple « 18h30 » ou « 14h-14h45 et 15h15-16h »');
-      }
-    }
-    if (nom === 'lieu') {
-      const L = Object.values(lieux(doc)).find(
-        l => l.cle.toLowerCase() === v.toLowerCase() || l.nom.toLowerCase() === v.toLowerCase()
-      );
-      if (L) v = L.cle;
-    }
-    f.classList.remove('erreur');
-    snapshot();
-    e[CHAMP_DE[nom]] = v;
-    changed();
-    afficherListe();
-    f.closest('.c-champ').classList.toggle('fait', !!v);
-    const sec = f.closest('.c-date');
-    sec.classList.toggle(
-      'fait',
-      $$('[data-champ]', sec).every(x => x.closest('.c-champ').classList.contains('fait'))
-    );
-    const reste = $$('#cListe .c-date:not(.fait)').length;
-    $('#cReste').textContent = reste
-      ? reste + ' date' + (reste > 1 ? 's' : '') + ' encore à compléter'
-      : 'Tout est complet : le mail peut partir.';
-  });
-}
+/* ---- vue « À compléter » : depuis la 0.87, une date à la fois (06n-completer.js, ouvrirCompleter) ---- */
 
 /* ---- mail « Équipe » ---- */
 const TOUTE = '*'; /* valeur de « Toute la saison » dans la liste des périodes */
@@ -17684,6 +18288,18 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-24 01:30',
+    v: '0.87.21',
+    t: '« À compléter » : un petit lot par jour',
+    items: [
+      'En haut de la liste, un bandeau : « 5 dates à compléter aujourd’hui », et « Compléter ». Jamais toute la saison : 5 dates au plus, prises dans la période en cours et la suivante, les plus proches d’abord. Le nombre est celui du lot, pas un total.',
+      '« Compléter » te montre les dates une par une, avec seulement ce qui leur manque (l’heure, le lieu, les élèves, les infos pratiques, le descriptif ; la date, pour une date à fixer). Ce qui est déjà là tient en une ligne verte.',
+      'Entrée passe au champ suivant, puis à la date suivante ; Ctrl+Entrée passe à la date suivante de n’importe où. Les heures toutes faites, les puces des infos pratiques et la liste des lieux s’y retrouvent.',
+      '« Passer » met une date de côté jusqu’au lendemain ; une date laissée à moitié faite aussi. À la fin du lot : « C’est tout pour aujourd’hui », et le bandeau s’en va jusqu’au lendemain.',
+      'Dans « Demandez le programme », « N dates à compléter → » ouvre la même fenêtre, sur les dates du mail.'
+    ]
+  },
   {
     d: '2026-11-24 01:05',
     v: '0.86.20',
