@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261123190123">
+<meta name="officious-page" content="20261125142856">
 <meta name="officious-appli" content="taches">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -104,7 +104,8 @@
   opacity: 1;
   transform: translate(-50%, 0);
 }
-#s-toast.action {
+/* 1.21.1 : touchable seulement quand il se voit (un bouton invisible captait les touchers en bas de l’écran) */
+#s-toast.on.action {
   pointer-events: auto;
 }
 #s-toast button {
@@ -904,6 +905,17 @@ dialog.s-resiste {
   dialog.s-plein[open] {
     animation: none !important;
   }
+}
+
+/* copies en double au PC, fichier partagé (1.21) : bandeau discret sous l'en-tête, comme une information */
+.s-copies {
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.s-copies button[hidden] {
+  display: none;
 }
 :root {
   --note-bg: #f0eee9;
@@ -8077,6 +8089,8 @@ function creerInterface() {
     $s('[data-a=copie]', ab).onclick = () =>
       nouveauFichier(null, sansExt(nomDonnees()) + ' (copie de secours)' + (C.format === 'pdf' ? '.pdf' : '.md'));
   }
+  /* copies en double au PC, fichier partagé (1.21, 27-partage.js) : bandeau discret sous l'en-tête */
+  creerBandeauCopies(tete);
   ajoute(
     `<dialog id="s-enligne" class="s-dialogue s-plein" aria-label="Adresse en ligne">
       <h2 id="s-elTitre">Adresse en ligne de ${A.fichier}</h2>
@@ -8116,8 +8130,16 @@ function creerInterface() {
   $s('#s-forcerOk').onclick = () => envoyerQuandMeme();
   $s('#s-libre').onchange = e => basculerLibre(e.target.checked);
   const e = A.etatEl ? $s(A.etatEl) : null;
+  /* 1.21 : la ligne d'état ne réagit qu'à un geste commencé sur elle. Un panneau ou une fenêtre qui se ferme pendant
+     le geste (au toucher, au relâcher, ou le clavier qui se replie et fait bouger la page) laisse sinon le clic tomber
+     dessous, sur la ligne d'état : au téléphone hors des heures, « Supprimer » dans une fiche ouvrait « Rien ne presse ». */
+  let appuiEtat = false;
+  if (e)
+    document.addEventListener('pointerdown', ev => (appuiEtat = !!(ev.target && e.contains(ev.target))), true);
   if (e)
     e.addEventListener('click', () => {
+      if (!appuiEtat) return;
+      appuiEtat = false;
       if (!AND && fichierPc.handle && !fichierPc.perm) reprendrePc();
       else if (AND && (horsHeures() || libreActif())) demanderEnvoi(); /* en pause ou synchro hors des heures : régler */
     });
@@ -8137,6 +8159,7 @@ function toast(msg, action, fn, ms) {
     b.textContent = action;
     b.onclick = e => {
       e.stopPropagation();
+      if (!t.classList.contains('on')) return; /* 1.21.1 : message déjà effacé, le bouton ne vaut plus */
       t.classList.remove('on');
       fn();
     };
@@ -8308,7 +8331,10 @@ function etat() {
     e.classList.toggle('libre', libreActif());
   }
   verifierVersionPc();
-  if (A && !AND) peindreAcces();
+  if (A && !AND) {
+    peindreAcces();
+    peindreCopies(); /* 1.21 */
+  }
   if (A && A.surEtat) A.surEtat();
 }
 
@@ -8830,17 +8856,100 @@ function restaurer() {
   return true;
 }
 
-/* ---- versions déjà vues ---- */
+/* ---- versions déjà vues ----
+   En mémoire, les 15 dernières (seenTexts : échos périmés, ancêtre perdu, synchrones). 1.21 : gardées aussi, par
+   empreinte, dans IndexedDB (50, clés « vu:<empreinte> » et l'ordre sous « vus », base officious-<appli>) : elles servent
+   à retrouver la version de départ d'une copie en double (« issu de »), y compris écrite par un autre appareil puis
+   lue ici. Pas dans le stockage local : commun à toutes les pages de la suite et limité à 5 Mo (journal du 21/11).
+   Migration : les 10 de l'ancienne clé <appli>-vus passent dans IndexedDB, puis la clé est retirée. Sans IndexedDB
+   (navigateur qui le refuse) : repli sur l'ancienne clé, 10 versions, comme avant. */
+const VUS_MAX = 50;
 let seenTexts = [];
+const vus = { idb: null /* promesse : true si IndexedDB sert, false sinon */, chaine: Promise.resolve(), attente: [] };
+/* IndexedDB qui ne répond pas (jamais vu, mais la WebView du Compagnon n'y avait jamais servi) : on n'attend pas plus de
+   quelques secondes, sinon le ramassage des copies resterait bloqué */
+function borne(p, ms, d) {
+  return Promise.race([p, new Promise(r => setTimeout(() => r(d), ms))]);
+}
 function chargerVus() {
   seenTexts = mem.get('vus', []);
+  vus.idb = borne((async () => {
+    try {
+      if (typeof indexedDB === 'undefined' || !indexedDB) return false;
+      const anciens = mem.get('vus', []);
+      await idbTx(st => {
+        const q = st.get('vus');
+        q.onsuccess = () => {
+          let ordre = Array.isArray(q.result) ? q.result : [];
+          for (const t of anciens) ordre = ajouterVu(st, ordre, t);
+          st.put(ordre, 'vus');
+        };
+      });
+      mem.set('vus', null); /* migré : le stockage local se libère */
+      return true;
+    } catch (e) {
+      return false;
+    }
+  })(), 5000, false);
+}
+/* dans une transaction ouverte : range t sous son empreinte, la met en dernier dans l'ordre, retire les plus anciennes */
+function ajouterVu(st, ordre, t) {
+  const h = hash8(t);
+  ordre = ordre.filter(x => x !== h);
+  ordre.push(h);
+  st.put(t, 'vu:' + h);
+  while (ordre.length > VUS_MAX) st.delete('vu:' + ordre.shift());
+  return ordre;
 }
 function remember(t) {
   if (t == null || seenTexts[seenTexts.length - 1] === t) return;
   seenTexts = seenTexts.filter(x => x !== t);
   seenTexts.push(t);
   if (seenTexts.length > 15) seenTexts.shift();
-  mem.set('vus', seenTexts.slice(-10));
+  if (!vus.idb) return mem.set('vus', seenTexts.slice(-10));
+  /* une écriture à la fois, dans l'ordre ; plusieurs versions arrivées pendant une écriture partent ensemble */
+  vus.attente.push(t);
+  if (vus.attente.length > 1) return;
+  vus.chaine = vus.chaine
+    .then(() => vus.idb)
+    .then(async ok => {
+      const L = vus.attente.splice(0);
+      if (!ok) return mem.set('vus', seenTexts.slice(-10));
+      await idbTx(st => {
+        const q = st.get('vus');
+        q.onsuccess = () => {
+          let ordre = Array.isArray(q.result) ? q.result : [];
+          for (const x of L) ordre = ajouterVu(st, ordre, x);
+          st.put(ordre, 'vus');
+        };
+      });
+    })
+    .catch(() => {});
+}
+/** Une version vue ici, par son empreinte (base, mémoire, puis IndexedDB, ou l'ancienne clé en repli) ; null sinon. */
+async function versionVueDe(h) {
+  if (!h) return null;
+  if (C.baseText != null && hash8(C.baseText) === h) return C.baseText;
+  const m = seenTexts.find(x => hash8(x) === h);
+  if (m != null) return m;
+  if (!vus.idb || !(await vus.idb)) return (mem.get('vus', []) || []).find(x => hash8(x) === h) || null;
+  await borne(vus.chaine, 3000); /* ce qui s'écrit encore */
+  try {
+    const t = await borne(idbGet('vu:' + h), 3000, null);
+    return typeof t === 'string' && hash8(t) === h ? t : null;
+  } catch (e) {
+    return null;
+  }
+}
+/** Empreintes des versions gardées dans IndexedDB, de la plus ancienne à la plus récente (tests, journal). */
+async function versionsVues() {
+  if (!vus.idb || !(await vus.idb)) return seenTexts.map(hash8);
+  await borne(vus.chaine, 3000);
+  try {
+    return (await borne(idbGet('vus'), 3000, null)) || [];
+  } catch (e) {
+    return [];
+  }
 }
 function parentOf(t) {
   const m = /^- issu de : ([0-9a-f]{8})\s*$/m.exec(t || '');
@@ -8882,7 +8991,12 @@ async function enregistrer() {
 
 /** Fusion : le métier (A.merge3), plus les règles des réglages communs. */
 function fusionner(B, M, T) {
+  /* 1.21 : « écrit par » change à chaque écriture : jamais un conflit ; le résultat garde celui du fichier lu (T), et
+     l'écriture qui suit pose celui de cet appareil. B et T sont toujours des modèles relus (A.parse) : on peut y toucher. */
+  const ep = A.reglage(T, ECRIT_PAR) || null;
+  A.fixeReglage(B, ECRIT_PAR, A.reglage(M, ECRIT_PAR) || null);
   const r = A.merge3(B, M, T);
+  A.fixeReglage(r, ECRIT_PAR, ep);
   /* tampon de la page déposée pour le PC : le plus récent des deux, jamais un conflit */
   const vm = A.reglage(M, 'version') || '',
     vt = A.reglage(T, 'version') || '';
@@ -8894,11 +9008,10 @@ function fusionner(B, M, T) {
     si on la connaît (la base, ou une version vue ici) ; sinon fusion prudente, à partir de rien, comme syncSave sans
     base : ce que la copie a en plus est ajouté, rien n'est retiré, en cas de différence la version du fichier de travail
     est gardée. « issu de » reste celui du fichier de travail (syncSave le refait en écrivant).
-    Rend { anc (texte ou null), avant, r (modèle fusionné), apres } ; ne change rien à l'état (1.19.1, commun au
-    ramassage du téléphone et à « Fusionner une copie… » du PC). */
-function fusionCopie(txt) {
-  const p = parentOf(txt),
-    anc = !p ? null : C.baseText != null && hash8(C.baseText) === p ? C.baseText : seenTexts.find(x => hash8(x) === p) || null,
+    Rend (promesse, 1.21 : versions vues dans IndexedDB) { anc (texte ou null), avant, r (modèle fusionné), apres } ;
+    ne change rien à l'état (1.19.1, commun au ramassage des copies et à « Fusionner une copie… » du PC). */
+async function fusionCopie(txt) {
+  const anc = await versionVueDe(parentOf(txt)),
     avant = A.serialize(A.etat()),
     r = fusionner(A.parse(anc != null ? anc : ''), A.parse(avant), A.parse(txt));
   A.fixeReglage(r, 'issu de', A.reglage(A.parse(avant), 'issu de') || null);
@@ -8988,21 +9101,26 @@ async function syncSave() {
         if (base != null) matin.b.recues += ecarts(base, cur);
       }
       A.appliquer(r);
+      const qui = ecritParAutre(cur);
       toast(
         r.conflits
-          ? 'Fusionné avec des modifications faites ailleurs · ' +
+          ? 'Fusionné avec des modifications ' +
+              (qui ? 'de ' + qui : 'faites ailleurs') +
+              ' · ' +
               r.conflits +
               ' conflit' +
               (r.conflits > 1 ? 's' : '') +
               ' : la version de cet appareil a été gardée'
-          : 'Fusionné avec des modifications faites ailleurs'
+          : 'Fusionné avec des modifications ' + (qui ? 'de ' + qui : 'faites ailleurs')
       );
     }
     fixeReglage('issu de', parentOf(cur));
+    fixeReglage(ECRIT_PAR, reglageDe(cur, ECRIT_PAR)); /* 1.21 : seul, il ne justifie pas d'écrire */
     const at = C.rev;
     let out = A.serialize(A.etat());
     if (out !== cur) {
       if (cur && cur.trim()) fixeReglage('issu de', hash8(cur)); /* ce qu'on écrit part de la version lue */
+      fixeReglage(ECRIT_PAR, signature()); /* 1.21 : le prénom de cet appareil et l'heure, ou rien */
       out = A.serialize(A.etat());
     }
     const perdus = C.forcer ? [] : elementsPerdus(cur, out, base, mien);
@@ -9077,10 +9195,17 @@ async function syncSave() {
   }
 }
 
-/** Relecture : le fichier a-t-il été modifié ailleurs ? (au retour sur la page, toutes les 30 s) */
+/** Relecture : le fichier a-t-il été modifié ailleurs ? (au retour sur la page, toutes les 30 s ; 1.21 : toutes les
+    10 s au PC quand le fichier est partagé). 1.21 : au PC, ensuite, ramassage des copies en double si le dossier est
+    autorisé (au plus une fois par minute environ, 27-partage.js). */
 async function checkExternal() {
   if (!C.backend || C.saving || C.dirty || horsHeures() || (A.enSaisie && A.enSaisie())) return;
   if (C.backend === pcBackend && !fichierPc.perm) return; /* accès à redonner : le bandeau le dit (1.18) */
+  await relire();
+  if (C.backend === pcBackend && fichierPc.perm && !C.dirty && !C.saving && !accesPerdu())
+    await ramasserDoublons(false).catch(() => {});
+}
+async function relire() {
   try {
     const change = !C.backend.changedSince || (await C.backend.changedSince());
     if (C.backend === pcBackend && fichierPc.introuvable) {
@@ -9102,7 +9227,8 @@ async function checkExternal() {
     C.baseText = cur;
     backup();
     etat();
-    toast('Mis à jour : le fichier a été modifié ailleurs');
+    const qui = ecritParAutre(cur);
+    toast(qui ? 'Mis à jour par ' + qui : 'Mis à jour : le fichier a été modifié ailleurs');
   } catch (e) {
     if (C.backend === pcBackend) {
       accesEchec(e); /* 1.18 : premier échec d'une relecture → bandeau */
@@ -9118,13 +9244,28 @@ async function checkExternal() {
    disait) ; tant que la page ne peut ni lire ni écrire son fichier, un bandeau en haut de la page le dit, avec
    « Reprendre » (et « Ouvrir… » si Edge a refusé, ou si le fichier a disparu). Voir accesPerdu, peindreAcces. */
 
+/* base IndexedDB de l'outil (officious-<appli>, magasin « kv ») : poignées du fichier et du dossier, versions vues (1.21).
+   Une connexion gardée pour toute la page (1.21 : les versions vues y écrivent à chaque lecture). */
+let idbP = null;
 function idb() {
-  return new Promise((res, rej) => {
-    const r = indexedDB.open('officious-' + C.appli, 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('kv');
-    r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error);
-  });
+  if (!idbP)
+    idbP = new Promise((res, rej) => {
+      const r = indexedDB.open('officious-' + C.appli, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => {
+        const db = r.result;
+        db.onversionchange = () => {
+          db.close();
+          idbP = null;
+        };
+        res(db);
+      };
+      r.onerror = () => rej(r.error);
+    }).catch(e => {
+      idbP = null;
+      throw e;
+    });
+  return idbP;
 }
 async function idbGet(k) {
   const db = await idb();
@@ -9135,12 +9276,17 @@ async function idbGet(k) {
   });
 }
 async function idbSet(k, v) {
+  return idbTx(st => st.put(v, k));
+}
+/** Une transaction d'écriture sur « kv » : fn(magasin) y fait ses demandes ; la promesse se termine avec elle. */
+async function idbTx(fn) {
   const db = await idb();
   return new Promise((res, rej) => {
     const tx = db.transaction('kv', 'readwrite');
-    tx.objectStore('kv').put(v, k);
+    fn(tx.objectStore('kv'));
     tx.oncomplete = () => res();
     tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error);
   });
 }
 
@@ -9348,12 +9494,14 @@ async function brancherPc(h) {
   etat();
 }
 /** Le premier clic ou la première touche n'importe où redemande la permission (sauf dans le bandeau, dont les boutons
-    font eux-mêmes la demande ou ouvrent le fichier : deux fenêtres d'Edge à la fois sinon). */
+    font eux-mêmes la demande ou ouvrent le fichier : deux fenêtres d'Edge à la fois sinon). 1.21.3 : ni dans une
+    fenêtre ouverte (nouveautés, mise à jour…) ni sur son fond : elle passe d'abord, la demande attend le geste suivant. */
 function armerPremierGeste() {
   if (armerPremierGeste.arme) return;
   armerPremierGeste.arme = true;
   const premier = e => {
     if (e.target && e.target.closest && e.target.closest('#s-acces')) return;
+    if (document.querySelector('dialog[open]:modal')) return;
     removeEventListener('pointerdown', premier, true);
     removeEventListener('keydown', premier, true);
     armerPremierGeste.arme = false;
@@ -9806,10 +9954,11 @@ async function envoyerQuandMeme() {
 const DOUBLON_DELAI = 60e3;
 function ramasserDoublons(force) {
   /* une seule à la fois : tirer pendant le ramassage de l'ouverture attend la fin, puis repasse */
-  const p = (ramasserDoublons.p || Promise.resolve()).catch(() => {}).then(() => ramasser(force));
+  const p = (ramasserDoublons.p || Promise.resolve()).catch(() => {}).then(() => (AND ? ramasser(force) : ramasserPc(force)));
   ramasserDoublons.p = p;
   return p;
 }
+/* téléphone : par l'accès direct (spList, spRead, spRecycle) */
 async function ramasser(force) {
   if (!AND || horsHeures() || C.backend !== spBackend || !A.doublon) return 0;
   if (!force && Date.now() - mem.get('doublons', 0) < 3600e3) return 0;
@@ -9822,55 +9971,82 @@ async function ramasser(force) {
     throw e;
   }
   mem.set('doublons', Date.now());
-  const copies = liste.filter(f => A.doublon.test(f.name) && Date.now() - Date.parse(f.modified) > DOUBLON_DELAI);
-  /* copies laissées (illisibles) : journalisées et dites une fois, tant qu'elles ne changent pas */
-  const dites = mem.get('doublons-laisses', []),
+  const url = f => dossier + '/' + encodeURIComponent(f.name);
+  const r = await ramasserCopies({
+    copies: liste
+      .filter(f => A.doublon.test(f.name))
+      .map(f => ({ name: f.name, modified: Date.parse(f.modified) }))
+      .filter(f => Date.now() - f.modified > DOUBLON_DELAI),
+    lire: async f => JSON.parse(await spCall('spRead', url(f))).text,
+    jeter: f => spCall('spRecycle', url(f)),
+    jetee: (n, s) => ' et mise' + s + ' à la corbeille de OneDrive',
+    laisses: 'doublons-laisses'
+  });
+  return r.n;
+}
+/**
+ * Ramassage commun au téléphone et au PC (1.21) : src = {copies: [{name, modified (ms)}] (déjà filtrées : motif
+ * A.doublon, plus d'une minute), lire(f) → contenu brut, jeter(f) (corbeille de OneDrive, ou suppression au PC),
+ * jetee(n, s) → fin du message (« et mise à la corbeille de OneDrive »), laisses : clé des copies illisibles déjà dites}.
+ * Chaque copie : déballée ; vide ou PDF sans données → laissée (dite une fois) ; sinon fusionnée (fusionCopie : version
+ * de départ connue → trois voies, inconnue → prudente), enregistrée, puis jetée ; pas enregistrée → gardée pour la
+ * prochaine fois. Rend {n (copies fusionnées et jetées), restantes (noms des copies lisibles non jetées)}.
+ */
+async function ramasserCopies(src) {
+  const dites = mem.get(src.laisses, []),
     signe = f => f.name + '|' + f.modified;
   let n = 0,
     prudentes = 0;
-  const laissees = [];
-  for (const f of copies) {
-    const url = dossier + '/' + encodeURIComponent(f.name);
-    const fait = await occupe('Rangement d’une copie en double…', async () => {
-      const brut = JSON.parse(await spCall('spRead', url)).text;
-      let txt,
-        pourquoi = '';
-      try {
-        txt = deballer(brut);
-        if (txt == null) txt = brut;
-        if (!txt || !txt.trim()) pourquoi = 'vide';
-      } catch (e) {
-        pourquoi = 'PDF sans données';
-      }
-      if (pourquoi) {
-        /* rien à fusionner : la mettre à la corbeille perdrait peut-être quelque chose (1.19.1) */
-        laissees.push(f);
-        if (!dites.includes(signe(f)))
-          journal('copie en double', { fichier: f.name, fusion: pourquoi + ', laissée telle quelle' });
-        return false;
-      }
-      const { anc, avant, r, apres } = fusionCopie(txt);
-      if (apres !== avant) {
-        A.appliquer(r);
-        C.dirty = true;
-        C.rev++;
-        backup();
-        await syncSave();
-        /* pas enregistrée : la copie reste, elle sera reprise au prochain ramassage */
-        if (C.saveErr) {
-          journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente', corbeille: 'non, pas enregistré' });
-          return false;
+  const laissees = [],
+    restantes = [];
+  for (const f of src.copies) {
+    let fait = false;
+    try {
+      fait = await occupe('Rangement d’une copie en double…', async () => {
+        const brut = await src.lire(f);
+        let txt,
+          pourquoi = '';
+        try {
+          txt = deballer(brut);
+          if (txt == null) txt = brut;
+          if (!txt || !txt.trim()) pourquoi = 'vide';
+        } catch (e) {
+          pourquoi = 'PDF sans données';
         }
-      }
-      journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente' });
-      await spCall('spRecycle', url);
-      if (!anc) prudentes++;
-      return true;
-    });
+        if (pourquoi) {
+          /* rien à fusionner : la jeter perdrait peut-être quelque chose (1.19.1) */
+          laissees.push(f);
+          if (!dites.includes(signe(f)))
+            journal('copie en double', { fichier: f.name, fusion: pourquoi + ', laissée telle quelle' });
+          return null;
+        }
+        const { anc, avant, r, apres } = await fusionCopie(txt);
+        if (apres !== avant) {
+          A.appliquer(r);
+          C.dirty = true;
+          C.rev++;
+          backup();
+          await syncSave();
+          /* pas enregistrée : la copie reste, elle sera reprise au prochain ramassage */
+          if (C.saveErr) {
+            journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente', suppression: 'non, pas enregistré' });
+            return false;
+          }
+        }
+        journal('copie en double', { fichier: f.name, fusion: anc ? 'faite' : 'prudente' });
+        await src.jeter(f);
+        if (!anc) prudentes++;
+        return true;
+      });
+    } catch (e) {
+      journal('copie en double', { fichier: f.name, erreur: sansCode(e) });
+      fait = false;
+    }
     if (fait) n++;
+    else if (fait === false) restantes.push(f.name);
   }
   const nouvelles = laissees.filter(f => !dites.includes(signe(f)));
-  mem.set('doublons-laisses', laissees.map(signe));
+  mem.set(src.laisses, laissees.length ? laissees.map(signe) : null);
   const s = k => (k > 1 ? 's' : '');
   const msg = [];
   if (n)
@@ -9885,9 +10061,7 @@ async function ramasser(force) {
         (prudentes
           ? ' (' + (n > 1 ? prudentes + '\u00a0' : '') + 'prudemment\u00a0: version de départ inconnue)'
           : '') +
-        ' et mise' +
-        s(n) +
-        ' à la corbeille de OneDrive'
+        src.jetee(n, s(n))
     );
   if (nouvelles.length)
     msg.push(
@@ -9899,7 +10073,7 @@ async function ramasser(force) {
         '\u00a0: aucune donnée lisible, rien à fusionner'
     );
   if (msg.length) toast(msg.join(' · '), null, null, prudentes || nouvelles.length ? 8000 : 6000);
-  return n;
+  return { n, restantes };
 }
 /* socle/js/19-versions.js : la chaîne des mises à jour, GitHub → Compagnon → OneDrive → PC.
    - La page publiée porte un tampon <meta name="officious-page" content="AAAAMMJJhhmmss"> (outils/publier.sh).
@@ -10284,6 +10458,13 @@ function annoncerNouveautes() {
  *   aujourdhui, bilan (cet outil), tous, texte, ligne} ; « ligne » est prête à afficher (« Synchro du matin : 9 h 02,
  *   1 modification envoyée, page déposée pour le PC »), par exemple dans le menu.
  * Accès au fichier perdu au PC (1.18) : rien à fournir ; le bandeau se place avant A.entete.
+ * Travail à deux (1.21, 27-partage.js) : rien à fournir. L'outil peut régler le prénom de l'appareil
+ *   (socle.auteur(), socle.reglerAuteur(prénom) : commun à la suite), lire qui a écrit la version lue
+ *   (socle.ecritPar() → null ou {prenom, quand, moi}), poser le fichier comme partagé (socle.partage(),
+ *   socle.reglerPartage(bool) : réglage commun « partagé : oui », relecture à 10 s au PC). Le socle écrit « écrit par »
+ *   à chaque écriture, dit « Mis à jour par Camille » à la relecture, et ramasse les copies en double au PC si le
+ *   dossier est autorisé (bandeau sinon, fichier partagé). socle.heuresBureau(date?) : heures de travail, sans
+ *   l'interrupteur « Synchroniser hors des heures ».
  * Fichiers discrets (1.19, 25-pdf.js, 26-discrets.js) : le fichier de travail peut être un vrai PDF. Le socle lit les deux
  *   formats (« %PDF » en tête du contenu, quel que soit le nom) et écrit dans le format lu. Champs facultatifs :
  *   fichierPdf   'Suivi tâches et régie.pdf'                nom proposé par « Passer au PDF… » (sinon fichier en .pdf)
@@ -10337,15 +10518,21 @@ async function demarrer(adaptateur) {
   initBoite();
   relever();
   annoncerMatin(); /* téléphone : bilan de la synchro du matin, une fois (1.18) */
-  /* relecture : au retour sur la page et toutes les 30 s ; ce qui attend part */
+  /* relecture : au retour sur la page et toutes les 30 s ; ce qui attend part. 1.21 : au PC, toutes les 10 s quand le
+     fichier est partagé (réglage « partagé : oui », 27-partage.js) ; un tour toutes les 10 s, dont un sur trois sinon */
   addEventListener('focus', () => !AND && checkExternal());
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !AND) checkExternal();
   });
+  let tours = 0;
   setInterval(() => {
+    tours++;
+    if (tours % (RELECTURE / RELECTURE_PARTAGE) && !relectureSerree()) return;
     if (C.dirty && !C.saving && pret()) enregistrer();
     else checkExternal();
-  }, 30000);
+  }, RELECTURE_PARTAGE);
+  /* 1.21 : au PC, copies en double ramassées dès l'ouverture si le dossier est autorisé */
+  if (!AND && pret() && !C.dirty) ramasserDoublons(false).catch(() => {});
   addEventListener('beforeunload', ev => {
     if (C.dirty && pret() && !AND) {
       enregistrer();
@@ -11384,8 +11571,9 @@ function mettreEnPage(doc) {
   return pages;
 }
 
-/** Données (texte) + description de la page → PDF 1.4 complet, en UTF-8. */
-function emballer(texte, doc) {
+/** Données (texte) + description de la page → PDF 1.4 complet, en UTF-8.
+    sans (1.20, via page()) : aucune donnée, ni /PieceInfo ; l'objet 5 n'est qu'un dictionnaire vide. */
+function emballer(texte, doc, sans) {
   texte = bienForme(String(texte == null ? '' : texte));
   doc = Object.assign({}, doc || {});
   doc.titre = String(doc.titre || 'Document');
@@ -11394,18 +11582,19 @@ function emballer(texte, doc) {
     quand = datePdf(maintenant()),
     np = pages.length,
     pi = '<< /' + PDF_CLE + ' << /LastModified (' + quand + ') /Private 5 0 R >> >>';
+  if (sans) texte = '';
   const O = [];
-  O[1] = '<< /Type /Catalog /Pages 2 0 R /PieceInfo ' + pi + ' >>';
+  O[1] = '<< /Type /Catalog /Pages 2 0 R' + (sans ? '' : ' /PieceInfo ' + pi) + ' >>';
   O[2] = '<< /Type /Pages /Kids [' + pages.map((_, k) => 7 + 2 * k + ' 0 R').join(' ') + '] /Count ' + np + ' >>';
   O[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
   O[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
-  O[5] = '<< /Type /' + PDF_CLE + ' /Length ' + octets(texte) + ' >>\nstream\n' + texte + '\nendstream';
+  O[5] = sans ? '<< >>' : '<< /Type /' + PDF_CLE + ' /Length ' + octets(texte) + ' >>\nstream\n' + texte + '\nendstream';
   O[6] = '<< /Title ' + textePdf(doc.titre) + ' /CreationDate (' + quand + ') /ModDate (' + quand + ') >>';
   pages.forEach((ops, k) => {
     const c = ops.join('\n');
     O[7 + 2 * k] =
       '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + nb(PDF_L) + ' ' + nb(PDF_H) + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' +
-      (8 + 2 * k) + ' 0 R' + (k ? '' : ' /LastModified (' + quand + ') /PieceInfo ' + pi) + ' >>';
+      (8 + 2 * k) + ' 0 R' + (k || sans ? '' : ' /LastModified (' + quand + ') /PieceInfo ' + pi) + ' >>';
     O[8 + 2 * k] = '<< /Length ' + c.length + ' >>\nstream\n' + c + '\nendstream';
   });
   /* en-tête, puis une ligne de commentaire en caractères non ASCII (le fichier est binaire pour les logiciels PDF) */
@@ -11425,6 +11614,13 @@ function emballer(texte, doc) {
   x += 'trailer\n<< /Size ' + O.length + ' /Root 1 0 R /Info 6 0 R /ID [<' + id1 + '> <' + id2 + '>] >>\nstartxref\n' + pos + '\n%%EOF\n';
   parts.push(x);
   return parts.join('');
+}
+
+/** Description de la page → PDF sans aucune donnée cachée (1.20) : à partager (programme pour les professeurs, par
+    exemple). Chaîne UTF-8 comme emballer (la 2e ligne de commentaire n'est pas en ASCII) : pour l'envoyer en base64,
+    passer par TextEncoder. deballer() n'y trouve rien : erreur « illisible », jamais de données. */
+function page(doc) {
+  return emballer('', doc, true);
 }
 
 /** Erreur « PDF sans données lisibles ». */
@@ -11557,7 +11753,7 @@ async function fusionnerCopie() {
     await enregistrer();
     if (C.saveErr) return;
   }
-  const { anc, avant, r, apres } = fusionCopie(txt),
+  const { anc, avant, r, apres } = await fusionCopie(txt),
     nom = fichierPc.handle.name;
   if (apres === avant) {
     journal('copie à fusionner', { fichier: h.name, apport: 'rien' });
@@ -11756,10 +11952,206 @@ async function passerAuPdf() {
     8000
   );
 }
+/* socle/js/27-partage.js : deux personnes dans le même fichier (1.21, décisions de François du 21/11,
+   docs/proposition-partage-2026-11-21.md § 0 bis et § 2.6, piste P1 : même fichier dans un dossier OneDrive partagé,
+   la même page sur les deux PC).
+   - Prénom de l'auteur, par appareil : socle.auteur(), socle.reglerAuteur(prénom). Clé commune à la suite
+     (officious-auteur, sans préfixe d'outil, comme la synchro hors des heures) : une personne = un appareil, et Tâches
+     comme Saison, sur ce PC ou ce téléphone, sont à la même personne. Jamais dans un dépôt ni une page publiée :
+     seulement dans ce navigateur et dans le fichier de données.
+   - À chaque écriture, réglage commun « écrit par : Camille (2026-11-22 10:41) » (rien si aucun prénom n'est réglé :
+     le réglage est retiré, pour qu'il ne nomme jamais à tort la personne précédente). Il change à chaque écriture : la
+     fusion ne le compte jamais comme conflit (fusionner, 16-synchro.js), et seul il ne justifie pas d'écrire.
+   - Relecture : « Mis à jour par Camille » quand la version lue a été écrite par un autre prénom que celui de cet
+     appareil ; socle.ecritPar() pour l'outil (« modifié par Camille il y a 3 min »).
+   - Fichier partagé : réglage commun « partagé : oui », posé par l'outil (socle.reglerPartage(true)), lu par
+     socle.partage() ; au PC, relecture toutes les 10 s au lieu de 30 (20-demarrage.js).
+   - Copies en double au PC : ramassées à chaque relecture si le dossier du fichier est autorisé (1.7) ; sinon, fichier
+     partagé, un bandeau discret propose d'autoriser le dossier ou « Fusionner une copie… ». */
+
+/* ---- prénom de l'auteur, par appareil ---- */
+const CLE_AUTEUR = 'officious-auteur',
+  ECRIT_PAR = 'écrit par';
+function auteur() {
+  try {
+    return localStorage.getItem(CLE_AUTEUR) || '';
+  } catch (e) {
+    return '';
+  }
+}
+/** Règle le prénom de cet appareil (pour toute la suite) ; '' ou null le retire. Rend le prénom retenu, nettoyé :
+    sans parenthèses, deux-points ni retours à la ligne (il est écrit tel quel dans le fichier), 40 caractères au plus. */
+function reglerAuteur(prenom) {
+  const p = String(prenom || '')
+    .replace(/[():\r\n\t]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 40)
+    .trim();
+  try {
+    if (p) localStorage.setItem(CLE_AUTEUR, p);
+    else localStorage.removeItem(CLE_AUTEUR);
+  } catch (e) {}
+  journal('prénom de cet appareil', { prénom: p || '–' });
+  return p;
+}
+function memePrenom(a, b) {
+  return plier(a || '') === plier(b || '');
+}
+/** Valeur du réglage « écrit par » pour une écriture d'ici : « Camille (2026-11-22 10:41) », ou '' sans prénom. */
+function signature() {
+  const p = auteur();
+  if (!p) return '';
+  const d = maintenant();
+  return (
+    p +
+    ' (' +
+    isoDe(d) +
+    ' ' +
+    String(d.getHours()).padStart(2, '0') +
+    ':' +
+    String(d.getMinutes()).padStart(2, '0') +
+    ')'
+  );
+}
+/** « Camille (2026-11-22 10:41) » → {prenom, quand (Date ou null), moi} ; null si vide. */
+function lireSignature(v) {
+  v = String(v || '').trim();
+  if (!v) return null;
+  const m = /^(.*?)\s*\((\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)\)$/.exec(v);
+  const prenom = (m ? m[1] : v).trim();
+  if (!prenom) return null;
+  return {
+    prenom,
+    quand: m ? new Date(+m[2], +m[3] - 1, +m[4], +m[5], +m[6]) : null,
+    moi: memePrenom(prenom, auteur())
+  };
+}
+/** Réglage commun lu sur le texte brut (« - clé : valeur », la forme que lit déjà parentOf pour « issu de »). */
+function reglageDe(t, cleR) {
+  const m = new RegExp('^- ' + cleR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' : (.*?)\\s*$', 'm').exec(t || '');
+  return m ? m[1] : '';
+}
+/** Prénom de l'auteur de ce texte s'il n'est pas celui de cet appareil, sinon ''. */
+function ecritParAutre(t) {
+  const s = lireSignature(reglageDe(t, ECRIT_PAR));
+  return s && !s.moi ? s.prenom : '';
+}
+/** Qui a écrit la version lue (ou écrite) en dernier : null, ou {prenom, quand (Date ou null), moi (même prénom que cet
+    appareil)}. */
+function ecritPar() {
+  return A ? lireSignature(reglage(ECRIT_PAR)) : null;
+}
+
+/* ---- fichier partagé ---- */
+function partage() {
+  return !!A && C.ouvert && reglage('partagé') === 'oui';
+}
+/** Pose (true) ou retire (false) le réglage commun « partagé : oui » ; enregistré comme toute modification. Rend
+    l'état retenu. */
+function reglerPartage(on) {
+  on = !!on;
+  if (!A || !C.ouvert) return partage();
+  if (on === partage()) return on;
+  if (A.avantModif) A.avantModif();
+  fixeReglage('partagé', on ? 'oui' : null);
+  journal('fichier partagé : ' + (on ? 'oui' : 'non'));
+  modifie();
+  return on;
+}
+/* relecture : toutes les 30 s ; au PC, toutes les 10 s quand le fichier est partagé (la date de modification ne coûte
+   rien). Au téléphone, chaque relecture est une lecture en ligne : 30 s, partagé ou non. */
+const RELECTURE = 30e3,
+  RELECTURE_PARTAGE = 10e3;
+function relectureSerree() {
+  return !AND && partage();
+}
+
+/* ---- copies en double, au PC ----
+   Même ramassage qu'au téléphone (ramasserCopies, 18-onedrive.js), par le dossier autorisé : liste, lecture, puis
+   suppression (removeEntry) une fois la fusion enregistrée. Au plus une fois toutes les 50 s (la relecture passe
+   toutes les 10 ou 30 s : environ une fois par minute). */
+const RAMASSAGE_PC = 50e3;
+const copiesPc = { autorise: null /* dossier accessible sans rien demander */, restantes: [], plusTard: false };
+async function ramasserPc(force) {
+  if (AND || !hasFS || !A.doublon || !fichierPc.handle || !fichierPc.perm) return 0;
+  const d = await accesDossier(false).catch(() => null),
+    avant = copiesPc.autorise;
+  copiesPc.autorise = !!d;
+  if (avant !== copiesPc.autorise) etat();
+  if (!d) return 0;
+  if (!force && Date.now() - (ramasserPc.dernier || 0) < RAMASSAGE_PC) return 0;
+  ramasserPc.dernier = Date.now();
+  const nom = fichierPc.handle.name,
+    copies = [];
+  for await (const [n, h] of d.entries()) {
+    if (h.kind !== 'file' || n === nom || !A.doublon.test(n)) continue;
+    try {
+      const f = await (await d.getFileHandle(n)).getFile();
+      copies.push({ name: n, modified: f.lastModified });
+    } catch (e) {}
+  }
+  const r = await ramasserCopies({
+    copies: copies.filter(f => Date.now() - f.modified > DOUBLON_DELAI),
+    lire: async f => (await (await d.getFileHandle(f.name)).getFile()).text(),
+    jeter: f => d.removeEntry(f.name),
+    jetee: (n, s) => ' et supprimée' + s,
+    laisses: 'doublons-laisses-pc'
+  });
+  copiesPc.restantes = r.restantes;
+  etat();
+  return r.n;
+}
+/** Bandeau discret (#s-copies, au PC) : fichier partagé et dossier non autorisé (les copies en double ne peuvent pas
+    être fusionnées d'elles-mêmes : le navigateur ne voit pas le dossier, ni donc les copies), ou copies trouvées mais
+    pas encore fusionnées (enregistrement impossible). */
+function peindreCopies() {
+  const b = $s('#s-copies');
+  if (!b) return;
+  const n = copiesPc.restantes.length,
+    cas = accesPerdu() ? '' : n ? 'restantes' : partage() && copiesPc.autorise === false && !copiesPc.plusTard ? 'dossier' : '';
+  b.hidden = !cas;
+  if (!cas) return;
+  b.dataset.cas = cas;
+  $s('.s-copies-txt', b).textContent =
+    cas === 'restantes'
+      ? (n > 1 ? n + ' copies en double' : '1 copie en double') +
+        ' à fusionner : ' +
+        copiesPc.restantes.join(', ')
+      : 'Fichier partagé : pour que les copies en double de ' +
+        nomDonnees() +
+        ' (créées par OneDrive quand deux PC écrivent en même temps) soient fusionnées d’elles-mêmes, autorise son dossier.';
+  $s('[data-a=dossier]', b).hidden = cas !== 'dossier';
+  $s('[data-a=plustard]', b).hidden = cas !== 'dossier';
+}
+function creerBandeauCopies(tete) {
+  if (AND || !hasFS) return;
+  const b = document.createElement('div');
+  b.id = 's-copies';
+  b.className = 's-bandeau s-copies';
+  b.setAttribute('role', 'status');
+  b.hidden = true;
+  b.innerHTML =
+    '<span class="s-copies-txt"></span><span class="s-alerte-b"><button class="s-primaire" data-a="dossier">Autoriser le dossier…</button><button data-a="fusionner">Fusionner une copie…</button><button data-a="plustard">Plus tard</button></span>';
+  if (tete) tete.after(b);
+  else document.body.prepend(b);
+  $s('[data-a=dossier]', b).onclick = async () => {
+    const d = await accesDossier(true);
+    if (!d) return;
+    copiesPc.autorise = true;
+    etat();
+    ramasserDoublons(true).catch(() => {});
+  };
+  $s('[data-a=fusionner]', b).onclick = () => fusionnerCopie();
+  $s('[data-a=plustard]', b).onclick = () => {
+    copiesPc.plusTard = true; /* pour cette session : rouvrir la page le redira */
+    etat();
+  };
+}
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.19.1',
+  version: '1.21.3',
   demarrer,
   /* fichier */
   modifie,
@@ -11774,8 +12166,8 @@ return {
   /* fichiers discrets (1.19) : au PC, menu ⋯ de l'outil */
   passerAuPdf,
   fusionnerCopie,
-  /* emballer(texte, doc), deballer(brut), estPdf(brut) : 25-pdf.js */
-  pdf: { emballer, deballer, estPdf },
+  /* emballer(texte, doc), deballer(brut), estPdf(brut), page(doc) (1.20 : PDF sans données, à partager) : 25-pdf.js */
+  pdf: { emballer, deballer, estPdf, page },
   /* format du fichier de travail tel qu'il a été lu : 'md', 'pdf', ou null avant la première lecture */
   get format() {
     return C.format;
@@ -11839,6 +12231,15 @@ return {
   deposerFichierVoisin,
   supprimerFichierVoisin,
   listerDossierVoisin,
+  /* travail à deux (1.21, 27-partage.js) */
+  auteur,
+  reglerAuteur,
+  ecritPar,
+  partage,
+  reglerPartage,
+  /* heures de travail (9 h – 18 h 30, jours ouvrés), sans compter « Synchroniser hors des heures » ni « Envoyer cette
+     fois » (1.21) */
+  heuresBureau: d => heuresBureau(d instanceof Date ? d : undefined),
   /* boîte d'échange entre outils (1.6) */
   envoyer,
   enAttenteDans,
@@ -11896,7 +12297,11 @@ return {
     mem,
     nomPage,
     deposerAutres,
-    lireDonnees
+    lireDonnees,
+    versionVueDe,
+    versionsVues,
+    copiesPc,
+    ramasserPc
   }
 };
 })();
@@ -20386,6 +20791,46 @@ function congeRow(d, c) {
 function congeOf(iso) {
   return (settings.conges || []).some(c => c.du <= iso && iso <= c.au);
 }
+
+/* ---------- 3.23 : « -> » devient « → » ----------
+   Demande de François (25/11) : en tapant « -> », une flèche fine vers la droite. Partout où l'on écrit (champs, notes,
+   éditeur mis en forme, PC et téléphone), au moment où l'on tape « > » juste après « - ». Par execCommand : la
+   correction entre dans l'annulation du champ (Ctrl+Z rend « -> »), et l'éditeur mis en forme garde son historique. */
+function flecheIci(t) {
+  if (!t) return;
+  if (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && /^(text|search)$/.test(t.type))) {
+    const p = t.selectionStart;
+    if (p !== t.selectionEnd || p < 2 || t.value.slice(p - 2, p) !== '->') return;
+    t.setSelectionRange(p - 2, p);
+    if (!document.execCommand('insertText', false, '→')) {
+      t.setRangeText('→', p - 2, p, 'end');
+      t.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    return;
+  }
+  if (!t.isContentEditable) return;
+  const s = getSelection();
+  if (!s.isCollapsed || !s.focusNode || s.focusNode.nodeType !== Node.TEXT_NODE) return;
+  const n = s.focusNode,
+    o = s.focusOffset;
+  if (o < 2 || n.data.slice(o - 2, o) !== '->') return;
+  const r = document.createRange();
+  r.setStart(n, o - 2);
+  r.setEnd(n, o);
+  s.removeAllRanges();
+  s.addRange(r);
+  document.execCommand('insertText', false, '→');
+}
+document.addEventListener(
+  'input',
+  e => {
+    if (e.isComposing || !/^insert(Text|CompositionText|ReplacementText)$/.test(e.inputType) || !(e.data || '').endsWith('>')) return;
+    flecheIci(e.target);
+  },
+  true
+);
+/* clavier d'Android : « > » arrive parfois en fin de composition */
+document.addEventListener('compositionend', e => (e.data || '').endsWith('>') && setTimeout(() => flecheIci(e.target), 0), true);
 /* ---------- passages entre tâches et notes (communs au PC et au téléphone) ----------
    tâche → note ; tâche lâchée sur une autre : sous-tâche (taskIntoTask), commentaire, ou pièces jointes seules.
    Chaque fonction prend son instantané (Ctrl+Z / Annuler) et laisse l'affichage à l'appelant. */
@@ -21513,6 +21958,17 @@ $('#mTabs').addEventListener('click', e => {
    ou 'appli' (« Compagnon Android », l'appli du téléphone, à installer ; v = numéro de fabrication, affiché 1.v). Noms toujours en entier.
    d = date et heure de publication (heure de Paris), les plus récentes en premier. À compléter à chaque publication. */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-25 14:30',
+    type: 'web',
+    v: '3.23.24',
+    t: 'Une flèche en tapant « -> »',
+    items: [
+      'En tapant « -> », la page écrit une flèche fine « → » : dans les notes, les intitulés, les commentaires, au PC comme au téléphone.',
+      'Ctrl+Z juste après rend « -> », si tu voulais vraiment les deux signes.',
+      'Au PC, une fenêtre ouverte au démarrage (nouveautés, mise à jour) passe avant la demande d’accès au fichier : un clic dedans ne fait plus surgir la question d’Edge, qui attend le clic suivant.'
+    ]
+  },
   {
     d: '2026-11-23 20:40',
     type: 'web',
