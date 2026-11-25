@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- L'origine seule (jamais le chemin ni ce qui suit « # ») : sans elle, pCloud refuse ses liens de fichiers
-     (« Invalid link referer », essai de François du 23/11/2026). -->
-<meta name="referrer" content="strict-origin">
+<!-- L'adresse de la page, sans ce qui suit « # » (le navigateur ne l'envoie jamais) : pCloud refuse ses liens de
+     fichiers sans en-tête Referer, et aussi avec l'origine seule (« Invalid link referer », essais de François du
+     23 et du 25/11/2026) ; hypothèse : il le compare au site déclaré pour l'appli, officious-labs.github.io/impulsion/. -->
+<meta name="referrer" content="unsafe-url">
 <meta name="robots" content="noindex">
 <title>Impulsion · Bulletins</title>
 <!--
@@ -113,12 +114,15 @@ function lireFichier(c, id) {
     // Une erreur arrive en JSON ({"result": 7010, …}) ; une note n'en est jamais un.
     if (/^\s*\{\s*"result"/.test(t)) { var j = JSON.parse(t); if (j.result !== 0) throw new Error(j.error || "erreur " + j.result); }
     return t;
-  }).catch(function () {
+  }).catch(function (e1) {
     return appel(c, "getfilelink", { fileid: id }).then(function (l) {
       return fetch("https://" + l.hosts[0] + l.path).then(function (r) {
         if (!r.ok) throw new Error("fichier illisible (" + r.status + ")");
         return r.text();
       });
+    }).catch(function (e2) {
+      // Les deux raisons, pour savoir laquelle corriger.
+      throw new Error("lecture directe : " + (e1.message || e1) + " ; lien : " + (e2.message || e2));
     });
   });
 }
