@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta name="officious-page" content="20261124114003">
+<meta name="officious-page" content="20261125142246">
 <meta name="officious-appli" content="saison">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4620,6 +4620,47 @@ body.sans-taches #propositions {
 #crSousLien {
   align-self: flex-start;
 }
+/* 0.94 : le sous-titre sous le titre, comme dans la fiche ; le champ, petit, seulement le temps de l'écrire */
+#creer .cr-st-vu {
+  align-self: flex-start;
+  margin: -0.35rem 0 0;
+  padding: 0.15rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  box-shadow: none;
+  min-height: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--gris);
+  white-space: normal;
+  text-align: left;
+  cursor: var(--s-cur-text);
+}
+#creer .cr-st-vu.devine {
+  border: 1px dashed var(--ocre);
+}
+#creer .cr-st-vu:hover {
+  border-color: var(--filet);
+}
+.cr-st-champ {
+  display: block;
+  margin-top: -0.35rem;
+}
+#crSous {
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--encre);
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--filet);
+  border-radius: 6px;
+  background: var(--papier);
+}
 .cr-q-champs {
   display: flex;
   flex-direction: column;
@@ -4643,6 +4684,7 @@ body.sans-taches #propositions {
 #crDateBloc[hidden],
 #crHeureLib[hidden],
 #crSousBloc[hidden],
+#creer .cr-st-vu[hidden],
 #crPratique[hidden],
 #creer select[hidden] {
   display: none;
@@ -5857,9 +5899,10 @@ body.sans-taches #propositions {
       <p class="cr-devine-type" id="crTypeDevine"></p>
       <label class="cr-champ cr-titre-champ"><span>Titre <small class="pc-seul">tel qu’il paraîtra sur l’affiche</small></span><input id="crTitre" placeholder="Titre" autocomplete="off" spellcheck="true" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="crTitres" enterkeyhint="next" title="Une phrase collée ici (une ligne d’un mail) est répartie dans la page">
         <span id="crTitres" class="cr-titres" role="listbox" aria-label="Titres déjà utilisés" hidden></span></label>
+      <button type="button" class="cr-st-vu" id="crSousVu" title="Changer le sous-titre" hidden></button>
+      <span class="cr-st-champ" id="crSousBloc" hidden><textarea id="crSous" rows="1" placeholder="Sous-titre" aria-label="Sous-titre" title="Entrée : une ligne de plus · Échap ou Tab : terminé"></textarea></span>
       <p id="crReprise" class="cr-reprise" hidden></p>
       <button type="button" class="lien" id="crSousLien">+ Sous-titre</button>
-      <label class="cr-champ" id="crSousBloc" hidden><span>Sous-titre</span><textarea id="crSous" rows="2" placeholder="Sous-titre"></textarea></label>
     </section>
     <div class="cr-bas">
       <section class="cr-pan cr-quand-pan" aria-label="Quand">
@@ -7744,12 +7787,14 @@ async function brancherPc(h) {
   etat();
 }
 /** Le premier clic ou la première touche n'importe où redemande la permission (sauf dans le bandeau, dont les boutons
-    font eux-mêmes la demande ou ouvrent le fichier : deux fenêtres d'Edge à la fois sinon). */
+    font eux-mêmes la demande ou ouvrent le fichier : deux fenêtres d'Edge à la fois sinon). 1.21.3 : ni dans une
+    fenêtre ouverte (nouveautés, mise à jour…) ni sur son fond : elle passe d'abord, la demande attend le geste suivant. */
 function armerPremierGeste() {
   if (armerPremierGeste.arme) return;
   armerPremierGeste.arme = true;
   const premier = e => {
     if (e.target && e.target.closest && e.target.closest('#s-acces')) return;
+    if (document.querySelector('dialog[open]:modal')) return;
     removeEventListener('pointerdown', premier, true);
     removeEventListener('keydown', premier, true);
     armerPremierGeste.arme = false;
@@ -10399,7 +10444,7 @@ function creerBandeauCopies(tete) {
 /* socle/js/99-exports.js : ce que l'outil voit du socle (objet global « socle »). */
 
 return {
-  version: '1.21.2',
+  version: '1.21.3',
   demarrer,
   /* fichier */
   modifie,
@@ -16113,6 +16158,7 @@ function crPeindreMarques() {
     crHeure: 'heures'
   };
   for (const [id, c] of Object.entries(marque)) $('#' + id).classList.toggle('devine', cr.devine.has(c));
+  $('#crSousVu').classList.toggle('devine', cr.devine.has('soustitre'));
   $('#crCal').classList.toggle('devine', cr.devine.has('quand'));
   $('#crHeuresTel').classList.toggle('devine', cr.devine.has('heures'));
 }
@@ -16128,11 +16174,22 @@ function crPeindreQuoi() {
   $('#crTypeDevine').textContent = r.type ? '' : r.titre.trim() ? 'sinon : ' + TYPES.find(t => t[0] === ty.cle)[2].toLowerCase() + ', deviné' : '';
   if (document.activeElement !== $('#crTitre')) $('#crTitre').value = r.titre;
   if (document.activeElement !== $('#crSous')) $('#crSous').value = r.soustitre;
-  const sous = !!r.soustitre || $('#crSousBloc').dataset.ouvert === '1';
-  $('#crSousBloc').hidden = !sous;
-  $('#crSousLien').hidden = sous;
+  /* 0.94 : comme dans la fiche, le sous-titre se lit sous le titre ; un petit champ seulement le temps de l'écrire */
+  const saisie = $('#crSousBloc').dataset.ouvert === '1',
+    vu = !saisie && !!r.soustitre.trim();
+  $('#crSousBloc').hidden = !saisie;
+  $('#crSousVu').hidden = !vu;
+  if (vu) $('#crSousVu').innerHTML = richLignes(r.soustitre.replace(/\s+$/, ''));
+  $('#crSousLien').hidden = saisie || vu;
+  if (saisie) crSousHauteur();
   crPeindreReprise();
   crPeindrePourQui();
+}
+/** Le petit champ du sous-titre grandit avec ses lignes. */
+function crSousHauteur() {
+  const t = $('#crSous');
+  t.style.height = 'auto';
+  t.style.height = t.scrollHeight + 2 + 'px';
 }
 /** La date du même titre la plus récente qui a de quoi reprendre (lieu, élèves, infos pratiques, descriptif). */
 function crSource() {
@@ -16703,15 +16760,33 @@ function initCreer() {
     const b = ev.target.closest('[data-k]');
     if (b) crChoisirTitre(+b.dataset.k);
   });
-  $('#crSousLien').onclick = () => {
+  const sousOuvrir = () => {
     $('#crSousBloc').dataset.ouvert = '1';
     crPeindreQuoi();
-    $('#crSous').focus();
+    const t = $('#crSous');
+    t.focus();
+    t.setSelectionRange(t.value.length, t.value.length);
   };
+  $('#crSousLien').onclick = sousOuvrir;
+  $('#crSousVu').onclick = sousOuvrir;
   $('#crSous').addEventListener('input', () => {
     cr.r.soustitre = $('#crSous').value;
     cr.devine.delete('soustitre');
     $('#crSous').classList.remove('devine');
+    $('#crSousVu').classList.remove('devine');
+    crSousHauteur();
+  });
+  /* le champ se referme dès qu'on le quitte : il ne reste que le texte sous le titre (ou « + Sous-titre » s'il est vide) */
+  $('#crSous').addEventListener('blur', () => {
+    if (!$('#creer').open) return;
+    delete $('#crSousBloc').dataset.ouvert;
+    crPeindreQuoi();
+  });
+  $('#crSous').addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape') return;
+    ev.preventDefault(); /* Échap ferme le champ, pas la fenêtre */
+    ev.stopPropagation();
+    $('#crTitre').focus();
   });
   $('#crReprise').addEventListener('click', ev => {
     if (ev.target.id === 'crRepriseOui') crReprendre();
@@ -18796,6 +18871,15 @@ function initMail() {
 /* Notes de version : une entrée par publication visible, la plus récente en tête (montrées une fois après une mise
    à jour, par le socle). */
 const NOUVEAUTES = [
+  {
+    d: '2026-11-25 14:20',
+    v: '0.94.28',
+    t: 'Sous-titre sous le titre',
+    items: [
+      'Nouvelle date : « + Sous-titre » ouvre un petit champ juste sous le titre. Dès qu’on le quitte, il ne reste que le sous-titre, sous le titre, comme dans la fiche ; un clic dessus le rouvre.',
+      'Au PC, la fenêtre de mise à jour (ou des nouveautés) passe avant la demande d’accès au planning : un clic dedans ne fait plus surgir la question d’Edge, qui attend le clic suivant.'
+    ]
+  },
   {
     d: '2026-11-24 12:30',
     v: '0.93.27',
