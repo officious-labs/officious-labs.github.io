@@ -101,30 +101,45 @@ function appel(c, methode, params) {
     return j;
   });
 }
-/**
- * Le texte d'un fichier : d'abord par « gettextfile », qui le rend directement depuis le serveur de l'API ; sinon par
- * un lien de téléchargement (« getfilelink »), que pCloud lie à l'origine de la page.
- */
-function lireFichier(c, id) {
-  var q = new URLSearchParams({ fileid: id, fromencoding: "utf-8", toencoding: "utf-8", access_token: c.jeton });
-  return fetch("https://" + c.serveur + "/gettextfile?" + q).then(function (r) {
-    if (!r.ok) throw new Error("gettextfile " + r.status);
-    return r.text();
-  }).then(function (t) {
-    // Une erreur arrive en JSON ({"result": 7010, …}) ; une note n'en est jamais un.
+/** Le texte rendu par « gettextfile » ; une erreur arrive en JSON ({"result": 1000, …}), une note n'en est jamais un. */
+function texteOuErreur(r) {
+  if (!r.ok) throw new Error("statut " + r.status);
+  return r.text().then(function (t) {
     if (/^\s*\{\s*"result"/.test(t)) { var j = JSON.parse(t); if (j.result !== 0) throw new Error(j.error || "erreur " + j.result); }
     return t;
-  }).catch(function (e1) {
-    return appel(c, "getfilelink", { fileid: id }).then(function (l) {
-      return fetch("https://" + l.hosts[0] + l.path).then(function (r) {
-        if (!r.ok) throw new Error("fichier illisible (" + r.status + ")");
-        return r.text();
-      });
-    }).catch(function (e2) {
-      // Les deux raisons, pour savoir laquelle corriger.
-      throw new Error("lecture directe : " + (e1.message || e1) + " ; lien : " + (e2.message || e2));
-    });
   });
+}
+function message(e) { return e && e.message ? e.message : String(e); }
+
+/**
+ * Le texte d'un fichier. Trois façons, essayées dans l'ordre, car pCloud se comporte autrement avec une page web
+ * qu'avec l'appli (essais de François du 23 et du 25/11/2026 : « Log in required » pour « gettextfile » avec le
+ * jeton dans l'adresse, « Invalid link referer » pour le lien de téléchargement) :
+ * 1. « gettextfile », le jeton dans l'en-tête Authorization (la forme d'OAuth 2) ;
+ * 2. « gettextfile » en POST, le jeton dans le corps ;
+ * 3. le lien de téléchargement (« getfilelink »).
+ * Si les trois échouent, le message donne les trois raisons.
+ */
+function lireFichier(c, id) {
+  var base = "https://" + c.serveur + "/gettextfile";
+  var params = { fileid: id, fromencoding: "utf-8", toencoding: "utf-8" };
+  var raisons = [];
+  return fetch(base + "?" + new URLSearchParams(params), { headers: { Authorization: "Bearer " + c.jeton } }).then(texteOuErreur)
+    .catch(function (e) {
+      raisons.push("en-tête : " + message(e));
+      return fetch(base, { method: "POST", body: new URLSearchParams(Object.assign({ access_token: c.jeton }, params)) }).then(texteOuErreur);
+    }).catch(function (e) {
+      if (raisons.length < 2) raisons.push("POST : " + message(e));
+      return appel(c, "getfilelink", { fileid: id }).then(function (l) {
+        return fetch("https://" + l.hosts[0] + l.path).then(function (r) {
+          if (!r.ok) throw new Error("fichier illisible (" + r.status + ")");
+          return r.text();
+        });
+      });
+    }).catch(function (e) {
+      raisons.push("lien : " + message(e));
+      throw new Error(raisons.join(" ; "));
+    });
 }
 
 // —— Les notes ——
